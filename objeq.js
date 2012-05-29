@@ -65,7 +65,7 @@ var $objeq;
 
   var toString = Object.prototype.toString;
   var isArray = Array.isArray || function(obj) {
-    return toString.call(obj) == '[object Array]';
+    return toString.call(obj) === '[object Array]';
   };
 
   // Utility Functions ********************************************************
@@ -97,7 +97,7 @@ var $objeq;
     var propertyEntry = properties[key] || ( properties[key] = {} );
     var callbacks = propertyEntry[target] || ( propertyEntry[target] = [] );
 
-    if ( callbacks.indexOf(callback) != -1 ) {
+    if ( callbacks.indexOf(callback) !== -1 ) {
       return;
     }
 
@@ -120,7 +120,7 @@ var $objeq;
     }
 
     var idx = callbacks.indexOf(callback);
-    if ( idx == -1 ) {
+    if ( idx === -1 ) {
       return;
     }
 
@@ -146,14 +146,14 @@ var $objeq;
   }
 
   function queueEvent(target, key, value, prev) {
-    if ( value == prev || !hasListeners(target, key) ) {
+    if ( value === prev || !hasListeners(target, key) ) {
       return;
     }
 
     var events = pending[target] || (pending[target] = {});
     var event = events[key];
     if ( event ) {
-      if ( value == event.prev ) {
+      if ( value === event.prev ) {
         // If we've reverted to the original value, remove from queue
         queue.splice(queue.indexOf(event), 1);
         delete events[key];
@@ -191,7 +191,7 @@ var $objeq;
   function createAccessors(wrapper, obj, key) {
     function setter(value) {
       var prev = obj[key];
-      if ( value == prev ) {
+      if ( value === prev ) {
         return;
       }
 
@@ -248,7 +248,7 @@ var $objeq;
     }
 
     arr.item = function _item(index, value) {
-      if ( typeof value == 'undefined' ) {
+      if ( typeof value === 'undefined' ) {
         var prev = arr[index].__objeq_target__;
         value = arr[index] = decorate(value);
         queueEvent(arr, index, value.__objeq_target__, prev);
@@ -265,7 +265,7 @@ var $objeq;
   }
 
   function decorate(value) {
-    if ( value == null ) {
+    if ( typeof value === 'undefined' || value === null ) {
       return value;
     }
 
@@ -278,7 +278,7 @@ var $objeq;
     if ( isArray(value) ) {
       return decorateArray(value);
     }
-    else if ( typeof value == 'object' ) {
+    else if ( typeof value === 'object' ) {
       return decorateObject(value);
     }
 
@@ -290,7 +290,7 @@ var $objeq;
   function getPath(node, path) {
     for ( var i = 0, ilen = path.length; node && i < ilen; i++ ) {
       node = node[path[i]];
-      if ( node == null ) return node;
+      if ( typeof node === 'undefined' || node === null ) return node;
     }
     return node;
   }
@@ -332,6 +332,34 @@ var $objeq;
         }
         return getPath(target, node.slice(start));
     }
+
+    // This should hopefully never happen
+    throw new Error('Invalid Parser Node: '+node[0]);
+  }
+
+  // TODO: Eventually may want do create a dependency graph here
+  function addQueryListeners(node, args, invalidateQuery, invalidateResults) {
+    if ( !isArray(node) ) {
+      return;
+    }
+
+    if ( node[0] == 'path' ) {
+      if ( typeof node[1] == 'string' ) {
+        var target = null, start = 1, callback = invalidateResults;
+      }
+      else {
+        var target = args[node[1]], start = 2, callback = invalidateQuery;
+      }
+
+      for ( var i = start, ilen = node.length; i < ilen; i++ ) {
+        addListener(target, node[i], callback);
+      }
+      return;
+    }
+
+    for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
+      addQueryListeners(node[i], args, invalidateQuery, invalidateResults);
+    }
   }
 
   function query($this, queryString, argStack) {
@@ -342,7 +370,6 @@ var $objeq;
     }
 
     var results = decorateArray([]);
-    var sourceInvalid = true, queryInvalid = true, resultsInvalid = true;
 
     function generateResults() {
       results.length = 0;
@@ -354,11 +381,7 @@ var $objeq;
       }
     }
 
-    function invalidateSource(target, key, value, prev) {
-      sourceInvalid = true;
-      generateResults();
-      console.log(queryString + ': source invalidated');
-    }
+    var queryInvalid = true, resultsInvalid = true;
 
     function invalidateQuery(target, key, value, prev) {
       queryInvalid = true;
@@ -372,35 +395,7 @@ var $objeq;
       console.log(queryString + ': results invalidated');
     }
 
-    function addListeners(node) {
-      if ( !isArray(node) ) {
-        return;
-      }
-
-      if ( node[0] == 'path' ) {
-        if ( typeof node[1] == 'string' ) {
-          var target = null;
-          var start = 1;
-          var callback = invalidateResults;
-        }
-        else {
-          var target = args[node[1]];
-          var start = 2;
-          var callback = invalidateQuery;
-        }
-
-        for ( var i = start, ilen = node.length; i < ilen; i++ ) {
-          addListener(target, node[i], callback);
-        }
-        return;
-      }
-
-      for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
-        addListeners(node[i]);
-      }
-    }
-
-    addListeners(root);
+    addQueryListeners(root, args, invalidateQuery, invalidateResults);
     generateResults();
 
     return results;
@@ -427,6 +422,7 @@ var $objeq;
     decorate: decorate,
     getPath: getPath,
     match: match,
+    addQueryListeners: addQueryListeners,
     query: query,
     objeq: objeq
   };
