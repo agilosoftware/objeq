@@ -74,6 +74,10 @@ var $objeq;
     return Array.prototype.slice.call(arr, 0);
   }
 
+  function isDecorated(value) {
+    return value.__objeq_wrapper__ ? true : false;
+  }
+
   // Listener Implementation **************************************************
 
   var queue = [];      // The queue of pending notifications
@@ -289,6 +293,12 @@ var $objeq;
 
   function getPath(node, path) {
     for ( var i = 0, ilen = path.length; node && i < ilen; i++ ) {
+      if ( isArray(node) && isDecorated(node) ) {
+        if ( node.length === 0 ) {
+          return null;
+        }
+        node = node[0];
+      }
       node = node[path[i]];
       if ( typeof node === 'undefined' || node === null ) return node;
     }
