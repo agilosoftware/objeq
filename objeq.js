@@ -325,12 +325,10 @@ var $objeq;
 
       case 'path':
         if ( typeof node[1] == 'string' ) {
-          var target = obj;
-          var start = 1;
+          var target = obj, start = 1;
         }
         else {
-          var target = args[node[1]];
-          var start = 2;
+          var target = args[node[1]], start = 2;
         }
         return getPath(target, node.slice(start));
     }
@@ -408,16 +406,40 @@ var $objeq;
     return results;
   }
 
+  // Debug and Testing Interface **********************************************
+
+  var debug = {
+    defineProperty1: defineProperty1,
+    defineProperty2: defineProperty2,
+    defineProperty: defineProperty,
+    toString: toString,
+    isArray: isArray,
+    makeArray: makeArray,
+    hasListeners: hasListeners,
+    addListener: addListener,
+    removeListener: removeListener,
+    getListeners: getListeners,
+    queueEvent: queueEvent,
+    notifyListeners: notifyListeners,
+    createAccessors: createAccessors,
+    decorateObject: decorateObject,
+    decorateArray: decorateArray,
+    decorate: decorate,
+    getPath: getPath,
+    match: match,
+    query: query,
+    objeq: objeq
+  };
+
   // Exported Function ********************************************************
 
   function objeq() {
     var $this = this.__objeq_wrapper__ ? this : decorateArray([]);
 
-    // TODO: This is just for testing... what we really want
-    //       to have is a latent notification system
+    // TODO: For testing and debugging only
     if ( arguments.length == 0 ) {
       notifyListeners();
-      return $this;
+      return debug;
     }
 
     // Fast Path for Single Array Parameter Calls
