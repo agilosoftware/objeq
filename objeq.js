@@ -30,7 +30,7 @@
  * @author Stefano Rago
  */
 
-// Here's our Global
+// Here's our global
 var $objeq;
 
 (function() {
@@ -248,7 +248,7 @@ var $objeq;
     }
 
     arr.item = function _item(index, value) {
-      if ( value !== undefined ) {
+      if ( typeof value == 'undefined' ) {
         var prev = arr[index].__objeq_target__;
         value = arr[index] = decorate(value);
         queueEvent(arr, index, value.__objeq_target__, prev);
@@ -265,7 +265,7 @@ var $objeq;
   }
 
   function decorate(value) {
-    if ( value == undefined || value == null ) {
+    if ( value == null ) {
       return value;
     }
 
@@ -287,27 +287,90 @@ var $objeq;
 
   // Query Implementation *****************************************************
 
-  function query($this, queryString, args) {
-    var root = $objeqParser.parse(queryString);
-    var resolvedArguments = [];
-    while ( args.length ) {
-      resolvedArguments.push(decorate(args.pop()));
+  function getPath(node, path) {
+    for ( var i = 0, ilen = path.length; node && i < ilen; i++ ) {
+      node = node[path[i]];
+      if ( node == null ) return node;
     }
-    var results = [].concat($this);
+    return node;
+  }
+
+  function match(node, obj, args) {
+    if ( !isArray(node) ) {
+      return node;
+    }
+
+    // Resolve all the children first
+    var child = [];
+    for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
+      child.push(match(node[i], obj, args));
+    }
+
+    switch ( node[0] ) {
+      case 'add': return child[0] + child[1];
+      case 'sub': return child[0] - child[1];
+      case 'mul': return child[0] * child[1];
+      case 'div': return child[0] / child[1];
+      case 'mod': return child[0] % child[1];
+      case 'and': return child[0] && child[1];
+      case 'or':  return child[0] || child[1];
+      case 'eq':  return child[0] == child[1];
+      case 'neq': return child[0] != child[1];
+      case 'gt':  return child[0] > child[1];
+      case 'gte': return child[0] >= child[1];
+      case 'lt':  return child[0] < child[1];
+      case 'lte': return child[0] <= child[1];
+      case 'not': return !child[0];
+      case 'neg': return -child[0];
+
+      case 'path':
+        if ( typeof node[1] == 'string' ) {
+          var target = obj;
+          var start = 1;
+        }
+        else {
+          var target = args[node[1]];
+          var start = 2;
+        }
+        return getPath(target, node.slice(start));
+    }
+  }
+
+  function query($this, queryString, argStack) {
+    var root = $objeqParser.parse(queryString);
+    var args = [];
+    while ( argStack.length ) {
+      args.push(decorate(argStack.pop()));
+    }
+
+    var results = decorateArray([]);
     var sourceInvalid = true, queryInvalid = true, resultsInvalid = true;
+
+    function generateResults() {
+      results.length = 0;
+      for ( var i = 0, ilen = $this.length; i < ilen; i++ ) {
+        var obj = $this[i];
+        if ( match(root, obj, args) ) {
+          results.push(obj);
+        }
+      }
+    }
 
     function invalidateSource(target, key, value, prev) {
       sourceInvalid = true;
+      generateResults();
       console.log(queryString + ': source invalidated');
     }
 
     function invalidateQuery(target, key, value, prev) {
       queryInvalid = true;
+      generateResults();
       console.log(queryString + ': query invalidated');
     }
 
     function invalidateResults(target, key, value, prev) {
       resultsInvalid = true;
+      generateResults();
       console.log(queryString + ': results invalidated');
     }
 
@@ -323,7 +386,7 @@ var $objeq;
           var callback = invalidateResults;
         }
         else {
-          var target = resolvedArguments[node[1]];
+          var target = args[node[1]];
           var start = 2;
           var callback = invalidateQuery;
         }
@@ -340,6 +403,7 @@ var $objeq;
     }
 
     addListeners(root);
+    generateResults();
 
     return results;
   }
@@ -356,14 +420,12 @@ var $objeq;
       return $this;
     }
 
-    // Fast Path for Single Parameter Calls
-    if ( arguments.length == 1 ) {
-      var arg0 = arguments[0];
-      if ( typeof arg0 == 'object' || isArray(arg0) ) {
-        return decorate(arg0);
-      }
+    // Fast Path for Single Array Parameter Calls
+    if ( arguments.length == 1 && isArray(arguments[0]) ) {
+      return decorate(arguments[0]);
     }
 
+    // TODO: If we pass multiple arrays, maybe we flatten them?
     var results = null;
     var args = makeArray(arguments).reverse();
     while ( args.length ) {

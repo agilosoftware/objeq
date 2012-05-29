@@ -40,7 +40,16 @@ These are chainable, so you can also do:
     var items = $objeq({name:'thom'}, {name:'stef'});
     var thom = items.objeq("name == 'thom'")[0];
 
-## Observables
+Queries can also be parameterized where any Objects passed in are also
+decorated and treated as 'live' parameters.  This means that the result
+array will be updated every time the parameter's properties change:
+
+    var items = $objeq({name:'thom'}, {name:'stef'});
+    var param = { name: 'thom' };
+    var result = items.objeq("name == %1.name", param);  // 0 -> thom
+    param.name = 'stef';                                 // 0 -> stef
+
+## Observables (Not Yet Implemented)
 
 You can create observers on both Objects and Arrays in the following ways.
 
