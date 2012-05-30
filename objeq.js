@@ -238,7 +238,7 @@ var $objeq;
 
     // Read-only Property
     var objectId = 'o'+nextObjectId++;
-    defineProperty(obj, '__objeq_id__', function() { return nextObjectId; });
+    defineProperty(obj, '__objeq_id__', function() { return objectId; });
 
     return obj;
   }
@@ -290,7 +290,7 @@ var $objeq;
     // Already decorated?  Just return the value
     if ( value.__objeq_id__ ) {
       return value;
-    };
+    }
 
     if ( isArray(value) ) {
       return decorateArray(value);
