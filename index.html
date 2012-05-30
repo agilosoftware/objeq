@@ -15,7 +15,7 @@
     var wrapped = $objeq(thom, stefano, nurhan, bill, fred, anon)
       , aged = wrapped.objeq("age >= %1.value", ageParams)
       , named = wrapped.objeq("name == %1.value", nameParams)
-      , oldNamed = named.objeq("age >= 50");
+      , oldNamed = named.objeq("age >= 50 and age <= 1000");
 
     var callback = function() {
       console.log('the query oldNamed has changed!');

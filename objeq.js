@@ -158,37 +158,12 @@ var $objeq;
     return [].concat(callbacks, wildcards);
   }
 
-  // To avoid recursion when queueEvent calls notifyListeners
-  var inNotifyListeners = false;
-
-  function queueEvent(target, key, value, prev) {
-    if ( value === prev || !hasListeners(target, key) ) {
-      return;
-    }
-
-    var tkey = getObjectId(target);
-    var events = pending[tkey] || (pending[tkey] = {});
-    var event = events[key];
-    if ( !event ) {
-      queue.push({ target: target, key: key, value: value, prev: prev });
-    }
-    else {
-      if ( value === event.prev ) {
-        // If we've reverted to the original value, remove from queue
-        queue.splice(queue.indexOf(event), 1);
-        delete events[key];
-        return;
-      }
-      event.value = value;
-    }
-    if ( !inNotifyListeners ) {
-      notifyListeners();
-    }
-  }
-
   // Allow a Developer the ability to debug a problem rather than having to
   // forcefully restart their browser (I'm looking at *YOU* Safari)
   var MaxNotifyCycles = 128;
+
+  // To avoid recursion when queueEvent calls notifyListeners
+  var inNotifyListeners = false;
 
   function notifyListeners() {
     inNotifyListeners = true;
@@ -219,8 +194,34 @@ var $objeq;
     }
   }
 
+  function queueEvent(target, key, value, prev) {
+    if ( value === prev || !hasListeners(target, key) ) {
+      return;
+    }
+
+    var tkey = getObjectId(target);
+    var events = pending[tkey] || (pending[tkey] = {});
+    var event = events[key];
+    if ( !event ) {
+      queue.push({ target: target, key: key, value: value, prev: prev });
+    }
+    else {
+      if ( value === event.prev ) {
+        // If we've reverted to the original value, remove from queue
+        queue.splice(queue.indexOf(event), 1);
+        delete events[key];
+        return;
+      }
+      event.value = value;
+    }
+    if ( !inNotifyListeners ) {
+      notifyListeners();
+    }
+  }
+
   // Object Decoration ********************************************************
 
+  // We have to keep track of objects with IDs for dictionary lookups
   var nextObjectId = 1;
 
   function createAccessors(obj, state, key) {
@@ -465,8 +466,12 @@ var $objeq;
     }
   }
 
+  function parse(queryString) {
+    return $objeqParser.parse(queryString);
+  }
+
   function query(source, queryString, argStack) {
-    var root = $objeqParser.parse(queryString);
+    var root = parse(queryString);
     var args = [];
     while ( argStack.length ) {
       args.push(decorate(argStack.pop()));
@@ -528,8 +533,8 @@ var $objeq;
       addListener: addListener,
       removeListener: removeListener,
       getListeners: getListeners,
-      queueEvent: queueEvent,
       notifyListeners: notifyListeners,
+      queueEvent: queueEvent,
       createAccessors: createAccessors,
       decorateObject: decorateObject,
       wrapArrayFunction: wrapArrayFunction,
@@ -542,6 +547,7 @@ var $objeq;
       getPath: getPath,
       match: match,
       addQueryListeners: addQueryListeners,
+      parse: parse,
       query: query,
       objeq: objeq
     };
