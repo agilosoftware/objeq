@@ -17,9 +17,19 @@
       , named = wrapped.objeq("name == %1.value", nameParams)
       , oldNamed = named.objeq("age >= 50");
 
+    var callback = function() {
+      console.log('the query oldNamed has changed!');
+    };
+
+    oldNamed.on('change', callback);
+
     thom.age = 39;
     anon.name = 'bill';
 
+    oldNamed.off('change', callback);
+
+    thom.age = 70;
+    anon.name = 'fred';
   </script>
 </head>
 <body>

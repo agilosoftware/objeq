@@ -308,6 +308,26 @@ var $objeq;
       return this[index];
     };
 
+    arr.on = function _on(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        switch(evt[i]) {
+          case 'change':
+            addListener(this, getArrayContentKey(this), callback);
+        }
+      }
+    };
+
+    arr.off = function _off(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        switch(evt[i]) {
+          case 'change':
+            removeListener(this, getArrayContentKey(this), callback);
+        }
+      }
+    };
+
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
     defineProperty(arr, '__objeq_id__', function() { return objectId; });
@@ -349,7 +369,8 @@ var $objeq;
   }
 
   function refreshQueries() {
-    pendingRefresh = invalidated, invalidated = {};
+    pendingRefresh = invalidated;
+    invalidated = {};
     for ( var key in pendingRefresh ) {
       var refreshFunction = pendingRefresh[key];
       delete pendingRefresh[key];
