@@ -82,6 +82,10 @@ var $objeq;
     return value && value.__objeq_id__ || null;
   }
 
+  function getArrayContentKey(value) {
+    return getObjectId(value) + '_content';
+  }
+
   // Listener Implementation **************************************************
 
   var queue = [];      // The queue of pending notifications
@@ -155,6 +159,9 @@ var $objeq;
     return [].concat(propertyEntry['*'] || EmptyArray);
   }
 
+  // To avoid recursion when queueEvent calls notifyListeners
+  var inNotifyListeners = false;
+
   function queueEvent(target, key, value, prev) {
     if ( value === prev || !hasListeners(target, key) ) {
       return;
@@ -175,10 +182,13 @@ var $objeq;
     else {
       queue.push({ target: target, key: key, value: value, prev: prev });
     }
+    if ( !inNotifyListeners ) {
+      notifyListeners();
+    }
   }
 
   function notifyListeners() {
-    var count = 0;
+    inNotifyListeners = true;
     for ( var count = 0; queue.length && count < 100; count++ ) {
       var currentQueue = [].concat(queue);
       pending = {};
@@ -198,6 +208,7 @@ var $objeq;
         }
       }
     }
+    inNotifyListeners = false;
     if ( count === 100 ) {
       throw new Error('Too Many Notification Cycles');
     }
@@ -272,7 +283,7 @@ var $objeq;
         }
       }
       var value = this.length;
-      queueEvent(this, '*', value, prev);
+      queueEvent(this, getArrayContentKey(this), value, prev);
     }
   }
 
@@ -291,7 +302,7 @@ var $objeq;
       if ( typeof value === 'undefined' ) {
         var prev = this[index];
         this[index] = decorate(value);
-        queueEvent(this, 'array', value, prev);
+        queueEvent(this, getArrayContentKey(this), value, prev);
       }
       return this[index];
     };
@@ -310,7 +321,7 @@ var $objeq;
     }
 
     // Already decorated?  Just return the value
-    if ( value.__objeq_id__ ) {
+    if ( isDecorated(value) ) {
       return value;
     }
 
@@ -416,37 +427,35 @@ var $objeq;
 
     var results = decorateArray([]);
 
+    // TODO: Right now this is brute force, but we need to do deltas
     function generateResults() {
+      var prev = -results.length;
       results.length = 0;
-      for ( var i = 0, ilen = source.length; i < ilen; i++ ) {
+      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
         var obj = source[i];
         if ( match(root, obj, args) ) {
-          results.push(obj);
+          results[j++] = obj;
         }
       }
+      queueEvent(results, getArrayContentKey(results), results.length, prev);
     }
 
-    var sourceInvalid = false, queryInvalid = false, resultsInvalid = false;
-
     function invalidateSource(target, key, value, prev) {
-      sourceInvalid = true;
-      generateResults();
       console.log(queryString + ': source invalidated');
+      generateResults();
     }
 
     function invalidateQuery(target, key, value, prev) {
-      queryInvalid = true;
-      generateResults();
       console.log(queryString + ': query invalidated');
+      generateResults();
     }
 
     function invalidateResults(target, key, value, prev) {
-      resultsInvalid = true;
-      generateResults();
       console.log(queryString + ': results invalidated');
+      generateResults();
     }
 
-    addListener(source, '*', invalidateSource);
+    addListener(source, getArrayContentKey(source), invalidateSource);
     addQueryListeners(root, args, invalidateQuery, invalidateResults);
     generateResults();
 
@@ -493,7 +502,6 @@ var $objeq;
     if ( arguments.length == 0 ) {
       debug.queue = queue;
       debug.pending = pending;
-      notifyListeners();
       return debug;
     }
 

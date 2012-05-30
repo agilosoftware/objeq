@@ -3,18 +3,22 @@
   <script type="text/javascript" src="objeq-parser.js"></script>
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
-    var obj1 = { name: "thom", age: 40 }
-      , obj2 = { name: "stefano", age: 29 }
-      , obj3 = { name: "nurhan", age: 37 }
-      , obj4 = { value: 50 };
+    var thom = { name: "thom", age: 40 }
+      , stefano = { name: "stefano", age: 29 }
+      , nurhan = { name: "nurhan", age: 37 }
+      , bill = { name: 'bill', age: 50 }
+      , fred = { name: 'fred', age: 70 }
+      , anon = { name: 'anonymous', age: 55 }
+      , ageParams = { value: 50 }
+      , nameParams = { value: 'bill' };
 
-    var wrapped = $objeq([obj1, obj2, obj3])
-      , result = wrapped.objeq("age == %1.value", obj4)
-      , thom = wrapped[0]
-      , stefano = wrapped[1]
-      , nurhan = wrapped[2];
+    var wrapped = $objeq(thom, stefano, nurhan, bill, fred, anon)
+      , aged = wrapped.objeq("age >= %1.value", ageParams)
+      , named = wrapped.objeq("name == %1.value", nameParams);
 
     thom.age = 39;
+    anon.name = 'bill';
+
   </script>
 </head>
 <body>
