@@ -211,17 +211,19 @@ var $objeq;
     state[key] = obj[key];
 
     function setter(value) {
+      value = decorate(value);
+
       var prev = state[key];
       if ( value === prev ) {
         return;
       }
 
       state[key] = value;
-      queueEvent(obj, key, value, prev);
+      queueEvent(this, key, value, prev);
     }
 
     function getter() {
-      return decorate(state[key]);
+      return state[key];
     }
 
     defineProperty(obj, key, getter, setter);
@@ -237,21 +239,40 @@ var $objeq;
     }
 
     // Read-only Property
-    var objectId = 'o'+nextObjectId++;
+    var objectId = 'o' + (nextObjectId++);
     defineProperty(obj, '__objeq_id__', function() { return objectId; });
 
     return obj;
   }
 
-  var Mutators = ['push', 'pop', 'reverse', 'shift', 'unshift', 'sort', 'splice'];
+  var ArrayFuncs = [
+    { name: 'push', additive: true },
+    { name: 'unshift', additive: true },
+    { name: 'splice', additive: true },
+    { name: 'pop', additive: false },
+    { name: 'reverse', additive: false },
+    { name: 'shift', additive: false },
+    { name: 'sort', additive: false }
+  ];
 
-  function wrapArrayFunction(arr, name) {
+  function wrapArrayFunction(arr, name, additive) {
     var oldFunc = arr[name];
+    if ( !oldFunc ) {
+      console.log('Attempting to wrap an Array, but it is missing: '+name);
+      return;
+    }
+
     arr[name] = function wrapped() {
       var prev = -this.length;
       oldFunc.apply(this, arguments);
+      if ( additive ) {
+        // TODO: This is not ideal because we only care about new items
+        for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
+          decorate(this[i]);
+        }
+      }
       var value = this.length;
-      queueEvent(this, 'array', value, prev);
+      queueEvent(this, '*', value, prev);
     }
   }
 
@@ -261,8 +282,9 @@ var $objeq;
       arr[i] = decorate(arr[i]);
     }
 
-    for ( var i = 0, ilen = Mutators.length; i < ilen; i++ ) {
-      wrapArrayFunction(arr, Mutators[i]);
+    for ( var i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
+      var arrayFunc = ArrayFuncs[i];
+      wrapArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
     }
 
     arr.item = function _item(index, value) {
@@ -275,7 +297,7 @@ var $objeq;
     };
 
     // Read-only Properties
-    var objectId = 'a'+nextObjectId++;
+    var objectId = 'a' + (nextObjectId++);
     defineProperty(arr, '__objeq_id__', function() { return objectId; });
     defineProperty(arr, 'objeq', function() { return objeq });
 
@@ -424,7 +446,7 @@ var $objeq;
       console.log(queryString + ': results invalidated');
     }
 
-    addListener(source, 'array', invalidateSource);
+    addListener(source, '*', invalidateSource);
     addQueryListeners(root, args, invalidateQuery, invalidateResults);
     generateResults();
 
@@ -468,9 +490,9 @@ var $objeq;
 
     // TODO: For testing and debugging only
     if ( arguments.length == 0 ) {
-      notifyListeners();
       debug.queue = queue;
       debug.pending = pending;
+      notifyListeners();
       return debug;
     }
 
