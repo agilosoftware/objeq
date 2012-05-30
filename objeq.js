@@ -268,7 +268,7 @@ var $objeq;
       if ( additive ) {
         // TODO: This is not ideal because we only care about new items
         for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
-          decorate(this[i]);
+          this[i] = decorate(this[i]);
         }
       }
       var value = this.length;
@@ -289,9 +289,9 @@ var $objeq;
 
     arr.item = function _item(index, value) {
       if ( typeof value === 'undefined' ) {
-        var prev = this[index].__objeq_target__;
-        value = this[index] = decorate(value);
-        queueEvent(this, 'array', value.__objeq_target__, prev);
+        var prev = this[index];
+        this[index] = decorate(value);
+        queueEvent(this, 'array', value, prev);
       }
       return this[index];
     };
@@ -486,7 +486,7 @@ var $objeq;
   // Exported Function ********************************************************
 
   function objeq() {
-    var $this = this.__objeq_id__ ? this : decorateArray([]);
+    var source = isDecorated(this) ? this : decorateArray([]);
 
     // TODO: For testing and debugging only
     if ( arguments.length == 0 ) {
@@ -507,11 +507,11 @@ var $objeq;
     while ( args.length ) {
       var arg = args.pop();
       if ( typeof arg == 'string' ) {
-        results = query($this, arg, args);
+        results = query(source, arg, args);
         break; // short circuit if it's a query
       }
       else {
-        results = results || ( $this = results = decorateArray([]) );
+        results = results || ( source = results = decorateArray([]) );
         results.push(decorate(arg));
       }
     }
