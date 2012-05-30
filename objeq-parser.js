@@ -386,7 +386,7 @@ topState:function () {
 pushState:function begin(condition) {
         this.begin(condition);
     }});
-lexer.options = {};
+lexer.options = {"case-insensitive":true};
 lexer.performAction = function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {
 
 var YYSTATE=YY_START
@@ -463,7 +463,7 @@ case 31:return 'INVALID';
 break;
 }
 };
-lexer.rules = [/^(?:(-?(?:[0-9]|[1-9][0-9]+))((?:\.[0-9]+))?((?:[eE][-+]?[0-9]+))?\b)/,/^(?:"(\\x[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4}|\\[^xu]|[^"(\\)\n])*")/,/^(?:'(\\['bfvnrt/(\\)]|\\u[a-fA-F0-9]{4}|[^'(\\)])*')/,/^(?:%[1-9][0-9]*)/,/^(?:\s+)/,/^(?:\()/,/^(?:\))/,/^(?:\.)/,/^(?:==)/,/^(?:!=)/,/^(?:<=)/,/^(?:>=)/,/^(?:<)/,/^(?:>)/,/^(?:\+)/,/^(?:-)/,/^(?:\*)/,/^(?:\/)/,/^(?:%)/,/^(?:not\b)/,/^(?:!)/,/^(?:and\b)/,/^(?:&&)/,/^(?:or\b)/,/^(?:\|\|)/,/^(?:true\b)/,/^(?:false\b)/,/^(?:null\b)/,/^(?:undefined\b)/,/^(?:[A-Za-z_$][A-Za-z_$0-9-]*)/,/^(?:$)/,/^(?:.)/];
+lexer.rules = [/^(?:(-?(?:[0-9]|[1-9][0-9]+))((?:\.[0-9]+))?((?:[eE][-+]?[0-9]+))?\b)/i,/^(?:"(\\x[a-fA-F0-9]{2}|\\u[a-fA-F0-9]{4}|\\[^xu]|[^"(\\)\n])*")/i,/^(?:'(\\['bfvnrt/(\\)]|\\u[a-fA-F0-9]{4}|[^'(\\)])*')/i,/^(?:%[1-9][0-9]*)/i,/^(?:\s+)/i,/^(?:\()/i,/^(?:\))/i,/^(?:\.)/i,/^(?:==)/i,/^(?:!=)/i,/^(?:<=)/i,/^(?:>=)/i,/^(?:<)/i,/^(?:>)/i,/^(?:\+)/i,/^(?:-)/i,/^(?:\*)/i,/^(?:\/)/i,/^(?:%)/i,/^(?:not\b)/i,/^(?:!)/i,/^(?:and\b)/i,/^(?:&&)/i,/^(?:or\b)/i,/^(?:\|\|)/i,/^(?:true\b)/i,/^(?:false\b)/i,/^(?:null\b)/i,/^(?:undefined\b)/i,/^(?:[A-Za-z_$][A-Za-z_$0-9-]*)/i,/^(?:$)/i,/^(?:.)/i];
 lexer.conditions = {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],"inclusive":true}};
 return lexer;})()
 parser.lexer = lexer;function Parser () { this.yy = {}; }Parser.prototype = parser;parser.Parser = Parser;

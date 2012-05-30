@@ -207,6 +207,8 @@ var $objeq;
           callback(target, key, event.value, event.prev);
         }
       }
+
+      refreshQueries();
     }
     inNotifyListeners = false;
     if ( count === 100 ) {
@@ -288,7 +290,6 @@ var $objeq;
   }
 
   function decorateArray(arr) {
-    // TODO: There's gotta be a better way to decorate an array
     for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
       arr[i] = decorate(arr[i]);
     }
@@ -336,6 +337,25 @@ var $objeq;
   }
 
   // Query Implementation *****************************************************
+
+  // Invalidated Queries are marked and processed after notifyListeners
+  var invalidated = {}, pendingRefresh = {};
+
+  function invalidateQuery(results, refreshFunction) {
+    var tkey = getObjectId(results);
+    if ( !pendingRefresh[tkey] ) {
+      invalidated[tkey] = refreshFunction;
+    }
+  }
+
+  function refreshQueries() {
+    pendingRefresh = invalidated, invalidated = {};
+    for ( var key in pendingRefresh ) {
+      var refreshFunction = pendingRefresh[key];
+      delete pendingRefresh[key];
+      refreshFunction();
+    }
+  }
 
   function getPath(node, path) {
     for ( var i = 0, ilen = path.length; node && i < ilen; i++ ) {
@@ -426,9 +446,10 @@ var $objeq;
     }
 
     var results = decorateArray([]);
-
     // TODO: Right now this is brute force, but we need to do deltas
-    function generateResults() {
+    function refreshResults() {
+      console.log('refreshing query: '+queryString);
+
       var prev = -results.length;
       results.length = 0;
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
@@ -440,24 +461,24 @@ var $objeq;
       queueEvent(results, getArrayContentKey(results), results.length, prev);
     }
 
-    function invalidateSource(target, key, value, prev) {
+    function sourceListener(target, key, value, prev) {
       console.log(queryString + ': source invalidated');
-      generateResults();
+      invalidateQuery(results, refreshResults);
     }
 
-    function invalidateQuery(target, key, value, prev) {
+    function queryListener(target, key, value, prev) {
       console.log(queryString + ': query invalidated');
-      generateResults();
+      invalidateQuery(results, refreshResults);
     }
 
-    function invalidateResults(target, key, value, prev) {
+    function resultListener(target, key, value, prev) {
       console.log(queryString + ': results invalidated');
-      generateResults();
+      invalidateQuery(results, refreshResults);
     }
 
-    addListener(source, getArrayContentKey(source), invalidateSource);
-    addQueryListeners(root, args, invalidateQuery, invalidateResults);
-    generateResults();
+    addListener(source, getArrayContentKey(source), sourceListener);
+    addQueryListeners(root, args, queryListener, resultListener);
+    refreshResults();
 
     return results;
   }

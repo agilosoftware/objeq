@@ -34,6 +34,9 @@
  */
 
 %lex
+
+%options case-insensitive
+
 digit [0-9]
 esc   "\\"
 int   "-"?(?:[0-9]|[1-9][0-9]+)

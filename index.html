@@ -9,12 +9,13 @@
       , bill = { name: 'bill', age: 50 }
       , fred = { name: 'fred', age: 70 }
       , anon = { name: 'anonymous', age: 55 }
-      , ageParams = { value: 50 }
+      , ageParams = { value: 40 }
       , nameParams = { value: 'bill' };
 
     var wrapped = $objeq(thom, stefano, nurhan, bill, fred, anon)
       , aged = wrapped.objeq("age >= %1.value", ageParams)
-      , named = wrapped.objeq("name == %1.value", nameParams);
+      , named = wrapped.objeq("name == %1.value", nameParams)
+      , oldNamed = named.objeq("age >= 50");
 
     thom.age = 39;
     anon.name = 'bill';
