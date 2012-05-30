@@ -75,7 +75,11 @@ var $objeq;
   }
 
   function isDecorated(value) {
-    return value.__objeq_wrapper__ ? true : false;
+    return value.__objeq_id__ ? true : false;
+  }
+
+  function getObjectId(value) {
+    return value && value.__objeq_id__ || null;
   }
 
   // Listener Implementation **************************************************
@@ -87,19 +91,21 @@ var $objeq;
   var EmptyArray = [];
 
   function hasListeners(target, key) {
+    var tkey = getObjectId(target);
+
     if ( !key ) {
-      var targetEntry = targets[target];
+      var targetEntry = targets[tkey];
       return targetEntry && targetEntry.length;
     }
 
     var propertyEntry = properties[key];
-    return propertyEntry && ( propertyEntry[target] || propertyEntry['*'] );
+    return propertyEntry && ( propertyEntry[tkey] || propertyEntry['*'] );
   }
 
   function addListener(target, key, callback) {
-    target = target || '*';
+    var tkey = getObjectId(target) || '*';
     var propertyEntry = properties[key] || ( properties[key] = {} );
-    var callbacks = propertyEntry[target] || ( propertyEntry[target] = [] );
+    var callbacks = propertyEntry[tkey] || ( propertyEntry[tkey] = [] );
 
     if ( callbacks.indexOf(callback) !== -1 ) {
       return;
@@ -107,7 +113,7 @@ var $objeq;
 
     // Add it to the callbacks and the target reverse lookup
     callbacks.push(callback);
-    var targetEntry = targets[target] || ( targets[target] = [] );
+    var targetEntry = targets[tkey] || ( targets[tkey] = [] );
     targetEntry.push(propertyEntry);
   }
 
@@ -117,8 +123,8 @@ var $objeq;
       return;
     }
 
-    target = target || '*';
-    var callbacks = propertyEntry[target];
+    var tkey = getObjectId(target) || '*';
+    var callbacks = propertyEntry[tkey];
     if ( !callbacks ) {
       return;
     }
@@ -130,7 +136,7 @@ var $objeq;
 
     // Remove it from the callbacks and the target reverse lookup
     callbacks.splice(idx, 1);
-    var targetEntry = targets[target];
+    var targetEntry = targets[tkey];
     targetEntry.splice(targetEntry.indexOf(propertyEntry), 1);
   }
 
@@ -141,7 +147,7 @@ var $objeq;
     }
 
     if ( target ) {
-      var callbacks = propertyEntry[target] || EmptyArray;
+      var callbacks = propertyEntry[getObjectId(target)] || EmptyArray;
       var wildcards = propertyEntry['*'] || EmptyArray;
       return [].concat(callbacks, wildcards);
     }
@@ -154,7 +160,8 @@ var $objeq;
       return;
     }
 
-    var events = pending[target] || (pending[target] = {});
+    var tkey = getObjectId(target);
+    var events = pending[tkey] || (pending[tkey] = {});
     var event = events[key];
     if ( event ) {
       if ( value === event.prev ) {
@@ -171,64 +178,82 @@ var $objeq;
   }
 
   function notifyListeners() {
-    var currentQueue = [].concat(queue);
-    pending = {};
-    queue = [];
+    var count = 0;
+    for ( var count = 0; queue.length && count < 100; count++ ) {
+      var currentQueue = [].concat(queue);
+      pending = {};
+      queue = [];
 
-    for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
-      var event = currentQueue[i];
-      var target = event.target, key = event.key;
-      var listeners = getListeners(target, key);
+      for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
+        var event = currentQueue[i];
+        var target = event.target, key = event.key;
+        var listeners = getListeners(target, key);
 
-      for ( var j = 0, jlen = listeners.length; j < jlen; j++ ) {
-        var callback = listeners[j];
-        if ( callback.once ) {
-          removeListener(target, key, callback);
+        for ( var j = 0, jlen = listeners.length; j < jlen; j++ ) {
+          var callback = listeners[j];
+          if ( callback.once ) {
+            removeListener(target, key, callback);
+          }
+          callback(target, key, event.value, event.prev);
         }
-        callback(target, key, event.value, event.prev);
       }
+    }
+    if ( count === 100 ) {
+      throw new Error('Too Many Notification Cycles');
     }
   }
 
   // Object Decoration ********************************************************
 
-  function createAccessors(wrapper, obj, key) {
+  var nextObjectId = 1;
+
+  function createAccessors(obj, state, key) {
+    state[key] = obj[key];
+
     function setter(value) {
-      var prev = obj[key];
+      var prev = state[key];
       if ( value === prev ) {
         return;
       }
 
-      obj[key] = value;
+      state[key] = value;
       queueEvent(obj, key, value, prev);
     }
 
     function getter() {
-      return decorate(obj[key]);
+      return decorate(state[key]);
     }
 
-    defineProperty(wrapper, key, getter, setter);
+    defineProperty(obj, key, getter, setter);
   }
 
   function decorateObject(obj) {
-    var wrap = {};
+    var state = {};
     for ( var key in obj ) {
       if ( !obj.hasOwnProperty(key) ) {
         continue;
       }
-      createAccessors(wrap, obj, key);
+      createAccessors(obj, state, key);
     }
 
-    // Read-only Properties
-    defineProperty(wrap, '__objeq_target__', function() { return obj; });
-    defineProperty(wrap, '__objeq_wrapper__', function() { return wrap; });
-    defineProperty(obj, '__objeq_wrapper__', function() { return wrap; });
-    // TODO: Should we add the objeq method to wrapped Objects as well?
+    // Read-only Property
+    var objectId = 'o'+nextObjectId++;
+    defineProperty(obj, '__objeq_id__', function() { return nextObjectId; });
 
-    return wrap;
+    return obj;
   }
 
   var Mutators = ['push', 'pop', 'reverse', 'shift', 'unshift', 'sort', 'splice'];
+
+  function wrapArrayFunction(arr, name) {
+    var oldFunc = arr[name];
+    arr[name] = function wrapped() {
+      var prev = -this.length;
+      oldFunc.apply(this, arguments);
+      var value = this.length;
+      queueEvent(this, 'array', value, prev);
+    }
+  }
 
   function decorateArray(arr) {
     // TODO: There's gotta be a better way to decorate an array
@@ -236,33 +261,22 @@ var $objeq;
       arr[i] = decorate(arr[i]);
     }
 
-    // TODO: Can't sort on wrapped items, so need to do something special
-    function wrapFunction(name) {
-      var oldFunc = arr[name];
-      arr[name] = function wrapped() {
-        var prev = -arr.length;
-        oldFunc.apply(arr, arguments);
-        var value = arr.length;
-        queueEvent(arr, name, value, prev);
-      };
-    }
-
     for ( var i = 0, ilen = Mutators.length; i < ilen; i++ ) {
-      wrapFunction(Mutators[i]);
+      wrapArrayFunction(arr, Mutators[i]);
     }
 
     arr.item = function _item(index, value) {
       if ( typeof value === 'undefined' ) {
-        var prev = arr[index].__objeq_target__;
-        value = arr[index] = decorate(value);
-        queueEvent(arr, index, value.__objeq_target__, prev);
+        var prev = this[index].__objeq_target__;
+        value = this[index] = decorate(value);
+        queueEvent(this, 'array', value.__objeq_target__, prev);
       }
-      return arr[index];
+      return this[index];
     };
 
     // Read-only Properties
-    defineProperty(arr, '__objeq_target__', function() { return arr; });
-    defineProperty(arr, '__objeq_wrapper__', function() { return arr; });
+    var objectId = 'a'+nextObjectId++;
+    defineProperty(arr, '__objeq_id__', function() { return objectId; });
     defineProperty(arr, 'objeq', function() { return objeq });
 
     return arr;
@@ -273,11 +287,10 @@ var $objeq;
       return value;
     }
 
-    // Already decorated?  Return our original wrapper
-    var wrap = value.__objeq_wrapper__;
-    if ( wrap ) {
-      return wrap;
-    }
+    // Already decorated?  Just return the value
+    if ( value.__objeq_id__ ) {
+      return value;
+    };
 
     if ( isArray(value) ) {
       return decorateArray(value);
@@ -372,7 +385,7 @@ var $objeq;
     }
   }
 
-  function query($this, queryString, argStack) {
+  function query(source, queryString, argStack) {
     var root = $objeqParser.parse(queryString);
     var args = [];
     while ( argStack.length ) {
@@ -383,15 +396,21 @@ var $objeq;
 
     function generateResults() {
       results.length = 0;
-      for ( var i = 0, ilen = $this.length; i < ilen; i++ ) {
-        var obj = $this[i];
+      for ( var i = 0, ilen = source.length; i < ilen; i++ ) {
+        var obj = source[i];
         if ( match(root, obj, args) ) {
           results.push(obj);
         }
       }
     }
 
-    var queryInvalid = true, resultsInvalid = true;
+    var sourceInvalid = false, queryInvalid = false, resultsInvalid = false;
+
+    function invalidateSource(target, key, value, prev) {
+      sourceInvalid = true;
+      generateResults();
+      console.log(queryString + ': source invalidated');
+    }
 
     function invalidateQuery(target, key, value, prev) {
       queryInvalid = true;
@@ -405,6 +424,7 @@ var $objeq;
       console.log(queryString + ': results invalidated');
     }
 
+    addListener(source, 'array', invalidateSource);
     addQueryListeners(root, args, invalidateQuery, invalidateResults);
     generateResults();
 
@@ -414,6 +434,10 @@ var $objeq;
   // Debug and Testing Interface **********************************************
 
   var debug = {
+    queue: queue,
+    pending: pending,
+    properties: properties,
+    targets: targets,
     defineProperty1: defineProperty1,
     defineProperty2: defineProperty2,
     defineProperty: defineProperty,
@@ -440,11 +464,13 @@ var $objeq;
   // Exported Function ********************************************************
 
   function objeq() {
-    var $this = this.__objeq_wrapper__ ? this : decorateArray([]);
+    var $this = this.__objeq_id__ ? this : decorateArray([]);
 
     // TODO: For testing and debugging only
     if ( arguments.length == 0 ) {
       notifyListeners();
+      debug.queue = queue;
+      debug.pending = pending;
       return debug;
     }
 
