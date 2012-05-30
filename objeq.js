@@ -34,7 +34,9 @@
 var $objeq;
 
 (function() {
+
   // Feature Checking *********************************************************
+
   var hasDefineProperty = Object.prototype.defineProperty;
   var hasDefineSetter = Object.prototype.__defineSetter__;
   if ( !hasDefineProperty && !hasDefineSetter ) {
@@ -53,9 +55,7 @@ var $objeq;
 
   // Otherwise, well have to fall back to __defineSetter__ / __defineGetter
   function defineProperty2(obj, key, getter, setter) {
-    if ( getter ) {
-      obj.__defineGetter__(key, getter);
-    }
+    obj.__defineGetter__(key, getter);
     if ( setter ) {
       obj.__defineSetter__(key, setter);
     }
@@ -64,7 +64,7 @@ var $objeq;
   var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2;
 
   var toString = Object.prototype.toString;
-  var isArray = Array.isArray || function(obj) {
+  var isArray = Array.isArray || function _isArray(obj) {
     return toString.call(obj) === '[object Array]';
   };
 
@@ -78,9 +78,7 @@ var $objeq;
     for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
       var hash = arguments[i];
       for ( var key in hash ) {
-        if ( hash.hasOwnProperty(key) ) {
-          obj[key] = hash[key];
-        }
+        obj[key] = hash[key];
       }
     }
   }
@@ -107,12 +105,6 @@ var $objeq;
 
   function hasListeners(target, key) {
     var tkey = getObjectId(target);
-
-    if ( !key ) {
-      var targetEntry = targets[tkey];
-      return targetEntry && targetEntry.length;
-    }
-
     var propertyEntry = properties[key];
     return propertyEntry && ( propertyEntry[tkey] || propertyEntry['*'] );
   }
@@ -161,13 +153,9 @@ var $objeq;
       return null;
     }
 
-    if ( target ) {
-      var callbacks = propertyEntry[getObjectId(target)] || EmptyArray;
-      var wildcards = propertyEntry['*'] || EmptyArray;
-      return [].concat(callbacks, wildcards);
-    }
-
-    return [].concat(propertyEntry['*'] || EmptyArray);
+    var callbacks = propertyEntry[getObjectId(target)] || EmptyArray;
+    var wildcards = propertyEntry['*'] || EmptyArray;
+    return [].concat(callbacks, wildcards);
   }
 
   // To avoid recursion when queueEvent calls notifyListeners
@@ -181,7 +169,10 @@ var $objeq;
     var tkey = getObjectId(target);
     var events = pending[tkey] || (pending[tkey] = {});
     var event = events[key];
-    if ( event ) {
+    if ( !event ) {
+      queue.push({ target: target, key: key, value: value, prev: prev });
+    }
+    else {
       if ( value === event.prev ) {
         // If we've reverted to the original value, remove from queue
         queue.splice(queue.indexOf(event), 1);
@@ -189,9 +180,6 @@ var $objeq;
         return;
       }
       event.value = value;
-    }
-    else {
-      queue.push({ target: target, key: key, value: value, prev: prev });
     }
     if ( !inNotifyListeners ) {
       notifyListeners();
@@ -301,7 +289,7 @@ var $objeq;
       }
       var value = this.length;
       queueEvent(this, getArrayContentKey(this), value, prev);
-    }
+    };
   }
 
   var decoratedArrayMixin = {
@@ -317,7 +305,7 @@ var $objeq;
     on: function _on(events, callback) {
       var evt = events.split(/\s/);
       for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch(evt[i]) {
+        switch( evt[i] ) {
           case 'change':
             addListener(this, getArrayContentKey(this), callback);
         }
@@ -327,13 +315,13 @@ var $objeq;
     off: function _off(events, callback) {
       var evt = events.split(/\s/);
       for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch(evt[i]) {
+        switch( evt[i] ) {
           case 'change':
             removeListener(this, getArrayContentKey(this), callback);
         }
       }
     }
-  }
+  };
 
   function decorateArray(arr) {
     for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
@@ -350,7 +338,7 @@ var $objeq;
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
     defineProperty(arr, '__objeq_id__', function() { return objectId; });
-    defineProperty(arr, 'objeq', function() { return objeq });
+    defineProperty(arr, 'objeq', function() { return objeq; });
 
     return arr;
   }
@@ -401,7 +389,9 @@ var $objeq;
         node = node[0];
       }
       node = node[path[i]];
-      if ( node == null ) return node;
+      if ( node == null ) {
+        return node;
+      }
     }
     return node;
   }
@@ -435,11 +425,12 @@ var $objeq;
       case 'neg': return -child[0];
 
       case 'path':
-        if ( typeof node[1] == 'string' ) {
-          var target = obj, start = 1;
+        var target, start;
+        if ( typeof node[1] === 'string' ) {
+          target = obj; start = 1;
         }
         else {
-          var target = args[node[1]], start = 2;
+          target = args[node[1]]; start = 2;
         }
         return getPath(target, node.slice(start));
     }
@@ -454,12 +445,13 @@ var $objeq;
       return;
     }
 
-    if ( node[0] == 'path' ) {
-      if ( typeof node[1] == 'string' ) {
-        var target = null, start = 1, callback = invalidateResults;
+    if ( node[0] === 'path' ) {
+      var target, start, callback;
+      if ( typeof node[1] === 'string' ) {
+        target = null; start = 1; callback = invalidateResults;
       }
       else {
-        var target = args[node[1]], start = 2, callback = invalidateQuery;
+        target = args[node[1]]; start = 2; callback = invalidateQuery;
       }
 
       for ( var i = start, ilen = node.length; i < ilen; i++ ) {
@@ -520,34 +512,40 @@ var $objeq;
 
   // Debug and Testing Interface **********************************************
 
-  var debug = {
-    queue: queue,
-    pending: pending,
-    properties: properties,
-    targets: targets,
-    defineProperty1: defineProperty1,
-    defineProperty2: defineProperty2,
-    defineProperty: defineProperty,
-    toString: toString,
-    isArray: isArray,
-    makeArray: makeArray,
-    hasListeners: hasListeners,
-    addListener: addListener,
-    removeListener: removeListener,
-    getListeners: getListeners,
-    queueEvent: queueEvent,
-    notifyListeners: notifyListeners,
-    createAccessors: createAccessors,
-    decorateObject: decorateObject,
-    wrapArrayFunction: wrapArrayFunction,
-    decorateArray: decorateArray,
-    decorate: decorate,
-    getPath: getPath,
-    match: match,
-    addQueryListeners: addQueryListeners,
-    query: query,
-    objeq: objeq
-  };
+  function debug() {
+    return {
+      queue: queue,
+      pending: pending,
+      properties: properties,
+      targets: targets,
+      defineProperty1: defineProperty1,
+      defineProperty2: defineProperty2,
+      defineProperty: defineProperty,
+      toString: toString,
+      isArray: isArray,
+      makeArray: makeArray,
+      hasListeners: hasListeners,
+      addListener: addListener,
+      removeListener: removeListener,
+      getListeners: getListeners,
+      queueEvent: queueEvent,
+      notifyListeners: notifyListeners,
+      createAccessors: createAccessors,
+      decorateObject: decorateObject,
+      wrapArrayFunction: wrapArrayFunction,
+      decorateArray: decorateArray,
+      decorate: decorate,
+      invalidated: invalidated,
+      pendingRefresh: pendingRefresh,
+      invalidateQuery: invalidateQuery,
+      refreshQueries: refreshQueries,
+      getPath: getPath,
+      match: match,
+      addQueryListeners: addQueryListeners,
+      query: query,
+      objeq: objeq
+    };
+  }
 
   // Exported Function ********************************************************
 
@@ -555,14 +553,12 @@ var $objeq;
     var source = isDecorated(this) ? this : decorateArray([]);
 
     // TODO: For testing and debugging only
-    if ( arguments.length == 0 ) {
-      debug.queue = queue;
-      debug.pending = pending;
-      return debug;
+    if ( arguments.length === 0 ) {
+      return debug();
     }
 
     // Fast Path for Single Array Parameter Calls
-    if ( arguments.length == 1 && isArray(arguments[0]) ) {
+    if ( arguments.length === 1 && isArray(arguments[0]) ) {
       return decorate(arguments[0]);
     }
 
@@ -571,7 +567,7 @@ var $objeq;
     var args = makeArray(arguments).reverse();
     while ( args.length ) {
       var arg = args.pop();
-      if ( typeof arg == 'string' ) {
+      if ( typeof arg === 'string' ) {
         results = query(source, arg, args);
         break; // short circuit if it's a query
       }
