@@ -474,6 +474,7 @@ var $objeq;
     notifyListeners: notifyListeners,
     createAccessors: createAccessors,
     decorateObject: decorateObject,
+    wrapArrayFunction: wrapArrayFunction,
     decorateArray: decorateArray,
     decorate: decorate,
     getPath: getPath,
