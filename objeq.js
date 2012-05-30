@@ -74,6 +74,17 @@ var $objeq;
     return Array.prototype.slice.call(arr, 0);
   }
 
+  function mixin(obj) {
+    for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
+      var hash = arguments[i];
+      for ( var key in hash ) {
+        if ( hash.hasOwnProperty(key) ) {
+          obj[key] = hash[key];
+        }
+      }
+    }
+  }
+
   function isDecorated(value) {
     return value.__objeq_id__ ? true : false;
   }
@@ -289,6 +300,37 @@ var $objeq;
     }
   }
 
+  var decoratedArrayMixin = {
+    item: function _item(index, value) {
+      if ( typeof value === 'undefined' ) {
+        var prev = this[index];
+        this[index] = decorate(value);
+        queueEvent(this, getArrayContentKey(this), value, prev);
+      }
+      return this[index];
+    },
+
+    on: function _on(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        switch(evt[i]) {
+          case 'change':
+            addListener(this, getArrayContentKey(this), callback);
+        }
+      }
+    },
+
+    off: function _off(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        switch(evt[i]) {
+          case 'change':
+            removeListener(this, getArrayContentKey(this), callback);
+        }
+      }
+    }
+  };
+
   function decorateArray(arr) {
     for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
       arr[i] = decorate(arr[i]);
@@ -299,34 +341,7 @@ var $objeq;
       wrapArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
     }
 
-    arr.item = function _item(index, value) {
-      if ( typeof value === 'undefined' ) {
-        var prev = this[index];
-        this[index] = decorate(value);
-        queueEvent(this, getArrayContentKey(this), value, prev);
-      }
-      return this[index];
-    };
-
-    arr.on = function _on(events, callback) {
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch(evt[i]) {
-          case 'change':
-            addListener(this, getArrayContentKey(this), callback);
-        }
-      }
-    };
-
-    arr.off = function _off(events, callback) {
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch(evt[i]) {
-          case 'change':
-            removeListener(this, getArrayContentKey(this), callback);
-        }
-      }
-    };
+    mixin(arr, decoratedArrayMixin);
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
