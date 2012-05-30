@@ -33,10 +33,8 @@ Queries can also be parameterized where any Objects passed in are also decorated
 
     var items = $objeq({name:'thom'}, {name:'stef'});
     var param = { name: 'thom' };
-    var result = items.objeq("name == %1.name", param);
-								 // 0 -> thom
-    param.name = 'stef';                                 
-								 // 0 -> stef
+    var result = items.objeq("name == %1.name", param); // 0 -> thom
+    param.name = 'stef';                                // 0 -> stef
 
 ## Observables (Not Yet Implemented)
 

@@ -198,9 +198,13 @@ var $objeq;
     }
   }
 
+  // Allow a Developer the ability to debug a problem rather than having to
+  // forcefully restart their browser (I'm looking at *YOU* Safari)
+  var MaxNotifyCycles = 128;
+
   function notifyListeners() {
     inNotifyListeners = true;
-    for ( var count = 0; queue.length && count < 100; count++ ) {
+    for ( var count = 0; queue.length && count < MaxNotifyCycles; count++ ) {
       var currentQueue = [].concat(queue);
       pending = {};
       queue = [];
@@ -222,7 +226,7 @@ var $objeq;
       refreshQueries();
     }
     inNotifyListeners = false;
-    if ( count === 100 ) {
+    if ( count === MaxNotifyCycles ) {
       throw new Error('Too Many Notification Cycles');
     }
   }
@@ -302,7 +306,7 @@ var $objeq;
 
   var decoratedArrayMixin = {
     item: function _item(index, value) {
-      if ( typeof value === 'undefined' ) {
+      if ( typeof value !== 'undefined' ) {
         var prev = this[index];
         this[index] = decorate(value);
         queueEvent(this, getArrayContentKey(this), value, prev);
@@ -329,7 +333,7 @@ var $objeq;
         }
       }
     }
-  };
+  }
 
   function decorateArray(arr) {
     for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
@@ -352,12 +356,7 @@ var $objeq;
   }
 
   function decorate(value) {
-    if ( typeof value === 'undefined' || value === null ) {
-      return value;
-    }
-
-    // Already decorated?  Just return the value
-    if ( isDecorated(value) ) {
+    if ( value == null || isDecorated(value) ) {
       return value;
     }
 
@@ -402,7 +401,7 @@ var $objeq;
         node = node[0];
       }
       node = node[path[i]];
-      if ( typeof node === 'undefined' || node === null ) return node;
+      if ( node == null ) return node;
     }
     return node;
   }
