@@ -422,6 +422,7 @@ var $objeq;
       case 'gte': return child[0] >= child[1];
       case 'lt':  return child[0] < child[1];
       case 'lte': return child[0] <= child[1];
+      case 'in':  return child[1].indexOf(child[0]) != -1;
       case 'not': return !child[0];
       case 'neg': return -child[0];
 
@@ -486,7 +487,7 @@ var $objeq;
       results.length = 0;
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
         var obj = source[i];
-        if ( match(root, obj, args) ) {
+        if ( match(root.expr, obj, args) ) {
           results[j++] = obj;
         }
       }
@@ -509,7 +510,7 @@ var $objeq;
     }
 
     addListener(source, getArrayContentKey(source), sourceListener);
-    addQueryListeners(root, args, queryListener, resultListener);
+    addQueryListeners(root.expr, args, queryListener, resultListener);
     refreshResults();
 
     return results;

@@ -61,7 +61,10 @@ frac  (?:\.[0-9]+)
 \s+                           /* skip whitespace */
 "("                           return '(';
 ")"                           return ')';
+"["                           return '[';
+"]"                           return ']';
 "."                           return '.';
+","                           return ',';
 "=="                          return 'EQ';
 "!="                          return 'NEQ';
 "<="                          return 'LTE';
@@ -83,6 +86,12 @@ frac  (?:\.[0-9]+)
 "false"                       return 'FALSE';
 "null"                        return 'NULL';
 "undefined"                   return 'UNDEFINED';
+"asc"                         return 'ASC';
+"desc"                        return 'DESC';
+"select"                      return 'SELECT';
+"order"                       return 'ORDER';
+"by"                          return 'BY';
+"in"                          return "IN";
 [A-Za-z_$][A-Za-z_$0-9-]*     return 'IDENT';
 <<EOF>>                       return 'EOF';
 .                             return 'INVALID';
@@ -96,12 +105,13 @@ frac  (?:\.[0-9]+)
 %left '%'
 %left AND OR
 %left EQ NEQ
-$left GT GTE LT LTE
+%left GT GTE LT LTE
+%left IN
 %left NOT
 %left NEG
 %left '.'
 
-%start query
+%start program
 
 %% /* Parser Grammar */
 
@@ -110,38 +120,81 @@ $left GT GTE LT LTE
  * but for now, we just want to get this thing to work
  */
 
+program
+  : query EOF        { return $1; }
+  ;
+
 query
-  : expr EOF { return $1; }
+  : expr             { $$ = { expr: $1 }; }
+  | expr filter      { $$ = $2; $2.expr = $1; }
+  ;
+
+filter
+  : order            { $$ = { order: $1, sortFirst: true }; }
+  | order select     { $$ = { order: $1, select: $2, sortFirst: true }; }
+  | select           { $$ = { select: $1 }; }
+  | select order     { $$ = { select: $1, order: $2 }; }
   ;
 
 expr
-  : expr '+' expr   { $$ = ['add', $1, $3]; }
-  | expr '-' expr   { $$ = ['sub', $1, $3]; }
-  | expr '*' expr   { $$ = ['mul', $1, $3]; }
-  | expr '/' expr   { $$ = ['div', $1, $3]; }
-  | expr '%' expr   { $$ = ['mod', $1, $3]; }
-  | expr 'AND' expr { $$ = ['and', $1, $3]; }
-  | expr 'OR' expr  { $$ = ['or', $1, $3]; }
-  | expr EQ expr    { $$ = ['eq', $1, $3]; }
-  | expr NEQ expr   { $$ = ['neq', $1, $3]; }
-  | expr GT expr    { $$ = ['gt', $1, $3]; }
-  | expr GTE expr   { $$ = ['gte', $1, $3]; }
-  | expr LT expr    { $$ = ['lt', $1, $3]; }
-  | expr LTE expr   { $$ = ['lte', $1, $3]; }
-  | NOT expr        { $$ = ['not', $2]; }
-  | '-' expr        %prec NEG { $$ = ['neg', $2]; }
-  | '(' expr ')'    { $$ = $2; }
-  | NUMBER          { $$ = Number(yytext); }
-  | STRING          { $$ = yytext; }
-  | TRUE            { $$ = true; }
-  | FALSE           { $$ = false; }
-  | NULL            { $$ = null; }
-  | UNDEFINED       { $$ = undefined; }
-  | path            { $$ = $1; }
+  : expr '+' expr    { $$ = ['add', $1, $3]; }
+  | expr '-' expr    { $$ = ['sub', $1, $3]; }
+  | expr '*' expr    { $$ = ['mul', $1, $3]; }
+  | expr '/' expr    { $$ = ['div', $1, $3]; }
+  | expr '%' expr    { $$ = ['mod', $1, $3]; }
+  | expr 'AND' expr  { $$ = ['and', $1, $3]; }
+  | expr 'OR' expr   { $$ = ['or', $1, $3]; }
+  | expr EQ expr     { $$ = ['eq', $1, $3]; }
+  | expr NEQ expr    { $$ = ['neq', $1, $3]; }
+  | expr GT expr     { $$ = ['gt', $1, $3]; }
+  | expr GTE expr    { $$ = ['gte', $1, $3]; }
+  | expr LT expr     { $$ = ['lt', $1, $3]; }
+  | expr LTE expr    { $$ = ['lte', $1, $3]; }
+  | expr IN expr     { $$ = ['in', $1, $3]; }
+  | NOT expr         { $$ = ['not', $2]; }
+  | '-' expr         %prec NEG { $$ = ['neg', $2]; }
+  | '(' expr ')'     { $$ = $2; }
+  | array            { $$ = $1; }
+  | NUMBER           { $$ = Number(yytext); }
+  | STRING           { $$ = yytext; }
+  | TRUE             { $$ = true; }
+  | FALSE            { $$ = false; }
+  | NULL             { $$ = null; }
+  | UNDEFINED        { $$ = undefined; }
+  | path             { $$ = $1; }
+  ;
+
+array
+  : '[' array_list ']'         { $$ = ['arr', $2]; }
+  | '[' ']'                    { $$ = ['arr', []]; }
+  ;
+
+array_list
+  : expr                       { $$ = [$1]; }
+  | array_list ',' expr        { $$ = $1; $1.push($3); }
+  ;
+
+select
+  : SELECT path                { $$ = $2; }
+  ;
+
+order
+  : ORDER BY order_list        { $$ = $3; }
+  ;
+
+order_list
+  : order_spec                 { $$ = [$1]; }
+  | order_list ',' order_spec  { $$ = $1; $1.push($3); }
+  ;
+
+order_spec
+  : path                       { $$ = { path: $1, ascending: true }; }
+  | path ASC                   { $$ = { path: $1, ascending: true }; }
+  | path DESC                  { $$ = { path: $1 }; }
   ;
 
 path
-  : ARGREF         { $$ = ['path', Number($1)-1]; }
-  | IDENT          { $$ = ['path', $1]; }
-  | path '.' IDENT { $$ = $1; $1.push($3); }
+  : ARGREF                     { $$ = ['path', Number($1)-1]; }
+  | IDENT                      { $$ = ['path', $1]; }
+  | path '.' IDENT             { $$ = $1; $1.push($3); }
   ;
