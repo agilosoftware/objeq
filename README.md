@@ -85,13 +85,19 @@ For example, the following are *entirely* different queries:
 
     firstName == 'thom' order by lastName select children
     
-    firstMame == 'thom' select children order by lastName
+    firstName == 'thom' select children order by lastName
 
 The first query selects all objects that have a firstName property equal to 'thom', orders those by the lastName property of the same object, and then returns the children property of that object.
 
 The second query selects all objects that have a firstName property equal to 'thom', returns the children property for each of those objects, sorting them by the child's lastName property.
 
 These two queries would only work if the children each had the same last name as their parent, but we know that in the real world, this isn't the case.
+
+For brevity and to visually isolate the filter conditions, these two queries could have also been written:
+
+    firstName == 'thom' by lastName -> children
+    
+    firstName == 'thom' -> children by lastName
 
 ### Predicates
 

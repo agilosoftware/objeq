@@ -102,20 +102,21 @@ var $objeq;
 
   var queue = [];      // The queue of pending notifications
   var pending = {};    // Reverse Lookup: Target -> queue Entry
-  var properties = {}; // Property Name -> Target -> Callbacks
-  var targets = {};    // Reverse Lookup: Target -> properties Entry
+  var listeners = {};  // Property@Target -> Callbacks
+  var targets = {};    // Reverse Lookup: Target -> Property@Target Set
   var EmptyArray = [];
 
   function hasListeners(target, key) {
-    var tkey = getObjectId(target);
-    var propertyEntry = properties[key];
-    return propertyEntry && ( propertyEntry[tkey] || propertyEntry['*'] );
+    var pkey = key || '*';
+    var tkey = getObjectId(target) || '*';
+    var entryKey = pkey + '@' + tkey;
+    return listeners[entryKey] || listeners[pkey + '@*'];
   }
 
   function addListener(target, key, callback) {
     var tkey = getObjectId(target) || '*';
-    var propertyEntry = properties[key] || ( properties[key] = {} );
-    var callbacks = propertyEntry[tkey] || ( propertyEntry[tkey] = [] );
+    var entryKey = (key || '*') + '@' + tkey;
+    var callbacks = listeners[entryKey] || ( listeners[entryKey] = [] );
 
     if ( callbacks.indexOf(callback) !== -1 ) {
       return;
@@ -124,17 +125,13 @@ var $objeq;
     // Add it to the callbacks and the target reverse lookup
     callbacks.push(callback);
     var targetEntry = targets[tkey] || ( targets[tkey] = [] );
-    targetEntry.push(propertyEntry);
+    targetEntry.push(entryKey);
   }
 
   function removeListener(target, key, callback) {
-    var propertyEntry = properties[key];
-    if ( !propertyEntry ) {
-      return;
-    }
-
     var tkey = getObjectId(target) || '*';
-    var callbacks = propertyEntry[tkey];
+    var entryKey = (key || '*') + '@' + tkey;
+    var callbacks = listeners[entryKey];
     if ( !callbacks ) {
       return;
     }
@@ -147,18 +144,19 @@ var $objeq;
     // Remove it from the callbacks and the target reverse lookup
     callbacks.splice(idx, 1);
     var targetEntry = targets[tkey];
-    targetEntry.splice(targetEntry.indexOf(propertyEntry), 1);
+    targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
 
-  function getListeners(target, key) {
-    var propertyEntry = properties[key];
-    if ( !propertyEntry ) {
-      return null;
-    }
+  function getCallbacks(target, key) {
+    var tkey = getObjectId(target) || '*';
+    var entryKey = (key || '*') + '@' + tkey;
 
-    var callbacks = propertyEntry[getObjectId(target)] || EmptyArray;
-    var wildcards = propertyEntry['*'] || EmptyArray;
-    return [].concat(callbacks, wildcards);
+    var callbacks = listeners[entryKey];
+    var wildcards = key ? listeners[key + '@*'] : null;
+    if ( callbacks && wildcards ) {
+      return callbacks.concat(wildcards);
+    }
+    return callbacks || wildcards || EmptyArray;
   }
 
   // Allow a Developer the ability to debug a problem rather than having to
@@ -178,13 +176,10 @@ var $objeq;
       for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
         var event = currentQueue[i];
         var target = event.target, key = event.key;
-        var listeners = getListeners(target, key);
+        var callbacks = getCallbacks(target, key);
 
-        for ( var j = 0, jlen = listeners.length; j < jlen; j++ ) {
-          var callback = listeners[j];
-          if ( callback.once ) {
-            removeListener(target, key, callback);
-          }
+        for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
+          var callback = callbacks[j];
           callback(target, key, event.value, event.prev);
         }
       }
@@ -544,7 +539,7 @@ var $objeq;
     return {
       queue: queue,
       pending: pending,
-      properties: properties,
+      listeners: listeners,
       targets: targets,
       defineProperty1: defineProperty1,
       defineProperty2: defineProperty2,
@@ -555,7 +550,7 @@ var $objeq;
       hasListeners: hasListeners,
       addListener: addListener,
       removeListener: removeListener,
-      getListeners: getListeners,
+      getCallbacks: getCallbacks,
       notifyListeners: notifyListeners,
       queueEvent: queueEvent,
       createAccessors: createAccessors,
