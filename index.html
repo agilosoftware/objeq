@@ -3,9 +3,9 @@
   <script type="text/javascript" src="objeq-parser.js"></script>
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
-    var thom = { name: "thom", age: 40 }
-      , stefano = { name: "stefano", age: 29 }
-      , nurhan = { name: "nurhan", age: 37 }
+    var thom = { name: 'thom', age: 40 }
+      , stefano = { name: 'stefano', age: 29 }
+      , nurhan = { name: 'nurhan', age: 37 }
       , bill = { name: 'bill', age: 50 }
       , fred = { name: 'fred', age: 70 }
       , anon = { name: 'anonymous', age: 55 }
@@ -13,9 +13,11 @@
       , nameParams = { value: 'bill' };
 
     var wrapped = $objeq(thom, stefano, nurhan, bill, fred, anon)
-      , aged = wrapped.objeq("age >= %1.value", ageParams)
-      , named = wrapped.objeq("name == %1.value", nameParams)
-      , oldNamed = named.objeq("age >= 50 and age <= 1000");
+      , aged = wrapped.query("age >= %1.value", ageParams)
+      , named = wrapped.query("name == %1.value", nameParams)
+      , oldNamed = named.query("age >= 50 and age <= 1000")
+      , live = wrapped.query("name == 'thom'")
+      , snap = wrapped.snapshot("name == 'thom'");
 
     var callback = function() {
       console.log('the query oldNamed has changed!');

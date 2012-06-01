@@ -27,13 +27,13 @@ Objects and Arrays need to be 'decorated' in order to be queryable.  The result 
 These are chainable, so you can also do:
 
     var items = $objeq({name:'thom'}, {name:'stef'});
-    var thom = items.objeq("name == 'thom'")[0];
+    var thom = items.query("name == 'thom'")[0];
 
 Queries can also be parameterized where any Objects passed in are also decorated and treated as 'live' parameters.  This means that the result array will be updated every time the parameter's properties change:
 
     var items = $objeq({name:'thom'}, {name:'stef'});
     var param = { name: 'thom' };
-    var result = items.objeq("name == %1.name", param); // 0 -> thom
+    var result = items.query("name == %1.name", param); // 0 -> thom
     param.name = 'stef';                                // 0 -> stef
 
 ## Observables (Not Yet Implemented)
@@ -55,7 +55,7 @@ You can create observers on both Objects and Arrays in the following ways.
 
     // this is a result observable... same rules as an array
     $objeq({name:'thom'})
-      .objeq("name == 'thom'")
+      .query("name == 'thom'")
       .on('name', function(target, name, value, prev) {
         // do something
       });
@@ -64,7 +64,40 @@ The last example in this set is a tricky one because the second part of the quer
 
 ## Query Language
 
-(soon)
+A query consists of three optional parts.  The first is a predicate that is used to filter your source array, the second is a selector for drilling into the filtered results, and the third is a collation for ordering the results.  The basic grammar for a query is as follows:
+
+    query
+      : expr 
+      | filter
+      | expr filter
+      ;
+      
+    filter 
+      : order_by
+      | order_by select
+      | select
+      | select order_by
+      ;
+
+Predicates are denoted by the 'expr' rule and the combination of selectors and collators is encapsulated by the 'filter' rule.  Essentially the predicate must come first, followed by an optional selector and an optional collator.  The order of the selector and collator is important because it determines whether or not the sorting is executed against the selector results.
+
+For example, the following are *entirely* different queries:
+
+    firstName == 'thom' order by lastName select children
+    
+    firstMame == 'thom' select children order by lastName
+
+The first query selects all objects that have a firstName property equal to 'thom', orders those by the lastName property of the same object, and then returns the children property of that object.
+
+The second query selects all objects that have a firstName property equal to 'thom', returns the children property for each of those objects, sorting them by the child's lastName property.
+
+These two queries would only work if the children each had the same last name as their parent, but we know that in the real world, this isn't the case.
+
+### Predicates
+
+### Selectors
+
+### Collations
 
 ## License (MIT License)
 

@@ -21,16 +21,12 @@
  */
 
 /**
- * objeq (Object Querying) - is a simple library that allows POJSO's
- * (Plain-Old JavaScript Objects) to be queried in real-time.  As it
- * relies on property setters, it will only work in more recent
- * browsers and JavaScript environments.
- *
+ * objeq (Object Querying)
  * This module defines both a Lexer and Grammar that use the
  * Jison Parser Generator (http://zaach.github.com/jison/)
  *
- * @author Thom Bradford
- * @author Stefano Rago
+ * @author Thom Bradford (github/bradford653)
+ * @author Stefano Rago (github/sterago)
  */
 
 %lex
@@ -42,6 +38,7 @@ esc   "\\"
 int   "-"?(?:[0-9]|[1-9][0-9]+)
 exp   (?:[eE][-+]?[0-9]+)
 frac  (?:\.[0-9]+)
+ws    [\s]
 
 %%
 
@@ -58,40 +55,36 @@ frac  (?:\.[0-9]+)
   yytext = yytext.substr(1); return 'ARGREF';
 };
 
-\s+                           /* skip whitespace */
-"("                           return '(';
-")"                           return ')';
-"["                           return '[';
-"]"                           return ']';
-"."                           return '.';
-","                           return ',';
+{ws}+                         /* skip whitespace */
+"undefined"                   return 'UNDEFINED';
+"null"                        return 'NULL';
+"true"                        return 'TRUE';
+"false"                       return 'FALSE';
+"select"|"->"                 return 'SELECT';
+("order"{ws}+)?"by"             return 'ORDER_BY';
+"asc"                         return 'ASC';
+"desc"                        return 'DESC';
+"and"|"&&"                    return 'AND';
+"or"|"||"                     return 'OR';
+"not"|"!"                     return 'NOT';
+"in"                          return "IN";
 "=="                          return 'EQ';
 "!="                          return 'NEQ';
 "<="                          return 'LTE';
 ">="                          return 'GTE';
 "<"                           return 'LT';
 ">"                           return 'GT';
+"("                           return '(';
+")"                           return ')';
+"["                           return '[';
+"]"                           return ']';
+"."                           return '.';
+","                           return ',';
 "+"                           return '+';
 "-"                           return '-';
 "*"                           return '*';
 "/"                           return '/';
 "%"                           return '%';
-"not"                         return 'NOT';
-"!"                           return 'NOT';
-"and"                         return 'AND';
-"&&"                          return 'AND';
-"or"                          return 'OR';
-"||"                          return 'OR';
-"true"                        return 'TRUE';
-"false"                       return 'FALSE';
-"null"                        return 'NULL';
-"undefined"                   return 'UNDEFINED';
-"asc"                         return 'ASC';
-"desc"                        return 'DESC';
-"select"                      return 'SELECT';
-"order"                       return 'ORDER';
-"by"                          return 'BY';
-"in"                          return "IN";
 [A-Za-z_$][A-Za-z_$0-9-]*     return 'IDENT';
 <<EOF>>                       return 'EOF';
 .                             return 'INVALID';
@@ -104,11 +97,9 @@ frac  (?:\.[0-9]+)
 %left '*' '/'
 %left '%'
 %left AND OR
-%left EQ NEQ
+%left EQ NEQ IN
 %left GT GTE LT LTE
-%left IN
-%left NOT
-%left NEG
+%left NOT NEG
 %left '.'
 
 %start program
@@ -126,14 +117,15 @@ program
 
 query
   : expr             { $$ = { expr: $1 }; }
+  | filter           { $$ = $1; $1.expr = true; }
   | expr filter      { $$ = $2; $2.expr = $1; }
   ;
 
 filter
-  : order            { $$ = { order: $1, sortFirst: true }; }
-  | order select     { $$ = { order: $1, select: $2, sortFirst: true }; }
+  : order_by         { $$ = { order: $1, sortFirst: true }; }
+  | order_by select  { $$ = { order: $1, select: $2, sortFirst: true }; }
   | select           { $$ = { select: $1 }; }
-  | select order     { $$ = { select: $1, order: $2 }; }
+  | select order_by  { $$ = { select: $1, order: $2 }; }
   ;
 
 expr
@@ -178,8 +170,8 @@ select
   : SELECT path                { $$ = $2; }
   ;
 
-order
-  : ORDER BY order_list        { $$ = $3; }
+order_by
+  : ORDER_BY order_list        { $$ = $2; }
   ;
 
 order_list

@@ -21,14 +21,17 @@
  */
 
 /**
- * objeq (Object Querying) - is a simple library that allows POJSO's
- * (Plain-Old JavaScript Objects) to be queried in real-time.  As it
- * relies on property setters, it will only work in more recent
- * browsers,
+ * objeq (Object Querying)
  *
- * @author Thom Bradford
- * @author Stefano Rago
+ * objeq is a simple library that allows POJSO's (Plain-Old JavaScript
+ * Objects) to be queried in real-time.  As it relies on property setters,
+ * it will only work in more recent browsers,
+ *
+ * @author Thom Bradford (github/bradford653)
+ * @author Stefano Rago (github/sterago)
  */
+
+// TODO: Make CommonJS Compatible
 
 // Here's our global
 var $objeq;
@@ -249,7 +252,7 @@ var $objeq;
   function decorateObject(obj) {
     var state = {};
     for ( var key in obj ) {
-      if ( !obj.hasOwnProperty(key) ) {
+      if ( !obj.hasOwnProperty(key) || typeof obj[key] === 'function' ) {
         continue;
       }
       createAccessors(obj, state, key);
@@ -294,6 +297,9 @@ var $objeq;
   }
 
   var decoratedArrayMixin = {
+    query: query,       // for live sub-queries
+    snapshot: snapshot, // for snapshot queries
+
     item: function _item(index, value) {
       if ( typeof value !== 'undefined' ) {
         var prev = this[index];
@@ -321,6 +327,11 @@ var $objeq;
             removeListener(this, getArrayContentKey(this), callback);
         }
       }
+    },
+
+    destroy: function() {
+      // TODO: Check if there are child arrays depending on this one
+      //       If none, then we can remove all listeners
     }
   };
 
@@ -339,7 +350,6 @@ var $objeq;
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
     defineProperty(arr, '__objeq_id__', function() { return objectId; });
-    defineProperty(arr, 'objeq', function() { return objeq; });
 
     return arr;
   }
@@ -471,18 +481,12 @@ var $objeq;
     return $objeqParser.parse(queryString);
   }
 
-  function query(source, queryString, argStack) {
+  function processQuery(source, queryString, args, live) {
     var root = parse(queryString);
-    var args = [];
-    while ( argStack.length ) {
-      args.push(decorate(argStack.pop()));
-    }
-
     var results = decorateArray([]);
+
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
-      console.log('refreshing query: '+queryString);
-
       var prev = -results.length;
       results.length = 0;
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
@@ -491,7 +495,9 @@ var $objeq;
           results[j++] = obj;
         }
       }
-      queueEvent(results, getArrayContentKey(results), results.length, prev);
+      if ( live ) {
+        queueEvent(results, getArrayContentKey(results), results.length, prev);
+      }
     }
 
     function sourceListener(target, key, value, prev) {
@@ -509,11 +515,27 @@ var $objeq;
       invalidateQuery(results, refreshResults);
     }
 
-    addListener(source, getArrayContentKey(source), sourceListener);
-    addQueryListeners(root.expr, args, queryListener, resultListener);
+    if ( live ) {
+      addListener(source, getArrayContentKey(source), sourceListener);
+      addQueryListeners(root.expr, args, queryListener, resultListener);
+    }
     refreshResults();
 
     return results;
+  }
+
+  function query() {
+    // Process a "live" query whose results update with data changes
+    var args = makeArray(arguments);
+    var queryString = args.shift();
+    return processQuery(this, queryString, args, true);
+  }
+
+  function snapshot() {
+    // Process a "snapshot" query with static results
+    var args = makeArray(arguments);
+    var queryString = args.shift();
+    return processQuery(this, queryString, args, false);
   }
 
   // Debug and Testing Interface **********************************************
@@ -549,7 +571,9 @@ var $objeq;
       match: match,
       addQueryListeners: addQueryListeners,
       parse: parse,
+      processQuery: processQuery,
       query: query,
+      snapshot: snapshot,
       objeq: objeq
     };
   }
@@ -557,25 +581,25 @@ var $objeq;
   // Exported Function ********************************************************
 
   function objeq() {
-    var source = isDecorated(this) ? this : decorateArray([]);
-
     // TODO: For testing and debugging only
     if ( arguments.length === 0 ) {
       return debug();
     }
 
+    var source = isDecorated(this) ? this : decorateArray([]);
+    var args = makeArray(arguments);
+
     // Fast Path for Single Array Parameter Calls
-    if ( arguments.length === 1 && isArray(arguments[0]) ) {
-      return decorate(arguments[0]);
+    if ( args.length === 1 && isArray(args[0]) ) {
+      return decorate(args[0]);
     }
 
     // TODO: If we pass multiple arrays, maybe we flatten them?
     var results = null;
-    var args = makeArray(arguments).reverse();
     while ( args.length ) {
-      var arg = args.pop();
+      var arg = args.shift();
       if ( typeof arg === 'string' ) {
-        results = query(source, arg, args);
+        results = processQuery(source, arg, args, true);
         break; // short circuit if it's a query
       }
       else {
