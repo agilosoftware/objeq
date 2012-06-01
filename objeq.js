@@ -484,9 +484,17 @@ var $objeq;
     function refreshResults() {
       var prev = -results.length;
       results.length = 0;
+
+      var select = root.select ? root.select.slice(1) : null;
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
         var obj = source[i];
-        if ( match(root.expr, obj, args) ) {
+        if ( !match(root.expr, obj, args) ) {
+          continue;
+        }
+        if ( select ) {
+          obj = getPath(obj, select);
+        }
+        if ( obj ) {
           results[j++] = obj;
         }
       }
