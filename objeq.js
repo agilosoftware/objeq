@@ -472,6 +472,41 @@ var $objeq;
     }
   }
 
+  function createComparator(path, ascending) {
+    if ( ascending ) {
+      return function ascendingComparator(item1, item2) {
+        var val1 = getPath(item1, path);
+        var val2 = getPath(item2, path);
+        return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
+      };
+    }
+    else {
+      return function descendingComparator(item1, item2) {
+        var val1 = getPath(item1, path);
+        var val2 = getPath(item2, path);
+        return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
+      };
+    }
+  }
+
+  function createSortFunction(order) {
+    var chain = [];
+    for ( var i = 0, len = order.length; i < len; i++ ) {
+      var item = order[i];
+      chain.push(createComparator(item.path.slice(1), item.ascending));
+    }
+
+    return function(item1, item2) {
+      for ( var i = 0, len = chain.length; i < len; i++ ) {
+        var result = chain[i](item1, item2);
+        if ( result !== 0 ) {
+          return result;
+        }
+      }
+      return 0;
+    }
+  }
+
   function parse(queryString) {
     return $objeqParser.parse(queryString);
   }
@@ -485,17 +520,41 @@ var $objeq;
       var prev = -results.length;
       results.length = 0;
 
-      var select = root.select ? root.select.slice(1) : null;
-      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-        var obj = source[i];
-        if ( !match(root.expr, obj, args) ) {
-          continue;
-        }
-        if ( select ) {
+      var select = root.select ? root.select.slice(1) : EmptyArray;
+      var sortFirst = root.sortFirst;
+      var sortFunction = root.order ? createSortFunction(root.order) : null;
+      if ( !sortFunction || !sortFirst || select === EmptyArray ) {
+        // Post-Drilldown Sorting
+        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+          var obj = source[i];
+          if ( !match(root.expr, obj, args) ) {
+            continue;
+          }
+
           obj = getPath(obj, select);
+          if ( obj ) {
+            results[j++] = obj;
+          }
         }
-        if ( obj ) {
-          results[j++] = obj;
+        if ( sortFunction ) {
+          results.sort(sortFunction);
+        }
+      }
+      else {
+        // Pre-Drilldown Sorting
+        var temp = [];
+        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+          var obj = source[i];
+          if ( match(root.expr, obj, args) ) {
+            temp[j++] = obj;
+          }
+        }
+        temp.sort(sortFunction);
+        for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
+          var obj = getPath(temp[i], select);
+          if ( obj ) {
+            results[j++] = obj;
+          }
         }
       }
       if ( live ) {
@@ -573,6 +632,8 @@ var $objeq;
       getPath: getPath,
       match: match,
       addQueryListeners: addQueryListeners,
+      createComparator: createComparator,
+      createSortFunction: createSortFunction,
       parse: parse,
       processQuery: processQuery,
       query: query,
