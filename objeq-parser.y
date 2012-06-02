@@ -180,13 +180,22 @@ order_list
   ;
 
 order_spec
-  : path                       { $$ = { path: $1, ascending: true }; }
-  | path ASC                   { $$ = { path: $1, ascending: true }; }
-  | path DESC                  { $$ = { path: $1 }; }
+  : local_path                 { $$ = { path: $1, ascending: true }; }
+  | local_path ASC             { $$ = { path: $1, ascending: true }; }
+  | local_path DESC            { $$ = { path: $1 }; }
   ;
 
 path
-  : ARGREF                     { $$ = ['path', Number($1)-1]; }
-  | IDENT                      { $$ = ['path', $1]; }
-  | path '.' IDENT             { $$ = $1; $1.push($3); }
+  : arg_path                   { $$ = $1; }
+  | local_path                 { $$ = $1; }
+  ;
+
+arg_path
+  : ARGREF                    { $$ = ['path', Number($1)-1]; }
+  | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
+  ;
+
+local_path
+  : IDENT                     { $$ = ['path', $1]; }
+  | local_path '.' IDENT      { $$ = $1; $1.push($3); }
   ;
