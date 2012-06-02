@@ -1,5 +1,6 @@
 <html>
 <head>
+  <title>Objeq Query Language Tester</title>
   <script type="text/javascript" src="objeq-parser.js"></script>
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
@@ -11,6 +12,12 @@
         return key == '__objeq_id__' ? undefined : value;
       });
       document.getElementById('result').value = output;
+    }
+
+    function chooseQuery() {
+      var value = document.getElementById('queries').value;
+      document.getElementById('query').value = value;
+      performQuery();
     }
   </script>
   <style>
@@ -30,7 +37,11 @@
     #query {
       position: absolute;
       left: 70px; top: 10px;
-      bottom: 10px; right: 90px;
+      bottom: 30px; right: 90px;
+    }
+    #queries {
+      position: absolute;
+      left: 70px; bottom: 10px; right: 90px; height: 20px;
     }
     #run {
       position: absolute;
@@ -63,11 +74,17 @@
     }
   </style>
 </head>
-<body>
+<body onload="chooseQuery();">
   <div class="query">
     <div class="label">Query</div>
-    <textarea id="query">name == 'thom' and age > 20</textarea>
+    <textarea id="query"></textarea>
     <button id="run" onclick="performQuery();">Query</button>
+    <select id ="queries" onchange="chooseQuery();">
+      <option selected>age > 20 order by name</option>
+      <option>name == 'thom' and age > 20</option>
+      <option>order by name, age</option>
+      <option>order by age, name select name</option>
+    </select>
   </div>
   <div class="source">
     <div class="label">Source</div>
