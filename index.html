@@ -3,38 +3,92 @@
   <script type="text/javascript" src="objeq-parser.js"></script>
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
-    var thom = { name: 'thom', age: 40 }
-      , stefano = { name: 'stefano', age: 29 }
-      , nurhan = { name: 'nurhan', age: 37 }
-      , bill = { name: 'bill', age: 50 }
-      , fred = { name: 'fred', age: 70 }
-      , anon = { name: 'anonymous', age: 55 }
-      , ageParams = { value: 40 }
-      , nameParams = { value: 'bill' };
-
-    var wrapped = $objeq(thom, stefano, nurhan, bill, fred, anon)
-      , aged = wrapped.query("age >= %1.value", ageParams)
-      , named = wrapped.query("name == %1.value", nameParams)
-      , oldNamed = named.query("age >= 50 and age <= 1000")
-      , live = wrapped.query("name == 'thom'")
-      , snap = wrapped.snapshot("name == 'thom'");
-
-    var callback = function() {
-      console.log('the query oldNamed has changed!');
-    };
-
-    oldNamed.on('change', callback);
-
-    thom.age = 39;
-    anon.name = 'bill';
-
-    oldNamed.off('change', callback);
-
-    thom.age = 70;
-    anon.name = 'fred';
+    function performQuery() {
+      var source = JSON.parse(document.getElementById('source').value);
+      var query = document.getElementById('query').value;
+      var result = $objeq(source).snapshot(query);
+      var output = JSON.stringify(result, function(key, value) {
+        return key == '__objeq_id__' ? undefined : value;
+      });
+      document.getElementById('result').value = output;
+    }
   </script>
+  <style>
+    textarea {
+      font-family: Courier New, Courier, serif;
+      font-size: 18px;
+    }
+    body {
+      padding: 0px; margin: 0px;
+    }
+    .query {
+      position: absolute;
+      left: 0px; top: 0px; right: 0px; height: 100px;
+      margin: 20px;
+      border-bottom: 1px solid gray;
+    }
+    #query {
+      position: absolute;
+      left: 70px; top: 10px;
+      bottom: 10px; right: 90px;
+    }
+    #run {
+      position: absolute;
+      right: 10px; width: 70px;
+      top: 10px;
+    }
+    .label {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      position: absolute;
+      left: 10px; top: 10px;
+    }
+    .source {
+      position: absolute;
+      left: 0px; top: 100px; right: 50%; bottom: 0px;
+      margin: 20px;
+    }
+    #source {
+      position: absolute;
+      left: 10px; top: 35px; right: 10px; bottom: 10px;
+    }
+    .result {
+      position: absolute;
+      left: 50%; top: 100px; right: 0px; bottom: 0px;
+      margin: 20px;
+    }
+    #result {
+      position: absolute;
+      left: 10px; top: 35px; right: 10px; bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-
+  <div class="query">
+    <div class="label">Query</div>
+    <textarea id="query">name == 'thom' and age > 20</textarea>
+    <button id="run" onclick="performQuery();">Query</button>
+  </div>
+  <div class="source">
+    <div class="label">Source</div>
+    <textarea id="source">
+[
+  { "name": "bill", "age": 30 },
+  { "name": "thom", "age": 40 },
+  { "name": "stefano", "age": 29 },
+  { "name": "fred", "age": 50 },
+  { "name": "ted", "age": 20 },
+  { "name": "jed", "age": 70 },
+  { "name": "will", "age": 45 },
+  { "name": "john", "age": 54 },
+  { "name": "thom", "age": 15 },
+  { "name": "bill", "age": 90 }
+]
+    </textarea>
+  </div>
+  <div class="result">
+    <div class="label">Result</div>
+    <textarea id="result"></textarea>
+  </div>
 </body>
 </html>
