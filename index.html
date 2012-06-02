@@ -23,7 +23,7 @@
   <style>
     textarea {
       font-family: Courier New, Courier, serif;
-      font-size: 18px;
+      font-size: 16px;
     }
     body {
       padding: 0px; margin: 0px;
@@ -31,13 +31,14 @@
     .query {
       position: absolute;
       left: 0px; top: 0px; right: 0px; height: 100px;
-      margin: 20px;
+      margin: 0px;
       border-bottom: 1px solid gray;
     }
     #query {
       position: absolute;
       left: 70px; top: 10px;
       bottom: 30px; right: 90px;
+      font-size: 20px;
     }
     #queries {
       position: absolute;
@@ -57,7 +58,7 @@
     .source {
       position: absolute;
       left: 0px; top: 100px; right: 50%; bottom: 0px;
-      margin: 20px;
+      margin: 0px;
     }
     #source {
       position: absolute;
@@ -66,7 +67,7 @@
     .result {
       position: absolute;
       left: 50%; top: 100px; right: 0px; bottom: 0px;
-      margin: 20px;
+      margin: 0px;
     }
     #result {
       position: absolute;
@@ -80,26 +81,30 @@
     <textarea id="query"></textarea>
     <button id="run" onclick="performQuery();">Query</button>
     <select id ="queries" onchange="chooseQuery();">
-      <option selected>age > 20 order by name</option>
-      <option>name == 'thom' and age > 20</option>
-      <option>order by name, age</option>
-      <option>order by age, name select name</option>
+      <option selected>age > 20 order by firstName</option>
+      <option>firstName == 'Thom' and age > 20</option>
+      <option>order by lastName, firstName, age</option>
+      <option>order by age, firstName select lastName</option>
     </select>
   </div>
   <div class="source">
     <div class="label">Source</div>
     <textarea id="source">
 [
-  { "name": "bill", "age": 30 },
-  { "name": "thom", "age": 40 },
-  { "name": "stefano", "age": 29 },
-  { "name": "fred", "age": 50 },
-  { "name": "ted", "age": 20 },
-  { "name": "jed", "age": 70 },
-  { "name": "will", "age": 45 },
-  { "name": "john", "age": 54 },
-  { "name": "thom", "age": 15 },
-  { "name": "bill", "age": 90 }
+  { "firstName": "Bill", "lastName": "Bradley", "age": 30 },
+  { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
+  { "firstName": "Stefano", "lastName": "Rago", "age": 29 },
+  { "firstName": "Fred", "lastName": "Wilkinson", "age": 50 },
+  { "firstName": "Ted", "lastName": "Williams", "age": 20 },
+  { "firstName": "Jed", "lastName": "Clampet", "age": 70 },
+  { "firstName": "Will", "lastName": "Robinson", "age": 45 },
+  { "firstName": "John", "lastName": "Jacob", "age": 54 },
+  { "firstName": "Thom", "lastName": "Smith", "age": 15 },
+  { "firstName": "Bill", "lastName": "Blake", "age": 90 },
+  { "firstName": "Hank", "lastName": "Williams", "age": 70 },
+  { "firstName": "John", "lastName": "Cash", "age": 45 },
+  { "firstName": "Joe", "lastName": "Strummer", "age": 54 },
+  { "firstName": "Ted", "lastName": "Turner", "age": 15 }
 ]
     </textarea>
   </div>
