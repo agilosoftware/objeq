@@ -57,7 +57,7 @@
     }
     .source {
       position: absolute;
-      left: 0px; top: 100px; right: 50%; bottom: 0px;
+      left: 0px; top: 100px; right: 50%; bottom: 30px;
       margin: 0px;
     }
     #source {
@@ -66,12 +66,19 @@
     }
     .result {
       position: absolute;
-      left: 50%; top: 100px; right: 0px; bottom: 0px;
+      left: 50%; top: 100px; right: 0px; bottom: 30px;
       margin: 0px;
     }
     #result {
       position: absolute;
       left: 10px; top: 35px; right: 10px; bottom: 10px;
+    }
+    .info {
+      text-align: center;
+      position: absolute;
+      left: 10px; bottom: 10px; height: 20px; right: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -111,6 +118,9 @@
   <div class="result">
     <div class="label">Result</div>
     <textarea id="result"></textarea>
+  </div>
+  <div class="info">
+    Demo of the Objeq Javascript Query Language -- Find us at Github: <a href="http://github.com/agilosoftware/objeq">http://github.com/agilosoftware/objeq</a>
   </div>
 </body>
 </html>
