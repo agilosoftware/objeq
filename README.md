@@ -99,12 +99,6 @@ For brevity and to visually isolate the filter conditions, these two queries cou
     
     firstName == 'thom' -> children by lastName
 
-### Predicates
-
-### Selectors
-
-### Collations
-
 ## License (MIT License)
 
 Copyright (c) 2012 Agilo Software GmbH
