@@ -459,7 +459,7 @@ var $objeq;
       case 'arr':
         var input = child[0];
         var result = [];
-        for ( var i = 0, len = input.length; i < len; i++ ) {
+        for ( var i = 0, ilen = input.length; i < ilen; i++ ) {
           result[i] = evaluate(input[i], obj, args);
         }
         return result;
@@ -471,27 +471,45 @@ var $objeq;
 
   // TODO: Eventually may want do create a dependency graph here
   function addQueryListeners(node, args, invalidateQuery, invalidateResults) {
-    if ( !isArray(node) ) {
+    if ( !isArray(node) || !node.isNode ) {
       return;
     }
 
-    if ( node[0] === 'path' ) {
-      var target, start, callback;
-      if ( typeof node[1] === 'number' ) {
-        target = args[node[1]]; start = 2; callback = invalidateQuery;
-      }
-      else {
-        target = null; start = 1; callback = invalidateResults;
-      }
+    switch ( node[0] ) {
+      case 'obj':
+        var input = node[1];
+        for ( var key in input ) {
+          var target = input[key];
+          addQueryListeners(target, args, invalidateQuery, invalidateResults);
+        }
+        return;
 
-      for ( var i = start, ilen = node.length; i < ilen; i++ ) {
-        addListener(target, node[i], callback);
-      }
-      return;
-    }
+      case 'arr':
+        var input = node[0];
+        for ( var i = 0, ilen = input.length; i < ilen; i++ ) {
+          var target = input[i];
+          addQueryListeners(target, args, invalidateQuery, invalidateResults);
+        }
+        return;
 
-    for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
-      addQueryListeners(node[i], args, invalidateQuery, invalidateResults);
+      case 'path':
+        var target, start, callback;
+        if ( typeof node[1] === 'number' ) {
+          target = args[node[1]]; start = 2; callback = invalidateQuery;
+        }
+        else {
+          target = null; start = 1; callback = invalidateResults;
+        }
+
+        for ( var i = start, ilen = node.length; i < ilen; i++ ) {
+          addListener(target, node[i], callback);
+        }
+        return;
+
+      default:
+        for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
+          addQueryListeners(node[i], args, invalidateQuery, invalidateResults);
+        }
     }
   }
 
@@ -514,13 +532,13 @@ var $objeq;
 
   function createSortFunction(order) {
     var chain = [];
-    for ( var i = 0, len = order.length; i < len; i++ ) {
+    for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
       var item = order[i];
       chain.push(createComparator(item.path.slice(1), item.ascending));
     }
 
     return function(item1, item2) {
-      for ( var i = 0, len = chain.length; i < len; i++ ) {
+      for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
         var result = chain[i](item1, item2);
         if ( result !== 0 ) {
           return result;
@@ -611,7 +629,10 @@ var $objeq;
 
     if ( live ) {
       addListener(source, getArrayContentKey(source), sourceListener);
-      addQueryListeners(root.expr, args, queryListener, resultListener);
+      addQueryListeners(expr, args, queryListener, resultListener);
+      if ( select != EmptyPath ) {
+        addQueryListeners(select, args, queryListener, resultListener);
+      }
     }
     refreshResults();
 
