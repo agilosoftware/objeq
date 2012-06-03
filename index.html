@@ -98,10 +98,12 @@
     <select id ="queries" onchange="chooseQuery();">
       <option selected>age > 20 order by firstName</option>
       <option>firstName == 'Thom' and age > 20</option>
-      <option>"^J" =~ firstName</option>
       <option>order by lastName, firstName, age</option>
       <option>order by age, firstName select lastName</option>
       <option>order by lastName select { fullName: firstName + ' ' + lastName }</option>
+      <option>"^J" =~ firstName</option>
+      <option>"^J" =~ firstName order by lastName select { fullName: lastName + ', ' + firstName, age: age-1 }</option>
+      <option>by lastName -> { fullName: lastName + ', ' + firstName, age: age / 2 }</option>
     </select>
   </div>
   <div class="source">
