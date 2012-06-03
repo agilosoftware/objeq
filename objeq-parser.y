@@ -35,14 +35,14 @@
 
 digit [0-9]
 esc   "\\"
-int   "-"?(?:[0-9]|[1-9][0-9]+)
+card  (?:[0-9]|[1-9][0-9]+)
 exp   (?:[eE][-+]?[0-9]+)
 frac  (?:\.[0-9]+)
 ws    [\s]
 
 %%
 
-{int}{frac}?{exp}?\b return 'NUMBER';
+{card}{frac}?{exp}?\b return 'NUMBER';
 
 '"'("\\x"[a-fA-F0-9]{2}|"\\u"[a-fA-F0-9]{4}|"\\"[^xu]|[^"{esc}\n])*'"' {
   yytext = yytext.substr(1,yyleng-2); return 'STRING';
@@ -89,7 +89,7 @@ ws    [\s]
 "*"                           return '*';
 "/"                           return '/';
 "%"                           return '%';
-[A-Za-z_$][A-Za-z_$0-9-]*     return 'IDENT';
+[A-Za-z_$][A-Za-z_$0-9]+      return 'IDENT';
 <<EOF>>                       return 'EOF';
 .                             return 'INVALID';
 
@@ -138,8 +138,8 @@ expr
   | expr '*' expr    { $$ = yy.node('mul', $1, $3); }
   | expr '/' expr    { $$ = yy.node('div', $1, $3); }
   | expr '%' expr    { $$ = yy.node('mod', $1, $3); }
-  | expr 'AND' expr  { $$ = yy.node('and', $1, $3); }
-  | expr 'OR' expr   { $$ = yy.node('or', $1, $3); }
+  | expr AND expr    { $$ = yy.node('and', $1, $3); }
+  | expr OR expr     { $$ = yy.node('or', $1, $3); }
   | expr EQ expr     { $$ = yy.node('eq', $1, $3); }
   | expr NEQ expr    { $$ = yy.node('neq', $1, $3); }
   | expr REGEX expr  { $$ = yy.node('regex', $1, $3); }
