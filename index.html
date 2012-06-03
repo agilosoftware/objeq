@@ -6,8 +6,16 @@
   <script type="text/javascript">
     function performQuery() {
       var source = JSON.parse(document.getElementById('source').value);
+      var data = $objeq(source);
       var query = document.getElementById('query').value;
-      var result = $objeq(source).snapshot(query);
+
+      // The actual query
+      var start = new Date().getTime();
+      var result = data.snapshot(query);
+      var elapsed = new Date().getTime() - start;
+      var stats = "(" + result.length + " items in " + elapsed + "ms)";
+      document.getElementById('stats').innerText = stats;
+
       var output = JSON.stringify(result, function(key, value) {
         return key == '__objeq_id__' ? undefined : value;
       });
@@ -62,7 +70,7 @@
     }
     #source {
       position: absolute;
-      left: 10px; top: 35px; right: 10px; bottom: 10px;
+      left: 10px; top: 35px; right: 5px; bottom: 10px;
     }
     .result {
       position: absolute;
@@ -71,7 +79,7 @@
     }
     #result {
       position: absolute;
-      left: 10px; top: 35px; right: 10px; bottom: 10px;
+      left: 5px; top: 35px; right: 10px; bottom: 10px;
     }
     .info {
       text-align: center;
@@ -116,11 +124,14 @@
     </textarea>
   </div>
   <div class="result">
-    <div class="label">Result</div>
-    <textarea id="result"></textarea>
+    <div class="label">Result <span id="stats"></span></div>
+    <textarea id="result" readonly="readonly"></textarea>
   </div>
   <div class="info">
-    Demo of the Objeq Javascript Query Language -- Find us at Github: <a href="http://github.com/agilosoftware/objeq">http://github.com/agilosoftware/objeq</a>
+    Demo of the Objeq Javascript Query Language -- Find us at Github:
+    <a href="http://github.com/agilosoftware/objeq">
+      http://github.com/agilosoftware/objeq
+    </a>
   </div>
 </body>
 </html>

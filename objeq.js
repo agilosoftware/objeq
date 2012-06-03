@@ -402,15 +402,15 @@ var $objeq;
     return node;
   }
 
-  function match(node, obj, args) {
-    if ( !isArray(node) ) {
+  function evaluate(node, obj, args) {
+    if ( !isArray(node) || !node.isNode ) {
       return node;
     }
 
     // Resolve all the children first
     var child = [];
     for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
-      child.push(match(node[i], obj, args));
+      child.push(evaluate(node[i], obj, args));
     }
 
     switch ( node[0] ) {
@@ -433,13 +433,16 @@ var $objeq;
 
       case 'path':
         var target, start;
-        if ( typeof node[1] === 'string' ) {
-          target = obj; start = 1;
-        }
-        else {
+        if ( typeof node[1] === 'number' ) {
           target = args[node[1]]; start = 2;
         }
+        else {
+          target = obj; start = 1;
+        }
         return getPath(target, node.slice(start));
+
+      default: // we assume
+        return child[0];
     }
 
     // This should hopefully never happen
@@ -454,11 +457,11 @@ var $objeq;
 
     if ( node[0] === 'path' ) {
       var target, start, callback;
-      if ( typeof node[1] === 'string' ) {
-        target = null; start = 1; callback = invalidateResults;
+      if ( typeof node[1] === 'number' ) {
+        target = args[node[1]]; start = 2; callback = invalidateQuery;
       }
       else {
-        target = args[node[1]]; start = 2; callback = invalidateQuery;
+        target = null; start = 1; callback = invalidateResults;
       }
 
       for ( var i = start, ilen = node.length; i < ilen; i++ ) {
@@ -507,31 +510,45 @@ var $objeq;
     }
   }
 
+  function node() {
+    var result = makeArray(arguments);
+    result.isNode = true;
+    return result;
+  }
+
+  $objeqParser.yy = {
+    node: node
+  };
+
   function parse(queryString) {
     return $objeqParser.parse(queryString);
   }
 
+  var EmptyPath = node('path');
+
   function processQuery(source, queryString, args, live) {
     var root = parse(queryString);
     var results = decorateArray([]);
+
+    var expr = root.expr;
+    var select = root.select || EmptyPath;
+    var sortFirst = root.sortFirst;
+    var sortFunction = root.order ? createSortFunction(root.order) : null;
 
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
       var prev = -results.length;
       results.length = 0;
 
-      var select = root.select ? root.select.slice(1) : EmptyArray;
-      var sortFirst = root.sortFirst;
-      var sortFunction = root.order ? createSortFunction(root.order) : null;
-      if ( !sortFunction || !sortFirst || select === EmptyArray ) {
+      if ( !sortFunction || !sortFirst || select === EmptyPath ) {
         // Post-Drilldown Sorting
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( !match(root.expr, obj, args) ) {
+          if ( !evaluate(expr, obj, args) ) {
             continue;
           }
 
-          obj = getPath(obj, select);
+          obj = evaluate(select, obj, args);
           if ( obj ) {
             results[j++] = obj;
           }
@@ -545,18 +562,19 @@ var $objeq;
         var temp = [];
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( match(root.expr, obj, args) ) {
+          if ( evaluate(expr, obj, args) ) {
             temp[j++] = obj;
           }
         }
         temp.sort(sortFunction);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          var obj = getPath(temp[i], select);
+          obj = evaluate(select, temp[i], args);
           if ( obj ) {
             results[j++] = obj;
           }
         }
       }
+
       if ( live ) {
         queueEvent(results, getArrayContentKey(results), results.length, prev);
       }
@@ -634,6 +652,7 @@ var $objeq;
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
       createSortFunction: createSortFunction,
+      node: node,
       parse: parse,
       processQuery: processQuery,
       query: query,

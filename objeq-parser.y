@@ -78,6 +78,9 @@ ws    [\s]
 ")"                           return ')';
 "["                           return '[';
 "]"                           return ']';
+"{"                           return '{';
+"}"                           return '}';
+":"                           return ':';
 "."                           return '.';
 ","                           return ',';
 "+"                           return '+';
@@ -129,24 +132,25 @@ filter
   ;
 
 expr
-  : expr '+' expr    { $$ = ['add', $1, $3]; }
-  | expr '-' expr    { $$ = ['sub', $1, $3]; }
-  | expr '*' expr    { $$ = ['mul', $1, $3]; }
-  | expr '/' expr    { $$ = ['div', $1, $3]; }
-  | expr '%' expr    { $$ = ['mod', $1, $3]; }
-  | expr 'AND' expr  { $$ = ['and', $1, $3]; }
-  | expr 'OR' expr   { $$ = ['or', $1, $3]; }
-  | expr EQ expr     { $$ = ['eq', $1, $3]; }
-  | expr NEQ expr    { $$ = ['neq', $1, $3]; }
-  | expr GT expr     { $$ = ['gt', $1, $3]; }
-  | expr GTE expr    { $$ = ['gte', $1, $3]; }
-  | expr LT expr     { $$ = ['lt', $1, $3]; }
-  | expr LTE expr    { $$ = ['lte', $1, $3]; }
-  | expr IN expr     { $$ = ['in', $1, $3]; }
-  | NOT expr         { $$ = ['not', $2]; }
-  | '-' expr         %prec NEG { $$ = ['neg', $2]; }
+  : expr '+' expr    { $$ = yy.node('add', $1, $3); }
+  | expr '-' expr    { $$ = yy.node('sub', $1, $3); }
+  | expr '*' expr    { $$ = yy.node('mul', $1, $3); }
+  | expr '/' expr    { $$ = yy.node('div', $1, $3); }
+  | expr '%' expr    { $$ = yy.node('mod', $1, $3); }
+  | expr 'AND' expr  { $$ = yy.node('and', $1, $3); }
+  | expr 'OR' expr   { $$ = yy.node('or', $1, $3); }
+  | expr EQ expr     { $$ = yy.node('eq', $1, $3); }
+  | expr NEQ expr    { $$ = yy.node('neq', $1, $3); }
+  | expr GT expr     { $$ = yy.node('gt', $1, $3); }
+  | expr GTE expr    { $$ = yy.node('gte', $1, $3); }
+  | expr LT expr     { $$ = yy.node('lt', $1, $3); }
+  | expr LTE expr    { $$ = yy.node('lte', $1, $3); }
+  | expr IN expr     { $$ = yy.node('in', $1, $3); }
+  | NOT expr         { $$ = yy.node('not', $2); }
+  | '-' expr         %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'     { $$ = $2; }
   | array            { $$ = $1; }
+  | obj              { $$ = $1; }
   | NUMBER           { $$ = Number(yytext); }
   | STRING           { $$ = yytext; }
   | TRUE             { $$ = true; }
@@ -157,8 +161,8 @@ expr
   ;
 
 array
-  : '[' array_list ']'         { $$ = ['arr', $2]; }
-  | '[' ']'                    { $$ = ['arr', []]; }
+  : '[' array_list ']'         { $$ = yy.node('arr', $2); }
+  | '[' ']'                    { $$ = yy.node('arr', []); }
   ;
 
 array_list
@@ -166,8 +170,24 @@ array_list
   | array_list ',' expr        { $$ = $1; $1.push($3); }
   ;
 
+obj
+  : '{' obj_items '}'          { $$ = yy.node('obj', $2); }
+  | '{' '}'                    { $$ = yy.node('obj', {}); }
+  ;
+
+obj_items
+  : obj_item                   { $$ = {}; $$[$1[0]] = $1[1]; }
+  | obj_items ',' obj_item     { $$ = $1; $$[$3[0]] = $3[1]; }
+  ;
+
+obj_key: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED | IDENT;
+
+obj_item
+  : obj_key ':' expr           { $$ = [$1, $3]; }
+  ;
+
 select
-  : SELECT path                { $$ = $2; }
+  : SELECT expr                { $$ = $2; }
   ;
 
 order_by
@@ -191,11 +211,11 @@ path
   ;
 
 arg_path
-  : ARGREF                    { $$ = ['path', Number($1)-1]; }
+  : ARGREF                    { $$ = yy.node('path', Number($1)-1); }
   | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
   ;
 
 local_path
-  : IDENT                     { $$ = ['path', $1]; }
+  : IDENT                     { $$ = yy.node('path', $1); }
   | local_path '.' IDENT      { $$ = $1; $1.push($3); }
   ;
