@@ -568,10 +568,7 @@ var $objeq;
             continue;
           }
 
-          obj = evaluate(select, obj, args);
-          if ( obj != null ) {
-            results[j++] = obj;
-          }
+          results[j++] = evaluate(select, obj, args);
         }
         if ( sortFunction ) {
           results.sort(sortFunction);
@@ -588,10 +585,7 @@ var $objeq;
         }
         temp.sort(sortFunction);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          obj = evaluate(select, temp[i], args);
-          if ( obj != null ) {
-            results[j++] = obj;
-          }
+          results[j++] = evaluate(select, temp[i], args);
         }
       }
 
