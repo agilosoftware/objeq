@@ -5,21 +5,27 @@
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
     function performQuery() {
-      var source = JSON.parse(document.getElementById('source').value);
-      var data = $objeq(source);
-      var query = document.getElementById('query').value;
+      try {
+        var source = JSON.parse(document.getElementById('source').value);
+        var data = $objeq(source);
+        var query = document.getElementById('query').value;
 
-      // The actual query
-      var start = new Date().getTime();
-      var result = data.snapshot(query);
-      var elapsed = new Date().getTime() - start;
-      var stats = "(" + result.length + " items in " + elapsed + "ms)";
-      document.getElementById('stats').innerText = stats;
+        // The actual query
+        var start = new Date().getTime();
+        var result = data.snapshot(query);
+        var elapsed = new Date().getTime() - start;
+        var stats = "(" + result.length + " items in " + elapsed + "ms)";
+        document.getElementById('stats').innerText = stats;
 
-      var output = JSON.stringify(result, function(key, value) {
-        return key == '__objeq_id__' ? undefined : value;
-      });
-      document.getElementById('result').value = output;
+        var output = JSON.stringify(result, function(key, value) {
+          return key == '__objeq_id__' ? undefined : value;
+        });
+        document.getElementById('result').value = output;
+      }
+      catch ( err ) {
+        document.getElementById('stats').innerText = "(Error!)";
+        document.getElementById('result').value = err;
+      }
     }
 
     function chooseQuery() {
