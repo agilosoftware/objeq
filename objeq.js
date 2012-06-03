@@ -441,8 +441,21 @@ var $objeq;
         }
         return getPath(target, node.slice(start));
 
-      default: // we assume
-        return child[0];
+      case 'obj':
+        var input = child[0];
+        var result = {};
+        for ( var key in input ) {
+          result[key] = evaluate(input[key], obj, args);
+        }
+        return result;
+
+      case 'arr':
+        var input = child[0];
+        var result = [];
+        for ( var i = 0, len = input.length; i < len; i++ ) {
+          result[i] = evaluate(input[i], obj, args);
+        }
+        return result;
     }
 
     // This should hopefully never happen
