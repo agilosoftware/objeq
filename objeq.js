@@ -402,6 +402,8 @@ var $objeq;
     return node;
   }
 
+  var RegexCache = {};
+
   function evaluate(node, obj, args) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
@@ -430,6 +432,11 @@ var $objeq;
       case 'in':  return child[1].indexOf(child[0]) != -1;
       case 'not': return !child[0];
       case 'neg': return -child[0];
+
+      case 'regex':
+        var key = child[0];
+        var regex = RegexCache[key] || (RegexCache[key] = new RegExp(key));
+        return regex.test(child[1]);
 
       case 'path':
         var target, start;
@@ -562,7 +569,7 @@ var $objeq;
           }
 
           obj = evaluate(select, obj, args);
-          if ( obj ) {
+          if ( obj != null ) {
             results[j++] = obj;
           }
         }
@@ -582,7 +589,7 @@ var $objeq;
         temp.sort(sortFunction);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
           obj = evaluate(select, temp[i], args);
-          if ( obj ) {
+          if ( obj != null ) {
             results[j++] = obj;
           }
         }
@@ -661,7 +668,8 @@ var $objeq;
       invalidateQuery: invalidateQuery,
       refreshQueries: refreshQueries,
       getPath: getPath,
-      match: match,
+      RegexCache: RegexCache,
+      evaluate: evaluate,
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
       createSortFunction: createSortFunction,
