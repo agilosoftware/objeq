@@ -1,51 +1,46 @@
 <html>
 <head>
-  <title>Objeq Query Language Tester</title>
+  <title>objeq Query Tester</title>
   <script type="text/javascript" src="objeq-parser.js"></script>
   <script type="text/javascript" src="objeq.js"></script>
   <script type="text/javascript">
     function performQuery() {
       try {
-        var source = JSON.parse(document.getElementById('source').value);
-        var data = $objeq(source);
-        var query = document.getElementById('query').value;
+        var input = $objeq(JSON.parse(source.value));
 
         // The actual query
         var start = new Date().getTime();
-        var result = data.snapshot(query);
+        var output = input.snapshot(query.value);
         var elapsed = new Date().getTime() - start;
-        var stats = "(" + result.length + " items in " + elapsed + "ms)";
-        document.getElementById('stats').innerText = stats;
+        stats.innerText = "(" + output.length + " items in " + elapsed + "ms)";
 
-        var output = JSON.stringify(result, function(key, value) {
+        result.value = JSON.stringify(output, function(key, value) {
           return key == '__objeq_id__' ? undefined : value;
         });
-        document.getElementById('result').value = output;
       }
       catch ( err ) {
-        document.getElementById('stats').innerText = "(Error!)";
-        document.getElementById('result').value = err;
+        stats.innertText = "(Error!)";
+        result.value = err;
       }
     }
 
     function chooseQuery() {
-      var value = document.getElementById('queries').value;
-      document.getElementById('query').value = value;
+      query.value = queries.value;
       performQuery();
     }
   </script>
-  <style>
+  <style type="text/css">
     textarea {
       font-family: Courier New, Courier, serif;
       font-size: 16px;
     }
     body {
-      padding: 0px; margin: 0px;
+      padding: 0; margin: 0;
     }
     .query {
       position: absolute;
-      left: 0px; top: 0px; right: 0px; height: 100px;
-      margin: 0px;
+      left: 0; top: 0; right: 0; height: 100px;
+      margin: 0;
       border-bottom: 1px solid gray;
     }
     #query {
@@ -63,7 +58,7 @@
       right: 10px; width: 70px;
       top: 10px;
     }
-    .label {
+    label {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 16px;
       position: absolute;
@@ -71,8 +66,8 @@
     }
     .source {
       position: absolute;
-      left: 0px; top: 100px; right: 50%; bottom: 30px;
-      margin: 0px;
+      left: 0; top: 100px; right: 50%; bottom: 30px;
+      margin: 0;
     }
     #source {
       position: absolute;
@@ -80,8 +75,8 @@
     }
     .result {
       position: absolute;
-      left: 50%; top: 100px; right: 0px; bottom: 30px;
-      margin: 0px;
+      left: 50%; top: 100px; right: 0; bottom: 30px;
+      margin: 0;
     }
     #result {
       position: absolute;
@@ -98,12 +93,13 @@
 </head>
 <body onload="chooseQuery();">
   <div class="query">
-    <div class="label">Query</div>
+    <label for="query">Query</label>
     <textarea id="query"></textarea>
     <button id="run" onclick="performQuery();">Query</button>
+    <label for="queries"></label>
     <select id ="queries" onchange="chooseQuery();">
       <option selected>age > 20 order by firstName</option>
-      <option>firstName == 'Thom' and age > 20</option>
+      <option>firstName == 'Bill' and age > 20</option>
       <option>order by lastName, firstName, age</option>
       <option>order by age, firstName select lastName</option>
       <option>order by lastName select { fullName: firstName + ' ' + lastName }</option>
@@ -113,7 +109,7 @@
     </select>
   </div>
   <div class="source">
-    <div class="label">Source</div>
+    <label for="source">Source</label>
     <textarea id="source">
 [
   { "firstName": "Bill", "lastName": "Bradley", "age": 30 },
@@ -134,13 +130,13 @@
     </textarea>
   </div>
   <div class="result">
-    <div class="label">Result <span id="stats"></span></div>
+    <label for="result">Result <span id="stats"></span></label>
     <textarea id="result" readonly="readonly"></textarea>
   </div>
   <div class="info">
-    Demo of the Objeq Javascript Query Language -- Find us at Github:
+    objeq (JavaScript Query Language) -- @Github:
     <a href="http://github.com/agilosoftware/objeq">
-      http://github.com/agilosoftware/objeq
+      github.com/agilosoftware/objeq
     </a>
   </div>
 </body>
