@@ -95,3 +95,18 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
     param.name = 'Stephen';                             // 0 -> Stephen
     
 ## Decoration Notes
+JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array.  
+
+### Objects
+What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for live query updates.
+
+### Arrays
+Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets (myArray[0] = 'blah') can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for live queries.
+
+To work around this problem, objeq has to introduce a method to each Array that it decorates.  This is the 'item' method, and can be utilized as follows:
+
+    // To set a value
+    myArray.item(0, 'blah');
+    
+    // To get a value
+    var blah = myArray.item(0);

@@ -19,15 +19,15 @@ If you have node.js, you can install jison using npm by issuing the following co
 Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was decorated, so you have to be careful to retrieve the first Item in the Result Set if you want to modify it:
 
     var items = $objeq({name:'William'}); // -> [{name:'William'}]
-    var thom = items[0];
+    var will = items[0];
 
     // is the same as the following
-    var thom = $objeq([{name:'William'})[0];
+    var will = $objeq([{name:'William'})[0];
 
 These are chainable, so you can also do:
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
-    var thom = items.query("name == 'William'")[0];
+    var will = items.query("name == 'William'")[0];
 
 Queries can also be Parameterized where any Objects passed in are also Decorated and treated as 'live' Parameters.  This means that the Result Set will be updated every time the Parameter's Properties change:
 
