@@ -566,7 +566,8 @@
   function yypath() {
     var args = makeArray(arguments);
     var result = ['path'].concat(args);
-    this.paths.push(result);
+    result.isNode = true;
+    objeqParser.yy.paths.push(result);
     return result;
   }
 
@@ -582,7 +583,7 @@
     return objeqParser.parse(queryString);
   }
 
-  var EmptyPath = node('path');
+  var EmptyPath = yypath();
 
   function processQuery(source, queryString, args, live) {
     var root = parse(queryString);
