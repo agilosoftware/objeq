@@ -1,0 +1,26 @@
+{
+  "name": "objeq",
+  "description": "JavaScript Object Querying",
+  "author": "Agilo Software GmbH",
+  "version": "0.0.1",
+  "homepage": "http://www.objeq.org/",
+  "main": "objeq.js",
+  "keywords": ["javascript", "json", "query", "language", "server", "client"],
+  "contributors": [
+    { "name": "Thom Bradford", "email": "thomas.bradford@agilosoftware.com" },
+    { "name": "Stefano Rago", "email": "stefano.rago@agilosoftware.com" }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agilosoftware/objeq.git"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "jison": "0.3.x",  
+    "nodeunit": "0.7.x"
+  },
+  "engines": {
+    "node": "*"
+  }
+}

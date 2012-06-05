@@ -21,7 +21,7 @@
  */
 
 /**
- * objeq (Object Querying)
+ * objeq (JavaScript Object Querying)
  *
  * objeq is a simple library that allows POJSO's (Plain-Old JavaScript
  * Objects) to be queried in real-time.  As it relies on property setters,
@@ -31,21 +31,29 @@
  * @author Stefano Rago (github/sterago)
  */
 
-// TODO: Make CommonJS Compatible
-
-// Here's our global
-var $objeq;
-
 (function() {
+  var CurrentVersion = "0.0.1";
+  var self = this || { $objeqParser: null };
 
   // Feature Checking *********************************************************
 
   var hasDefineProperty = Object.prototype.defineProperty;
   var hasDefineSetter = Object.prototype.__defineSetter__;
   if ( !hasDefineProperty && !hasDefineSetter ) {
-    // TODO: Throw an error if this library will be unusable?
-    console.log("Property definitions are not available!  Not Good!");
-    return;
+    throw new Error("Property definitions are not available!  Not Good!");
+  }
+
+  var objeqParser = null;
+  if ( self.$objeqParser ) {
+    objeqParser = self.$objeqParser;
+  }
+  else {
+    if ( typeof require === 'function' ) {
+      objeqParser = require('objeq-parser').parser;
+    }
+    else {
+      throw new Error("The objeq Parser doesn't seem to be available!");
+    }
   }
 
   // By default, try to use standard ECMAScript defineProperty
@@ -404,6 +412,7 @@ var $objeq;
 
   var RegexCache = {};
 
+  // TODO: Handle Boolean short-circuiting (don't resolve children first)
   function evaluate(node, obj, args) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
@@ -469,7 +478,7 @@ var $objeq;
     throw new Error('Invalid Parser Node: '+node[0]);
   }
 
-  // TODO: Eventually may want do create a dependency graph here
+  // TODO: Eventually may want do create a dependency graph instead
   function addQueryListeners(node, args, invalidateQuery, invalidateResults) {
     if ( !isArray(node) || !node.isNode ) {
       return;
@@ -548,18 +557,29 @@ var $objeq;
     }
   }
 
-  function node() {
+  function yynode() {
     var result = makeArray(arguments);
     result.isNode = true;
     return result;
   }
 
-  $objeqParser.yy = {
-    node: node
+  function yypath() {
+    var args = makeArray(arguments);
+    var result = ['path'].concat(args);
+    this.paths.push(result);
+    return result;
+  }
+
+  objeqParser.yy = {
+    node: yynode,
+    path: yypath,
+    paths: []
   };
 
+  // TODO: Probably unnecessary, but make this reentrant
   function parse(queryString) {
-    return $objeqParser.parse(queryString);
+    objeqParser.yy.paths = [];
+    return objeqParser.parse(queryString);
   }
 
   var EmptyPath = node('path');
@@ -688,7 +708,8 @@ var $objeq;
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
       createSortFunction: createSortFunction,
-      node: node,
+      yynode: yynode,
+      yypath: yypath,
       parse: parse,
       processQuery: processQuery,
       query: query,
@@ -728,7 +749,17 @@ var $objeq;
     }
     return results;
   }
+  objeq.VERSION = CurrentVersion;
 
-  // bind the function to its global variable
-  $objeq = objeq;
+  // Node.js and CommonJS Exporting
+  if ( typeof exports !== 'undefined' ) {
+    if ( typeof module !== 'undefined' && module.exports ) {
+      exports = module.exports = objeq;
+    }
+    exports.$objeq = objeq;
+  }
+  else {
+    // Global Exporting
+    self.$objeq = objeq;
+  }
 })();
