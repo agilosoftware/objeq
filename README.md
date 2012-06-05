@@ -1,4 +1,4 @@
-# objeq (Object Querying)
+# objeq (JavaScript Object Querying)
 
 objeq (Object Querying) - is a simple library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.  As it relies on property setters, it will only work in more recent browsers and JavaScript environments.
 
@@ -16,88 +16,41 @@ If you have node.js, you can install jison using npm by issuing the following co
 
 ## Examples
 
-Objects and Arrays need to be 'decorated' in order to be queryable.  The result of such decoration is always an array of items, even if only a single object was decorated, so you have to be careful to retrieve the first item in the result if you want to modify it:
+Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was decorated, so you have to be careful to retrieve the first Item in the Result Set if you want to modify it:
 
-    var items = $objeq({name:'thom'}); // -> [{name:'thom'}]
+    var items = $objeq({name:'William'}); // -> [{name:'William'}]
     var thom = items[0];
 
     // is the same as the following
-    var thom = $objeq([{name:'thom'})[0];
+    var thom = $objeq([{name:'William'})[0];
 
 These are chainable, so you can also do:
 
-    var items = $objeq({name:'thom'}, {name:'stef'});
-    var thom = items.query("name == 'thom'")[0];
+    var items = $objeq({name:'William'}, {name:'Stephen'});
+    var thom = items.query("name == 'William'")[0];
 
-Queries can also be parameterized where any Objects passed in are also decorated and treated as 'live' parameters.  This means that the result array will be updated every time the parameter's properties change:
+Queries can also be Parameterized where any Objects passed in are also Decorated and treated as 'live' Parameters.  This means that the Result Set will be updated every time the Parameter's Properties change:
 
-    var items = $objeq({name:'thom'}, {name:'stef'});
-    var param = { name: 'thom' };
-    var result = items.query("name == %1.name", param); // 0 -> thom
-    param.name = 'stef';                                // 0 -> stef
+    var items = $objeq({name:'William'}, {name:'Stephen'});
+    var param = { name: 'William' };
+    var result = items.query("name == %1.name", param); // 0 -> William
+    param.name = 'Stephen';                             // 0 -> Stephen
 
-## Observables (Not Yet Implemented)
+## Observables (Not Fully Implemented)
 
-You can create observers on both Objects and Arrays in the following ways.
+Presently, you can only create Observers on Result Sets in the following way:
 
-    // Fire when the objects 'name' property changes
-    $objeq({name:'thom'})
-      .on('name', function(target, name, value, prev) {
-        // do something
-      });
+    // query all items that start with the letter 't'
+    var items = $objeq([{name:'William'}, {name:'Stephen'});
+    var query = items.query("'^W' =~ name");
+    query.on('change', function(target) {
+        console.log("There are " + target.length + " results");
+    });
+    items[1].name = 'William'; // -> There are 2 results
 
-    // This is an Array observable... all objects controlled
-    // by the event are observed, but reported on individually
-    $objeq({name:'thom'})
-      .on('name', function(target, name, value, prev) {
-        // do something
-      });
+## More Information
 
-    // this is a result observable... same rules as an array
-    $objeq({name:'thom'})
-      .query("name == 'thom'")
-      .on('name', function(target, name, value, prev) {
-        // do something
-      });
-
-The last example in this set is a tricky one because the second part of the query filters the result such that only objects with a name property of 'thom' appear.  So if the property changes value to something other than 'thom' you will be notified before it is filtered from the array.  You will also be notified if the property value changes back to 'thom', once again including it in the set.
-
-## Query Language
-
-A query consists of three optional parts.  The first is a predicate that is used to filter your source array, the second is a selector for drilling into the filtered results, and the third is a collation for ordering the results.  The basic grammar for a query is as follows:
-
-    query
-      : expr 
-      | filter
-      | expr filter
-      ;
-      
-    filter 
-      : order_by
-      | order_by select
-      | select
-      | select order_by
-      ;
-
-Predicates are denoted by the 'expr' rule and the combination of selectors and collators is encapsulated by the 'filter' rule.  Essentially the predicate must come first, followed by an optional selector and an optional collator.  The order of the selector and collator is important because it determines whether or not the sorting is executed against the selector results.
-
-For example, the following are *entirely* different queries:
-
-    firstName == 'thom' order by lastName select children
-    
-    firstName == 'thom' select children order by lastName
-
-The first query selects all objects that have a firstName property equal to 'thom', orders those by the lastName property of the same object, and then returns the children property of that object.
-
-The second query selects all objects that have a firstName property equal to 'thom', returns the children property for each of those objects, sorting them by the child's lastName property.
-
-These two queries would only work if the children each had the same last name as their parent, but we know that in the real world, this isn't the case.
-
-For brevity and to visually isolate the filter conditions, these two queries could have also been written:
-
-    firstName == 'thom' by lastName -> children
-    
-    firstName == 'thom' -> children by lastName
+See Reference.md for more information on the objeq Query Language.
 
 ## License (MIT License)
 
