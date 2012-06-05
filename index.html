@@ -12,14 +12,14 @@
         var start = new Date().getTime();
         var output = input.query(query.value);
         var elapsed = new Date().getTime() - start;
-        stats.innerText = "(" + output.length + " items in " + elapsed + "ms)";
+        stats.innerHTML = "(" + output.length + " items in " + elapsed + "ms)";
 
         result.value = JSON.stringify(output, function(key, value) {
           return key == '__objeq_id__' ? undefined : value;
         });
       }
       catch ( err ) {
-        stats.innertText = "(Error!)";
+        stats.innerHTML = "(Error!)";
         result.value = err;
       }
     }
