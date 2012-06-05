@@ -21,7 +21,8 @@
  */
 
 /**
- * objeq (Object Querying)
+ * objeq (JavaScript Object Querying)
+ *
  * This module defines both a Lexer and Grammar that use the
  * Jison Parser Generator (http://zaach.github.com/jison/)
  *
@@ -213,11 +214,11 @@ path
   ;
 
 arg_path
-  : ARGREF                    { $$ = yy.node('path', Number($1)-1); }
+  : ARGREF                    { $$ = yy.path(Number($1)-1); }
   | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
   ;
 
 local_path
-  : IDENT                     { $$ = yy.node('path', $1); }
+  : IDENT                     { $$ = yy.path($1); }
   | local_path '.' IDENT      { $$ = $1; $1.push($3); }
   ;
