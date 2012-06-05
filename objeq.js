@@ -479,46 +479,21 @@
   }
 
   // TODO: Eventually may want do create a dependency graph instead
-  function addQueryListeners(node, args, invalidateQuery, invalidateResults) {
-    if ( !isArray(node) || !node.isNode ) {
-      return;
-    }
+  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
+    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
+      var node = paths[i];
 
-    switch ( node[0] ) {
-      case 'obj':
-        var input = node[1];
-        for ( var key in input ) {
-          var target = input[key];
-          addQueryListeners(target, args, invalidateQuery, invalidateResults);
-        }
-        return;
+      var target, start, callback;
+      if ( typeof node[1] === 'number' ) {
+        target = args[node[1]]; start = 2; callback = invalidateQuery;
+      }
+      else {
+        target = null; start = 1; callback = invalidateResults;
+      }
 
-      case 'arr':
-        var input = node[0];
-        for ( var i = 0, ilen = input.length; i < ilen; i++ ) {
-          var target = input[i];
-          addQueryListeners(target, args, invalidateQuery, invalidateResults);
-        }
-        return;
-
-      case 'path':
-        var target, start, callback;
-        if ( typeof node[1] === 'number' ) {
-          target = args[node[1]]; start = 2; callback = invalidateQuery;
-        }
-        else {
-          target = null; start = 1; callback = invalidateResults;
-        }
-
-        for ( var i = start, ilen = node.length; i < ilen; i++ ) {
-          addListener(target, node[i], callback);
-        }
-        return;
-
-      default:
-        for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
-          addQueryListeners(node[i], args, invalidateQuery, invalidateResults);
-        }
+      for ( var j = start, jlen = node.length; j < jlen; j++ ) {
+        addListener(target, node[j], callback);
+      }
     }
   }
 
@@ -563,23 +538,24 @@
     return result;
   }
 
+  var parsedPaths = [];
+
   function yypath() {
     var args = makeArray(arguments);
     var result = ['path'].concat(args);
     result.isNode = true;
-    objeqParser.yy.paths.push(result);
+    parsedPaths.push(result);
     return result;
   }
 
   objeqParser.yy = {
     node: yynode,
-    path: yypath,
-    paths: []
+    path: yypath
   };
 
   // TODO: Probably unnecessary, but make this reentrant
   function parse(queryString) {
-    objeqParser.yy.paths = [];
+    parsedPaths = [];
     return objeqParser.parse(queryString);
   }
 
@@ -650,10 +626,7 @@
 
     if ( live ) {
       addListener(source, getArrayContentKey(source), sourceListener);
-      addQueryListeners(expr, args, queryListener, resultListener);
-      if ( select != EmptyPath ) {
-        addQueryListeners(select, args, queryListener, resultListener);
-      }
+      addQueryListeners(parsedPaths, args, queryListener, resultListener);
     }
     refreshResults();
 
@@ -709,6 +682,7 @@
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
       createSortFunction: createSortFunction,
+      parsedPaths: parsedPaths,
       yynode: yynode,
       yypath: yypath,
       parse: parse,
