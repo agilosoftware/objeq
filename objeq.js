@@ -76,7 +76,7 @@
 
   var toString = Object.prototype.toString;
   var isArray = Array.isArray || function _isArray(obj) {
-    return toString.call(obj) === '[object Array]';
+    return obj != null && toString.call(obj) === '[object Array]';
   };
 
   // Utility Functions ********************************************************
@@ -412,45 +412,48 @@
 
   var RegexCache = {};
 
-  // TODO: Handle Boolean short-circuiting (don't resolve children first)
   function evaluate(node, obj, args) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
     }
 
-    // Resolve all the children first
-    var child = [];
-    for ( var i = 1, ilen = node.length; i < ilen; i++ ) {
-      child.push(evaluate(node[i], obj, args));
+    var op = node[0];
+    var left = evaluate(node[1], obj, args);
+
+    // Boolean Short-Circuit    
+    if ( ( op === 'and' && !left ) || ( op === 'or' && left ) ) {
+      return left;
     }
+    
+    var right = evaluate(node[2], obj, args);
 
-    switch ( node[0] ) {
-      case 'add': return child[0] + child[1];
-      case 'sub': return child[0] - child[1];
-      case 'mul': return child[0] * child[1];
-      case 'div': return child[0] / child[1];
-      case 'mod': return child[0] % child[1];
-      case 'and': return child[0] && child[1];
-      case 'or':  return child[0] || child[1];
-      case 'eq':  return child[0] == child[1];
-      case 'neq': return child[0] != child[1];
-      case 'gt':  return child[0] > child[1];
-      case 'gte': return child[0] >= child[1];
-      case 'lt':  return child[0] < child[1];
-      case 'lte': return child[0] <= child[1];
-      case 'in':  return child[1].indexOf(child[0]) != -1;
-      case 'not': return !child[0];
-      case 'neg': return -child[0];
-
+    switch ( op ) {      
+      case 'and': return right;
+      case 'or':  return right;
+      case 'add': return left + right;
+      case 'sub': return left - right;
+      case 'mul': return left * right;
+      case 'div': return left / right;
+      case 'mod': return left % right;
+      case 'eq':  return left == right;
+      case 'neq': return left != right;
+      case 'gt':  return left > right;
+      case 'gte': return left >= right;
+      case 'lt':  return left < right;
+      case 'lte': return left <= right;
+      case 'in':  return right.indexOf(left) != -1;
+      case 'not': return !left;
+      case 'neg': return -left;
+    
       case 'regex':
-        var key = child[0];
+        var key = left;
         var regex = RegexCache[key] || (RegexCache[key] = new RegExp(key));
-        return regex.test(child[1]);
+        return regex.test(right);
 
       case 'path':
         var target, start;
-        if ( typeof node[1] === 'number' ) {
-          target = args[node[1]]; start = 2;
+        if ( typeof left === 'number' ) {
+          target = args[left]; start = 2;
         }
         else {
           target = obj; start = 1;
@@ -458,7 +461,7 @@
         return getPath(target, node.slice(start));
 
       case 'obj':
-        var input = child[0];
+        var input = left;
         var result = {};
         for ( var key in input ) {
           result[key] = evaluate(input[key], obj, args);
@@ -466,7 +469,7 @@
         return result;
 
       case 'arr':
-        var input = child[0];
+        var input = left;
         var result = [];
         for ( var i = 0, ilen = input.length; i < ilen; i++ ) {
           result[i] = evaluate(input[i], obj, args);
