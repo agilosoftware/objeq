@@ -91,8 +91,8 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var param = { name: 'William' };
-    var result = items.query("name == %1.name", param); // 0 -> William
-    param.name = 'Stephen';                             // 0 -> Stephen
+    var result = items.dynamic("name == %1.name", param); // 0 -> William
+    param.name = 'Stephen';                               // 0 -> Stephen
     
 ## Decoration Notes
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array.  

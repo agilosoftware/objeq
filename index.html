@@ -10,7 +10,7 @@
 
         // The actual query
         var start = new Date().getTime();
-        var output = input.snapshot(query.value);
+        var output = input.query(query.value);
         var elapsed = new Date().getTime() - start;
         stats.innerText = "(" + output.length + " items in " + elapsed + "ms)";
 
@@ -43,13 +43,13 @@
       margin: 0;
       border-bottom: 1px solid gray;
     }
-    #query {
+    .queryHolder {
       position: absolute;
       left: 70px; top: 10px;
       bottom: 30px; right: 90px;
       font-size: 20px;
     }
-    #queries {
+    .queriesHolder {
       position: absolute;
       left: 70px; bottom: 10px; right: 90px; height: 20px;
     }
@@ -69,7 +69,7 @@
       left: 0; top: 100px; right: 50%; bottom: 30px;
       margin: 0;
     }
-    #source {
+    .sourceHolder {
       position: absolute;
       left: 10px; top: 35px; right: 5px; bottom: 10px;
     }
@@ -78,7 +78,7 @@
       left: 50%; top: 100px; right: 0; bottom: 30px;
       margin: 0;
     }
-    #result {
+    .resultHolder {
       position: absolute;
       left: 5px; top: 35px; right: 10px; bottom: 10px;
     }
@@ -89,14 +89,19 @@
       font-family: Arial, Helvetica, sans-serif;
       font-size: 16px;
     }
+    #query, #queries, #source, #result {
+      position: absolute;
+      width: 100%; height: 100%;
+    }
   </style>
 </head>
 <body onload="chooseQuery();">
   <div class="query">
     <label for="query">Query</label>
-    <textarea id="query"></textarea>
+    <div class="queryHolder"><textarea id="query"></textarea></div>
     <button id="run" onclick="performQuery();">Query</button>
     <label for="queries"></label>
+    <div class="queriesHolder">
     <select id ="queries" onchange="chooseQuery();">
       <option selected>age > 20 order by firstName</option>
       <option>firstName == 'Bill' and age > 20</option>
@@ -107,10 +112,11 @@
       <option>"^J" =~ firstName order by lastName select { fullName: lastName + ', ' + firstName, age: age-1 }</option>
       <option>by lastName -> { fullName: lastName + ', ' + firstName, age: age / 2 }</option>
     </select>
+    </div>
   </div>
   <div class="source">
     <label for="source">Source</label>
-    <textarea id="source">
+    <div class="sourceHolder"><textarea id="source">
 [
   { "firstName": "Bill", "lastName": "Bradley", "age": 30 },
   { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
@@ -127,14 +133,16 @@
   { "firstName": "Joe", "lastName": "Strummer", "age": 54 },
   { "firstName": "Ted", "lastName": "Turner", "age": 15 }
 ]
-    </textarea>
+    </textarea></div>
   </div>
   <div class="result">
     <label for="result">Result <span id="stats"></span></label>
-    <textarea id="result" readonly="readonly"></textarea>
+    <div class="resultHolder">
+      <textarea id="result" readonly="readonly"></textarea>
+    </div>
   </div>
   <div class="info">
-    objeq (JavaScript Query Language) -- @Github:
+    objeq (JavaScript Query Language) -- @GitHub:
     <a href="http://github.com/agilosoftware/objeq">
       github.com/agilosoftware/objeq
     </a>

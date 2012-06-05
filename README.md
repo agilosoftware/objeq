@@ -14,7 +14,29 @@ If you have node.js, you can install jison using npm by issuing the following co
 
     > npm -g install jison
 
-## Examples
+## Usage
+
+There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the $objeq function:
+
+    var data = $objeq({name:'Ronald'}, {name:'Robert'}, {name:'Thomas'});
+
+Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that $objeq() returns.  The first method is called 'query' and creates an immediate (or snapshot) Result Set.  The second method is called 'dynamic' and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items that match the original Query criteria.
+
+    // The Result Set membership will not change as its Items are modified
+    var result = data.query("'^Ro' =~ name");
+    
+Or
+    
+    // The Result Set membership will update as soon as its Items are modified
+    var result = data.dynamic("'^Ro' =~ name");
+    
+And finally, if you want to monitor changes to your results as they happen, you can register an Observer on the Result Set.  Note that this really is only useful for the results of a Dynamic Query.
+
+    result.on('change', function(target) {
+      alert('My Data Changed!');
+    });
+    
+## Things Worth Mentioning
 
 Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was decorated, so you have to be careful to retrieve the first Item in the Result Set if you want to modify it:
 
@@ -33,8 +55,8 @@ Queries can also be Parameterized where any Objects passed in are also Decorated
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var param = { name: 'William' };
-    var result = items.query("name == %1.name", param); // 0 -> William
-    param.name = 'Stephen';                             // 0 -> Stephen
+    var result = items.dynamic("name == %1.name", param); // 0 -> William
+    param.name = 'Stephen';                               // 0 -> Stephen
 
 ## Observables (Not Fully Implemented)
 
@@ -42,7 +64,7 @@ Presently, you can only create Observers on Result Sets in the following way:
 
     // query all items that start with the letter 't'
     var items = $objeq([{name:'William'}, {name:'Stephen'});
-    var query = items.query("'^W' =~ name");
+    var query = items.dynamic("'^W' =~ name");
     query.on('change', function(target) {
         console.log("There are " + target.length + " results");
     });

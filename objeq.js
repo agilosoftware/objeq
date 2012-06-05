@@ -300,8 +300,8 @@
   }
 
   var decoratedArrayMixin = {
-    query: query,       // for live sub-queries
-    snapshot: snapshot, // for snapshot queries
+    dynamic: dynamic, // for dynamic sub-queries
+    query: query,     // for snapshot queries
 
     item: function _item(index, value) {
       if ( typeof value !== 'undefined' ) {
@@ -446,8 +446,7 @@
       case 'neg': return -left;
     
       case 'regex':
-        var key = left;
-        var regex = RegexCache[key] || (RegexCache[key] = new RegExp(key));
+        var regex = RegexCache[left] || (RegexCache[left] = new RegExp(left));
         return regex.test(right);
 
       case 'path':
@@ -461,18 +460,16 @@
         return getPath(target, node.slice(start));
 
       case 'obj':
-        var input = left;
         var result = {};
-        for ( var key in input ) {
-          result[key] = evaluate(input[key], obj, args);
+        for ( var key in left ) {
+          result[key] = evaluate(left[key], obj, args);
         }
         return result;
 
       case 'arr':
-        var input = left;
         var result = [];
-        for ( var i = 0, ilen = input.length; i < ilen; i++ ) {
-          result[i] = evaluate(input[i], obj, args);
+        for ( var i = 0, ilen = left.length; i < ilen; i++ ) {
+          result[i] = evaluate(left[i], obj, args);
         }
         return result;
     }
@@ -532,7 +529,7 @@
         }
       }
       return 0;
-    }
+    };
   }
 
   function yynode() {
@@ -541,30 +538,33 @@
     return result;
   }
 
-  var parsedPaths = [];
-
   function yypath() {
     var args = makeArray(arguments);
     var result = ['path'].concat(args);
     result.isNode = true;
-    parsedPaths.push(result);
+    this.paths.push(result);
     return result;
   }
 
-  objeqParser.yy = {
-    node: yynode,
-    path: yypath
-  };
+  var parserPool = [];
 
-  // TODO: Probably unnecessary, but make this reentrant
   function parse(queryString) {
-    parsedPaths = [];
-    return objeqParser.parse(queryString);
+    // Get a Parser from the pool, if possible
+    var parser = parserPool.pop() || new objeqParser.Parser();
+    parser.yy = { node: yynode, path: yypath, paths: [] };
+
+    // Parse the Query, include collected paths in the result
+    var result = parser.parse(queryString);
+    result.paths = parser.yy.paths;
+
+    // Push the Parser back onto the pool and return the result
+    parserPool.push(parser);
+    return result;
   }
 
-  var EmptyPath = yypath();
+  var EmptyPath = yynode('path');
 
-  function processQuery(source, queryString, args, live) {
+  function processQuery(source, queryString, args, dynamic) {
     var root = parse(queryString);
     var results = decorateArray([]);
 
@@ -607,7 +607,7 @@
         }
       }
 
-      if ( live ) {
+      if ( dynamic ) {
         queueEvent(results, getArrayContentKey(results), results.length, prev);
       }
     }
@@ -627,23 +627,23 @@
       invalidateQuery(results, refreshResults);
     }
 
-    if ( live ) {
+    if ( dynamic ) {
       addListener(source, getArrayContentKey(source), sourceListener);
-      addQueryListeners(parsedPaths, args, queryListener, resultListener);
+      addQueryListeners(root.paths, args, queryListener, resultListener);
     }
     refreshResults();
 
     return results;
   }
 
-  function query() {
-    // Process a "live" query whose results update with data changes
+  function dynamic() {
+    // Process a "dynamic" query whose results update with data changes
     var args = makeArray(arguments);
     var queryString = args.shift();
     return processQuery(this, queryString, args, true);
   }
 
-  function snapshot() {
+  function query() {
     // Process a "snapshot" query with static results
     var args = makeArray(arguments);
     var queryString = args.shift();
@@ -654,24 +654,35 @@
 
   function debug() {
     return {
-      queue: queue,
-      pending: pending,
-      listeners: listeners,
-      targets: targets,
+      CurrentVersion: CurrentVersion,
+      self: self,
+      hasDefineProperty: hasDefineProperty,
+      hasDefineSetter: hasDefineSetter,
+      objeqParser: objeqParser,
       defineProperty1: defineProperty1,
       defineProperty2: defineProperty2,
       defineProperty: defineProperty,
       toString: toString,
       isArray: isArray,
+      queue: queue,
+      pending: pending,
+      listeners: listeners,
+      targets: targets,
       makeArray: makeArray,
+      EmptyArray: EmptyArray,
       hasListeners: hasListeners,
       addListener: addListener,
       removeListener: removeListener,
       getCallbacks: getCallbacks,
+      MaxNotifyCycles: MaxNotifyCycles,
+      inNotifyListeners: inNotifyListeners,
       notifyListeners: notifyListeners,
       queueEvent: queueEvent,
       createAccessors: createAccessors,
+      nextObjectId: nextObjectId,
       decorateObject: decorateObject,
+      ArrayFuncs: ArrayFuncs,
+      decoratedArrayMixin: decoratedArrayMixin,
       wrapArrayFunction: wrapArrayFunction,
       decorateArray: decorateArray,
       decorate: decorate,
@@ -685,13 +696,14 @@
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
       createSortFunction: createSortFunction,
-      parsedPaths: parsedPaths,
       yynode: yynode,
       yypath: yypath,
+      parserPool: parserPool,
       parse: parse,
+      EmptyPath: EmptyPath,
       processQuery: processQuery,
+      dynamic: dynamic,
       query: query,
-      snapshot: snapshot,
       objeq: objeq
     };
   }
