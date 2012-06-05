@@ -32,13 +32,14 @@
  */
 
 (function() {
-  var CurrentVersion = "0.0.1";
-  var self = this || { $objeqParser: null };
+  var CurrentVersion = "0.0.1"
+    , self = this || { $objeqParser: null };
 
   // Feature Checking *********************************************************
 
-  var hasDefineProperty = Object.prototype.defineProperty;
-  var hasDefineSetter = Object.prototype.__defineSetter__;
+  var hasDefineProperty = Object.prototype.defineProperty
+    , hasDefineSetter = Object.prototype.__defineSetter__;
+
   if ( !hasDefineProperty && !hasDefineSetter ) {
     throw new Error("Property definitions are not available!  Not Good!");
   }
@@ -72,9 +73,9 @@
     }
   }
 
-  var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2;
+  var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2
+    , toString = Object.prototype.toString;
 
-  var toString = Object.prototype.toString;
   var isArray = Array.isArray || function _isArray(obj) {
     return obj != null && toString.call(obj) === '[object Array]';
   };
@@ -108,23 +109,25 @@
 
   // Listener Implementation **************************************************
 
-  var queue = [];      // The queue of pending notifications
-  var pending = {};    // Reverse Lookup: Target -> queue Entry
-  var listeners = {};  // Property@Target -> Callbacks
-  var targets = {};    // Reverse Lookup: Target -> Property@Target Set
-  var EmptyArray = [];
+  var queue = []                // The queue of pending notifications
+    , pending = {}              // Reverse Lookup: Target -> queue Entry
+    , listeners = {}            // Property@Target -> Callbacks
+    , targets = {}              // Reverse Lookup: Target -> Property@Target
+    , inNotifyListeners = false // to avoid recursion with notifyListeners
+    , MaxNotifyCycles = 128;    // to avoid locking up the browser in loops
 
   function hasListeners(target, key) {
-    var pkey = key || '*';
-    var tkey = getObjectId(target) || '*';
-    var entryKey = pkey + '@' + tkey;
+    var pkey = key || '*'
+      , tkey = getObjectId(target) || '*'
+      , entryKey = pkey + '@' + tkey;
+
     return listeners[entryKey] || listeners[pkey + '@*'];
   }
 
   function addListener(target, key, callback) {
-    var tkey = getObjectId(target) || '*';
-    var entryKey = (key || '*') + '@' + tkey;
-    var callbacks = listeners[entryKey] || ( listeners[entryKey] = [] );
+    var tkey = getObjectId(target) || '*'
+      , entryKey = (key || '*') + '@' + tkey
+      , callbacks = listeners[entryKey] || ( listeners[entryKey] = [] );
 
     if ( callbacks.indexOf(callback) !== -1 ) {
       return;
@@ -137,9 +140,10 @@
   }
 
   function removeListener(target, key, callback) {
-    var tkey = getObjectId(target) || '*';
-    var entryKey = (key || '*') + '@' + tkey;
-    var callbacks = listeners[entryKey];
+    var tkey = getObjectId(target) || '*'
+      , entryKey = (key || '*') + '@' + tkey
+      , callbacks = listeners[entryKey];
+
     if ( !callbacks ) {
       return;
     }
@@ -155,24 +159,19 @@
     targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
 
-  function getCallbacks(target, key) {
-    var tkey = getObjectId(target) || '*';
-    var entryKey = (key || '*') + '@' + tkey;
+  var EmptyArray = []
 
-    var callbacks = listeners[entryKey];
-    var wildcards = key ? listeners[key + '@*'] : null;
+  function getCallbacks(target, key) {
+    var tkey = getObjectId(target) || '*'
+      , entryKey = (key || '*') + '@' + tkey
+      , callbacks = listeners[entryKey]
+      , wildcards = key ? listeners[key + '@*'] : null;
+
     if ( callbacks && wildcards ) {
       return callbacks.concat(wildcards);
     }
     return callbacks || wildcards || EmptyArray;
   }
-
-  // Allow a Developer the ability to debug a problem rather than having to
-  // forcefully restart their browser (I'm looking at *YOU* Safari)
-  var MaxNotifyCycles = 128;
-
-  // To avoid recursion when queueEvent calls notifyListeners
-  var inNotifyListeners = false;
 
   function notifyListeners() {
     inNotifyListeners = true;
@@ -187,8 +186,7 @@
         var callbacks = getCallbacks(target, key);
 
         for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
-          var callback = callbacks[j];
-          callback(target, key, event.value, event.prev);
+          callback[j](target, key, event.value, event.prev);
         }
       }
 
@@ -205,9 +203,10 @@
       return;
     }
 
-    var tkey = getObjectId(target);
-    var events = pending[tkey] || (pending[tkey] = {});
-    var event = events[key];
+    var tkey = getObjectId(target)
+      , events = pending[tkey] || (pending[tkey] = {})
+      , event = events[key];
+
     if ( !event ) {
       queue.push({ target: target, key: key, value: value, prev: prev });
     }
@@ -299,7 +298,7 @@
     };
   }
 
-  var decoratedArrayMixin = {
+  var DecoratedArrayMixin = {
     dynamic: dynamic, // for dynamic sub-queries
     query: query,     // for snapshot queries
 
@@ -348,7 +347,7 @@
       wrapArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
     }
 
-    mixin(arr, decoratedArrayMixin);
+    mixin(arr, DecoratedArrayMixin);
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
@@ -375,7 +374,8 @@
   // Query Implementation *****************************************************
 
   // Invalidated Queries are marked and processed after notifyListeners
-  var invalidated = {}, pendingRefresh = {};
+  var invalidated = {}
+    , pendingRefresh = {};
 
   function invalidateQuery(results, refreshFunction) {
     var tkey = getObjectId(results);
@@ -410,24 +410,24 @@
     return node;
   }
 
-  var RegexCache = {};
+  var regexCache = {};
 
   function evaluate(node, obj, args) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
     }
 
-    var op = node[0];
-    var left = evaluate(node[1], obj, args);
+    var op = node[0]
+      , left = evaluate(node[1], obj, args);
 
-    // Boolean Short-Circuit    
+    // Boolean Short-Circuit
     if ( ( op === 'and' && !left ) || ( op === 'or' && left ) ) {
       return left;
     }
-    
+
     var right = evaluate(node[2], obj, args);
 
-    switch ( op ) {      
+    switch ( op ) {
       case 'and': return right;
       case 'or':  return right;
       case 'add': return left + right;
@@ -444,9 +444,9 @@
       case 'in':  return right.indexOf(left) != -1;
       case 'not': return !left;
       case 'neg': return -left;
-    
+
       case 'regex':
-        var regex = RegexCache[left] || (RegexCache[left] = new RegExp(left));
+        var regex = regexCache[left] || (regexCache[left] = new RegExp(left));
         return regex.test(right);
 
       case 'path':
@@ -500,15 +500,15 @@
   function createComparator(path, ascending) {
     if ( ascending ) {
       return function ascendingComparator(item1, item2) {
-        var val1 = getPath(item1, path);
-        var val2 = getPath(item2, path);
+        var val1 = getPath(item1, path)
+          , val2 = getPath(item2, path);
         return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
       };
     }
     else {
       return function descendingComparator(item1, item2) {
-        var val1 = getPath(item1, path);
-        var val2 = getPath(item2, path);
+        var val1 = getPath(item1, path)
+          , val2 = getPath(item2, path);
         return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
       };
     }
@@ -539,8 +539,8 @@
   }
 
   function yypath() {
-    var args = makeArray(arguments);
-    var result = ['path'].concat(args);
+    var args = makeArray(arguments)
+      , result = ['path'].concat(args);
     result.isNode = true;
     this.paths.push(result);
     return result;
@@ -565,13 +565,12 @@
   var EmptyPath = yynode('path');
 
   function processQuery(source, queryString, args, dynamic) {
-    var root = parse(queryString);
-    var results = decorateArray([]);
-
-    var expr = root.expr;
-    var select = root.select || EmptyPath;
-    var sortFirst = root.sortFirst;
-    var sortFunction = root.order ? createSortFunction(root.order) : null;
+    var root = parse(queryString)
+      , results = decorateArray([])
+      , expr = root.expr
+      , select = root.select || EmptyPath
+      , sortFirst = root.sortFirst
+      , sortFunction = root.order ? createSortFunction(root.order) : null;
 
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
@@ -638,15 +637,15 @@
 
   function dynamic() {
     // Process a "dynamic" query whose results update with data changes
-    var args = makeArray(arguments);
-    var queryString = args.shift();
+    var args = makeArray(arguments)
+      , queryString = args.shift();
     return processQuery(this, queryString, args, true);
   }
 
   function query() {
     // Process a "snapshot" query with static results
-    var args = makeArray(arguments);
-    var queryString = args.shift();
+    var args = makeArray(arguments)
+      , queryString = args.shift();
     return processQuery(this, queryString, args, false);
   }
 
@@ -669,12 +668,10 @@
       listeners: listeners,
       targets: targets,
       makeArray: makeArray,
-      EmptyArray: EmptyArray,
       hasListeners: hasListeners,
       addListener: addListener,
       removeListener: removeListener,
       getCallbacks: getCallbacks,
-      MaxNotifyCycles: MaxNotifyCycles,
       inNotifyListeners: inNotifyListeners,
       notifyListeners: notifyListeners,
       queueEvent: queueEvent,
@@ -682,7 +679,7 @@
       nextObjectId: nextObjectId,
       decorateObject: decorateObject,
       ArrayFuncs: ArrayFuncs,
-      decoratedArrayMixin: decoratedArrayMixin,
+      DecoratedArrayMixin: DecoratedArrayMixin,
       wrapArrayFunction: wrapArrayFunction,
       decorateArray: decorateArray,
       decorate: decorate,
@@ -691,7 +688,7 @@
       invalidateQuery: invalidateQuery,
       refreshQueries: refreshQueries,
       getPath: getPath,
-      RegexCache: RegexCache,
+      regexCache: regexCache,
       evaluate: evaluate,
       addQueryListeners: addQueryListeners,
       createComparator: createComparator,
@@ -700,7 +697,6 @@
       yypath: yypath,
       parserPool: parserPool,
       parse: parse,
-      EmptyPath: EmptyPath,
       processQuery: processQuery,
       dynamic: dynamic,
       query: query,
@@ -716,8 +712,8 @@
       return debug();
     }
 
-    var source = isDecorated(this) ? this : decorateArray([]);
-    var args = makeArray(arguments);
+    var source = isDecorated(this) ? this : decorateArray([])
+      , args = makeArray(arguments);
 
     // Fast Path for Single Array Parameter Calls
     if ( args.length === 1 && isArray(args[0]) ) {
