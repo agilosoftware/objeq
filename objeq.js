@@ -441,7 +441,7 @@
       case 'gte': return left >= right;
       case 'lt':  return left < right;
       case 'lte': return left <= right;
-      case 'in':  return right.indexOf(left) != -1;
+      case 'in':  return right && right.indexOf(left) != -1;
       case 'not': return !left;
       case 'neg': return -left;
 
