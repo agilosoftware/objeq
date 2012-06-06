@@ -186,7 +186,7 @@
         var callbacks = getCallbacks(target, key);
 
         for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
-          callback[j](target, key, event.value, event.prev);
+          callbacks[j](target, key, event.value, event.prev);
         }
       }
 
