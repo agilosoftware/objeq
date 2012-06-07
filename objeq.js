@@ -443,12 +443,15 @@
         // recursively create evaluators for the values
         var hash = node[1], template = {};
         for ( var key in hash ) {
-          template[key] = createEvaluator(hash[key])
+          var item = hash[key];
+          var isNode = isArray(item) && item.isNode;
+          template[key] = isNode ? createEvaluator(item) : item;
         }
         return function _obj(obj, args) {
           var result = {};
           for ( var key in template ) {
-            result[key] = template[key](obj, args);
+            var item = template[key];
+            result[key] = typeof item === 'function' ? item(obj, args) : item;
           }
           return result;
         };
@@ -457,12 +460,15 @@
         // create evaluators for the items
         var items = node[1], template = [];
         for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
-          template[i] = createEvaluator(items[i]);
+          var item = items[i];
+          var isNode = isArray(item) && item.isNode;
+          template[i] = isNode ? createEvaluator(item) : item;
         }
         return function _arr(obj, args) {
           var result = [];
           for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
-            result[i] = template[i](obj, args);
+            var item = template[i];
+            result[i] = typeof item === 'function' ? item(obj, args) : item;
           }
           return result;
         };
