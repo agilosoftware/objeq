@@ -187,10 +187,12 @@ obj_items
   | obj_items ',' obj_item     { $$ = $1; $$[$3[0]] = $3[1]; }
   ;
 
-obj_key: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED | IDENT;
+obj_non_id: NUMBER | STRING | TRUE | FALSE | NULL | UNDEFINED;
 
 obj_item
-  : obj_key ':' expr           { $$ = [$1, $3]; }
+  : obj_non_id ':' expr        { $$ = [$1, $3]; }
+  | IDENT ':' expr             { $$ = [$1, $3]; }
+  | IDENT                      { $$ = [$1, yy.path($1)]; }
   ;
 
 select
