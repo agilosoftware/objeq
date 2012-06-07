@@ -440,7 +440,7 @@
         }
 
       case 'obj':
-        // recursively create evaluators for the values
+        // create evaluators for the values
         var hash = node[1], template = {};
         for ( var key in hash ) {
           var item = hash[key];
@@ -611,11 +611,12 @@
   // TODO: Eventually may want do create a dependency graph instead
   function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
     for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
-      var node = paths[i];
+      var node = paths[i]
+        , index = node[1]
+        , target, start, callback;
 
-      var target, start, callback;
-      if ( typeof node[1] === 'number' ) {
-        target = args[node[1]]; start = 2; callback = invalidateQuery;
+      if ( typeof index === 'number' ) {
+        target = args[index]; start = 2; callback = invalidateQuery;
       }
       else {
         target = null; start = 1; callback = invalidateResults;
