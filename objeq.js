@@ -410,7 +410,7 @@
     return node;
   }
 
-  var regexCache = {};
+  var regexCache = {}; // TODO: LRU Cache
 
   // TODO: Maybe break this up into separate function generators
   function createEvaluator(node) {
@@ -423,16 +423,19 @@
     // Resolving Operators
     switch ( op ) {
       case 'path':
-        var first = node[1];
-        if ( typeof first === 'number' ) {
+        var index = node[1]
+          , pathComponents;
+                  
+        if ( typeof index === 'number' ) {
+          pathComponents = node.slice(2);
           return function _argpath(obj, args) {
-            var target = args[first];
-            return getPath(target, node.slice(2));
+            return getPath(args[index], pathComponents);
           };
         }
         else {
+          pathComponents = node.slice(1);
           return function _localpath(obj, args) {
-            return getPath(obj, node.slice(1));
+            return getPath(obj, pathComponents);
           };
         }
 
@@ -586,6 +589,7 @@
         };
 
       case 'regex':
+        // TODO: This function needs to be a little more robust
         return function _regex(obj, args) {
           var lval = left ? left(obj, args) : lnode
             , rval = right ? right(obj, args) : rnode;
@@ -667,7 +671,7 @@
   }
 
   var parserPool = [],
-      parseCache = {},
+      parseCache = {}, // TODO: LRU Cache
       EmptyPath = yynode('path');
 
   function parse(queryString) {
