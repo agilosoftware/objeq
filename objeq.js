@@ -159,7 +159,7 @@
     targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
 
-  var EmptyArray = []
+  var EmptyArray = [];
 
   function getCallbacks(target, key) {
     var tkey = getObjectId(target) || '*'
@@ -412,70 +412,190 @@
 
   var regexCache = {};
 
-  function evaluate(node, obj, args) {
+  // TODO: Maybe break this up into separate function generators
+  function createEvaluator(node) {
     if ( !isArray(node) || !node.isNode ) {
-      return node;
+      return function() { return node; }
     }
 
-    var op = node[0]
-      , left = evaluate(node[1], obj, args);
+    var op = node[0];
 
-    // Boolean Short-Circuit
-    if ( ( op === 'and' && !left ) || ( op === 'or' && left ) ) {
-      return left;
-    }
-
-    var right = evaluate(node[2], obj, args);
-
+    // Resolving Operators
     switch ( op ) {
-      case 'and': return right;
-      case 'or':  return right;
-      case 'add': return left + right;
-      case 'sub': return left - right;
-      case 'mul': return left * right;
-      case 'div': return left / right;
-      case 'mod': return left % right;
-      case 'eq':  return left == right;
-      case 'neq': return left != right;
-      case 'gt':  return left > right;
-      case 'gte': return left >= right;
-      case 'lt':  return left < right;
-      case 'lte': return left <= right;
-      case 'in':  return right && right.indexOf(left) != -1;
-      case 'not': return !left;
-      case 'neg': return -left;
-
-      case 'regex':
-        var regex = regexCache[left] || (regexCache[left] = new RegExp(left));
-        return regex.test(right);
-
       case 'path':
-        var target, start;
-        if ( typeof left === 'number' ) {
-          target = args[left]; start = 2;
+        var first = node[1];
+        if ( typeof first === 'number' ) {
+          return function _argpath(obj, args) {
+            var target = args[first];
+            return getPath(target, node.slice(2));
+          };
         }
         else {
-          target = obj; start = 1;
+          return function _localpath(obj, args) {
+            return getPath(obj, node.slice(1));
+          };
         }
-        return getPath(target, node.slice(start));
 
       case 'obj':
-        var result = {};
-        for ( var key in left ) {
-          result[key] = evaluate(left[key], obj, args);
+        // recursively create evaluators for the values
+        var hash = node[1], template = {};
+        for ( var key in hash ) {
+          template[key] = createEvaluator(hash[key])
         }
-        return result;
+        return function _obj(obj, args) {
+          var result = {};
+          for ( var key in template ) {
+            result[key] = template[key](obj, args);
+          }
+          return result;
+        };
 
       case 'arr':
-        var result = [];
-        for ( var i = 0, ilen = left.length; i < ilen; i++ ) {
-          result[i] = evaluate(left[i], obj, args);
+        // create evaluators for the items
+        var items = node[1], template = [];
+        for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
+          template[i] = createEvaluator(items[i]);
         }
-        return result;
+        return function _arr(obj, args) {
+          var result = [];
+          for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+            result[i] = template[i](obj, args);
+          }
+          return result;
+        };
+    }
+
+    // Unary Operators
+    var lnode = node[1], left;
+    if ( isArray(lnode) && lnode.isNode ) {
+      left = createEvaluator(lnode);
+    }
+
+    switch ( op ) {
+      case 'not':
+        return function _not(obj, args) {
+          return !(left ? left(obj, args) : lnode);
+        };
+
+      case 'neg':
+        return function _neg(obj, args) {
+          return -(left ? left(obj, args) : lnode);
+        };
+    }
+
+    // Binary Operators
+    var rnode = node[2], right;
+    if ( isArray(rnode) && rnode.isNode ) {
+      right = createEvaluator(rnode);
+    }
+
+    switch ( op ) {
+      case 'and':
+        return function _and(obj, args) {
+          var lval = left ? left(obj, args) : lnode;
+          return !lval ? lval : (right ? right(obj, args) : rnode);
+        };
+
+      case 'or':
+        return function _or(obj, args) {
+          var lval = left ? left(obj, args) : lnode;
+          return left ? lval : (right ? right(obj, args) : rnode);
+        };
+
+      case 'add':
+        return function _add(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval + rval;
+        };
+
+      case 'sub':
+        return function _sub(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval - rval;
+        };
+
+      case 'mul':
+        return function _mul(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval * rval;
+        };
+
+      case 'div':
+        return function _mul(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval / rval;
+        };
+
+      case 'mod':
+        return function _mod(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval % rval;
+        };
+
+      case 'eq':
+        return function _eq(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval == rval;
+        };
+
+      case 'neq':
+        return function _neq(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval != rval;
+        };
+
+      case 'gt':
+        return function _gt(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval > rval;
+        };
+
+      case 'gte':
+        return function _gte(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval >= rval;
+        };
+
+      case 'lt':
+        return function _lt(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval < rval;
+        };
+
+      case 'lte':
+        return function _lte(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          return lval <= rval;
+        };
+
+      case 'in':
+        return function _in(obj, args) {
+          var rval = right ? right(obj, args) : rnode;
+          return rval && rval.indexOf(left ? left(obj, args) : lnode) != -1;
+        };
+
+      case 'regex':
+        return function _regex(obj, args) {
+          var lval = left ? left(obj, args) : lnode
+            , rval = right ? right(obj, args) : rnode;
+          var re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
+          return re.test(rval);
+        };
     }
 
     // This should hopefully never happen
-    throw new Error('Invalid Parser Node: '+node[0]);
+    throw new Error('Invalid Parser Node: '+op);
   }
 
   // TODO: Eventually may want do create a dependency graph instead
@@ -514,7 +634,7 @@
     }
   }
 
-  function createSortFunction(order) {
+  function createSorter(order) {
     var chain = [];
     for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
       var item = order[i];
@@ -546,49 +666,57 @@
     return result;
   }
 
-  var parserPool = [];
+  var parserPool = [],
+      parseCache = {},
+      EmptyPath = yynode('path');
 
   function parse(queryString) {
+    var result = parseCache[queryString];
+    if ( result ) {
+      return result;
+    }
+
     // Get a Parser from the pool, if possible
     var parser = parserPool.pop() || new objeqParser.Parser();
     parser.yy = { node: yynode, path: yypath, paths: [] };
 
-    // Parse the Query, include collected paths in the result
-    var result = parser.parse(queryString);
+    // Parse the Query, include paths and evaluators in the result
+    var result = parseCache[queryString] = parser.parse(queryString);
     result.paths = parser.yy.paths;
+    result.evaluate = createEvaluator(result.expr);
+    result.select = createEvaluator(result.select || EmptyPath);
+    result.sort = result.order && createSorter(result.order);
 
     // Push the Parser back onto the pool and return the result
     parserPool.push(parser);
     return result;
   }
 
-  var EmptyPath = yynode('path');
-
   function processQuery(source, queryString, args, dynamic) {
     var root = parse(queryString)
       , results = decorateArray([])
-      , expr = root.expr
-      , select = root.select || EmptyPath
-      , sortFirst = root.sortFirst
-      , sortFunction = root.order ? createSortFunction(root.order) : null;
+      , evaluate = root.evaluate
+      , select = root.select
+      , sort = root.sort
+      , sortFirst = root.sortFirst;
 
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
       var prev = -results.length;
       results.length = 0;
 
-      if ( !sortFunction || !sortFirst || select === EmptyPath ) {
+      if ( !sort || !sortFirst || select === EmptyPath ) {
         // Post-Drilldown Sorting
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( !evaluate(expr, obj, args) ) {
+          if ( !evaluate(obj, args) ) {
             continue;
           }
 
-          results[j++] = evaluate(select, obj, args);
+          results[j++] = select(obj, args);
         }
-        if ( sortFunction ) {
-          results.sort(sortFunction);
+        if ( sort ) {
+          results.sort(sort);
         }
       }
       else {
@@ -596,13 +724,13 @@
         var temp = [];
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( evaluate(expr, obj, args) ) {
+          if ( evaluate(obj, args) ) {
             temp[j++] = obj;
           }
         }
-        temp.sort(sortFunction);
+        temp.sort(sort);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          results[j++] = evaluate(select, temp[i], args);
+          results[j++] = select(temp[i], args);
         }
       }
 
@@ -689,13 +817,14 @@
       refreshQueries: refreshQueries,
       getPath: getPath,
       regexCache: regexCache,
-      evaluate: evaluate,
       addQueryListeners: addQueryListeners,
+      createEvaluator: createEvaluator,
       createComparator: createComparator,
-      createSortFunction: createSortFunction,
+      createSorter: createSorter,
       yynode: yynode,
       yypath: yypath,
       parserPool: parserPool,
+      parseCache: parseCache,
       parse: parse,
       processQuery: processQuery,
       dynamic: dynamic,
