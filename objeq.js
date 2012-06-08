@@ -79,8 +79,12 @@
     return value && value.__objeq_id__ || null;
   }
 
-  function getArrayContentKey(value) {
-    return getObjectId(value) + '_content';
+  function getArrayContentKey(arr) {
+    return getObjectId(arr) + '_content';
+  }
+
+  function getArrayLengthKey(arr) {
+    return getObjectId(arr) + '_length';
   }
 
   // Listener Implementation **************************************************
@@ -93,16 +97,14 @@
     , MaxNotifyCycles = 128;    // to avoid locking up the browser in loops
 
   function hasListeners(target, key) {
-    var pkey = key || '*'
-      , tkey = getObjectId(target) || '*'
-      , entryKey = pkey + '@' + tkey;
-
-    return listeners[entryKey] || listeners[pkey + '@*'];
+    return listeners['*@*']
+        || listeners[key + '@*']
+        || listeners[key + '@' + getObjectId(target)];
   }
 
   function addListener(target, key, callback) {
     var tkey = getObjectId(target) || '*'
-      , entryKey = (key || '*') + '@' + tkey
+      , entryKey = key + '@' + tkey
       , callbacks = listeners[entryKey] || ( listeners[entryKey] = [] );
 
     if ( callbacks.indexOf(callback) !== -1 ) {
@@ -117,7 +119,7 @@
 
   function removeListener(target, key, callback) {
     var tkey = getObjectId(target) || '*'
-      , entryKey = (key || '*') + '@' + tkey
+      , entryKey = key + '@' + tkey
       , callbacks = listeners[entryKey];
 
     if ( !callbacks ) {
@@ -138,15 +140,12 @@
   var EmptyArray = [];
 
   function getCallbacks(target, key) {
-    var tkey = getObjectId(target) || '*'
-      , entryKey = (key || '*') + '@' + tkey
-      , callbacks = listeners[entryKey]
-      , wildcards = key ? listeners[key + '@*'] : null;
+    var tkey = getObjectId(target)
+      , callbacks = listeners[key + '@' + tkey] || EmptyArray
+      , pCallbacks = listeners[key + '@*'] || EmptyArray
+      , aCallbacks = listeners['*@*'] || EmptyArray;
 
-    if ( callbacks && wildcards ) {
-      return callbacks.concat(wildcards);
-    }
-    return callbacks || wildcards || EmptyArray;
+    return callbacks.concat(pCallbacks, aCallbacks);
   }
 
   function notifyListeners() {
@@ -157,9 +156,10 @@
       queue = [];
 
       for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
-        var event = currentQueue[i];
-        var target = event.target, key = event.key;
-        var callbacks = getCallbacks(target, key);
+        var event = currentQueue[i]
+          , target = event.target
+          , key = event.key
+          , callbacks = getCallbacks(target, key);
 
         for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
           callbacks[j](target, key, event.value, event.prev);
@@ -270,7 +270,57 @@
         }
       }
       var value = this.length;
+      // TODO: Check if the Content *really* changed
       queueEvent(this, getArrayContentKey(this), value, prev);
+      if ( value != prev ) {
+        queueEvent(this, getArrayLengthKey(this), value, prev);
+      }
+    };
+  }
+
+  function getArrayListenerInfo(arr, name) {
+    switch( name ) {
+      case '.content': return { target: arr, key: getArrayContentKey(arr) };
+      case '.length': return { target: arr, key: getArrayLengthKey(arr) };
+      default: return { target: null, key: name };
+    }
+  }
+
+  function addEventMethods(arr) {
+    var callbackMapping = [];
+
+    function wrapCallback(arr, callback) {
+      // If it's already wrapped, return the wrapper
+      for ( var i = 0, ilen = callbackMapping; i < ilen; i++ ) {
+        var item = callbackMapping[i];
+        if ( item.callback === callback ) {
+          return item.wrapped;
+        }
+      }
+      // Otherwise create the wrapper
+      var wrapped = function _wrappedCallback(target, key, value, prev) {
+        arr.indexOf(target) !== -1 && callback(target, key, value, prev);
+      };
+      callbackMapping.push({ callback: callback, wrapped: wrapped });
+      return wrapped;
+    }
+
+    arr.on = function _on(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        var info = getArrayListenerInfo(this, evt[i]);
+        if ( !info.target ) callback = wrapCallback(this, callback);
+        addListener(info.target, info.key, callback);
+      }
+    };
+
+    arr.off = function _off(events, callback) {
+      var evt = events.split(/\s/);
+      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        var info = getArrayListenerInfo(this, evt[i]);
+        if ( !info.target ) callback = wrapCallback(this, callback);
+        removeListener(info.target, info.key, callback);
+      }
     };
   }
 
@@ -287,29 +337,19 @@
       return this[index];
     },
 
-    on: function _on(events, callback) {
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch( evt[i] ) {
-          case 'change':
-            addListener(this, getArrayContentKey(this), callback);
+    attr: function _attr(key, value) {
+      if ( typeof value !== 'undefined' ) {
+        for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
+          var item = this[i];
+          if ( typeof item !== 'object' ) {
+            continue;
+          }
+          item[key] = value;
         }
       }
-    },
 
-    off: function _off(events, callback) {
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        switch( evt[i] ) {
-          case 'change':
-            removeListener(this, getArrayContentKey(this), callback);
-        }
-      }
-    },
-
-    destroy: function() {
-      // TODO: Check if there are child arrays depending on this one
-      //       If none, then we can remove all listeners
+      var first = this[0];
+      return typeof first === 'object' ? first[key] : null;
     }
   };
 
@@ -324,6 +364,7 @@
     }
 
     mixin(arr, DecoratedArrayMixin);
+    addEventMethods(arr);
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
@@ -389,14 +430,13 @@
   var regexCache = {}; // TODO: LRU Cache
 
   // TODO: Maybe break this up into separate function generators
-  function createEvaluator(node) {
+  function createEvaluator(node, forceFunction) {
     if ( !isArray(node) || !node.isNode ) {
-      return function() { return node; }
+      return forceFunction ? function() { return node; } : node;
     }
 
-    var op = node[0];
-
     // Resolving Operators
+    var op = node[0];
     switch ( op ) {
       case 'path':
         var index = node[1]
@@ -419,8 +459,8 @@
         // create evaluators for the values
         var hash = node[1], template = {};
         for ( var key in hash ) {
-          var item = hash[key];
-          var isNode = isArray(item) && item.isNode;
+          var item = hash[key]
+            , isNode = isArray(item) && item.isNode;
           template[key] = isNode ? createEvaluator(item) : item;
         }
         return function _obj(obj, args) {
@@ -436,8 +476,8 @@
         // create evaluators for the items
         var items = node[1], template = [];
         for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
-          var item = items[i];
-          var isNode = isArray(item) && item.isNode;
+          var item = items[i]
+            , isNode = isArray(item) && item.isNode;
           template[i] = isNode ? createEvaluator(item) : item;
         }
         return function _arr(obj, args) {
@@ -451,131 +491,135 @@
     }
 
     // Unary Operators
-    var lnode = node[1], left;
-    if ( isArray(lnode) && lnode.isNode ) {
-      left = createEvaluator(lnode);
-    }
+    var l = createEvaluator(node[1]), left, leftLiteral;
+    typeof l === 'function' ? left = l : leftLiteral = l;
 
     switch ( op ) {
       case 'not':
         return function _not(obj, args) {
-          return !(left ? left(obj, args) : lnode);
+          return !(left ? left(obj, args) : leftLiteral);
         };
 
       case 'neg':
         return function _neg(obj, args) {
-          return -(left ? left(obj, args) : lnode);
+          return -(left ? left(obj, args) : leftLiteral);
         };
     }
 
     // Binary Operators
-    var rnode = node[2], right;
-    if ( isArray(rnode) && rnode.isNode ) {
-      right = createEvaluator(rnode);
-    }
+    var r = createEvaluator(node[2]), right, rightLiteral;
+    typeof r === 'function' ? right = r : rightLiteral = r;
 
     switch ( op ) {
       case 'and':
         return function _and(obj, args) {
-          var lval = left ? left(obj, args) : lnode;
-          return !lval ? lval : (right ? right(obj, args) : rnode);
+          var lval = left ? left(obj, args) : leftLiteral;
+          return !lval ? lval : (right ? right(obj, args) : rightLiteral);
         };
 
       case 'or':
         return function _or(obj, args) {
-          var lval = left ? left(obj, args) : lnode;
-          return left ? lval : (right ? right(obj, args) : rnode);
+          var lval = left ? left(obj, args) : leftLiteral;
+          return left ? lval : (right ? right(obj, args) : rightLiteral);
         };
 
       case 'add':
         return function _add(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval + rval;
         };
 
       case 'sub':
         return function _sub(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval - rval;
         };
 
       case 'mul':
         return function _mul(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval * rval;
         };
 
       case 'div':
         return function _mul(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval / rval;
         };
 
       case 'mod':
         return function _mod(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval % rval;
         };
 
       case 'eq':
         return function _eq(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval == rval;
         };
 
       case 'neq':
         return function _neq(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval != rval;
         };
 
       case 'gt':
         return function _gt(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval > rval;
         };
 
       case 'gte':
         return function _gte(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval >= rval;
         };
 
       case 'lt':
         return function _lt(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval < rval;
         };
 
       case 'lte':
         return function _lte(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
+          var lval = left ? left(obj, args) : leftLiteral
+            , rval = right ? right(obj, args) : rightLiteral;
           return lval <= rval;
         };
 
       case 'in':
         return function _in(obj, args) {
-          var rval = right ? right(obj, args) : rnode;
-          return rval && rval.indexOf(left ? left(obj, args) : lnode) !== -1;
+          var rval = right ? right(obj, args) : rightLiteral;
+          if ( isArray(rval) ) {
+            return rval.indexOf(left ? left(obj, args) : leftLiteral) !== -1;
+          }
+          else if ( typeof rval === 'object' ) {
+            return (left ? left(obj, args) : leftLiteral) in rval;
+          }
+          return false
         };
 
       case 'regex':
-        // TODO: This function needs to be a little more robust
         return function _regex(obj, args) {
-          var lval = left ? left(obj, args) : lnode
-            , rval = right ? right(obj, args) : rnode;
-          var re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
+          var lval = left ? left(obj, args) : leftLiteral;
+          if ( typeof lval !== 'string' ) {
+            return false;
+          }
+          var rval = right ? right(obj, args) : rightLiteral
+            , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
           return re.test(rval);
         };
     }
@@ -584,7 +628,6 @@
     throw new Error('Invalid Parser Node: '+op);
   }
 
-  // TODO: Eventually may want do create a dependency graph instead
   function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
     for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
       var node = paths[i]
@@ -670,8 +713,8 @@
     // Parse the Query, include paths and evaluators in the result
     var result = parseCache[queryString] = parser.parse(queryString);
     result.paths = parser.yy.paths;
-    result.evaluate = createEvaluator(result.expr);
-    result.select = createEvaluator(result.select || EmptyPath);
+    result.evaluate = createEvaluator(result.expr, true);
+    result.select = createEvaluator(result.select || EmptyPath, true);
     result.sort = result.order && createSorter(result.order);
 
     // Push the Parser back onto the pool and return the result
@@ -681,7 +724,7 @@
 
   function processQuery(source, queryString, args, dynamic) {
     var root = parse(queryString)
-      , results = decorateArray([])
+      , results = []
       , evaluate = root.evaluate
       , select = root.select
       , sort = root.sort
@@ -747,7 +790,7 @@
     }
     refreshResults();
 
-    return results;
+    return decorateArray(results);
   }
 
   function dynamic() {
@@ -798,6 +841,7 @@
       nextObjectId: nextObjectId,
       decorateObject: decorateObject,
       ArrayFuncs: ArrayFuncs,
+      addEventMethods: addEventMethods,
       DecoratedArrayMixin: DecoratedArrayMixin,
       wrapArrayFunction: wrapArrayFunction,
       decorateArray: decorateArray,
@@ -827,30 +871,28 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    // TODO: For testing and debugging only
-    if ( arguments.length === 0 ) {
+    if ( arguments.length === 1 && isArray(arguments[0]) ) {
+      // Fast Path for single Array calls
+      return decorate(arguments[0]);
+    }
+    else if ( arguments.length === 0 ) {
+      // For testing and debugging only
       return debug();
     }
 
-    var source = isDecorated(this) ? this : decorateArray([])
-      , args = makeArray(arguments);
+    var args = makeArray(arguments)
+      , source = isDecorated(this) ? this : decorateArray([])
+      , results = null;
 
-    // Fast Path for Single Array Parameter Calls
-    if ( args.length === 1 && isArray(args[0]) ) {
-      return decorate(args[0]);
-    }
-
-    // TODO: If we pass multiple arrays, maybe we flatten them?
-    var results = null;
     while ( args.length ) {
       var arg = args.shift();
       if ( typeof arg === 'string' ) {
-        results = processQuery(source, arg, args, true);
-        break; // short circuit if it's a query
+        // short circuit if it's a query
+        return processQuery(source, arg, args, true);
       }
       else {
         results = results || ( source = results = decorateArray([]) );
-        results.push(decorate(arg));
+        results.push.apply(results, isArray(arg) ? arg : [arg]);
       }
     }
     return results;
