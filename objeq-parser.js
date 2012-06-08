@@ -2,8 +2,8 @@
 var $objeqParser = (function(){
 var parser = {trace: function trace() { },
 yy: {},
-symbols_: {"error":2,"program":3,"query":4,"EOF":5,"expr":6,"filter":7,"order_by":8,"select":9,"+":10,"-":11,"*":12,"/":13,"%":14,"AND":15,"OR":16,"EQ":17,"NEQ":18,"REGEX":19,"GT":20,"GTE":21,"LT":22,"LTE":23,"IN":24,"NOT":25,"(":26,")":27,"array":28,"obj":29,"NUMBER":30,"STRING":31,"TRUE":32,"FALSE":33,"NULL":34,"UNDEFINED":35,"path":36,"[":37,"array_list":38,"]":39,",":40,"{":41,"obj_items":42,"}":43,"obj_item":44,"obj_non_id":45,":":46,"IDENT":47,"SELECT":48,"ORDER_BY":49,"order_list":50,"order_spec":51,"local_path":52,"ASC":53,"DESC":54,"arg_path":55,"ARGREF":56,".":57,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",10:"+",11:"-",12:"*",13:"/",14:"%",15:"AND",16:"OR",17:"EQ",18:"NEQ",19:"REGEX",20:"GT",21:"GTE",22:"LT",23:"LTE",24:"IN",25:"NOT",26:"(",27:")",30:"NUMBER",31:"STRING",32:"TRUE",33:"FALSE",34:"NULL",35:"UNDEFINED",37:"[",39:"]",40:",",41:"{",43:"}",46:":",47:"IDENT",48:"SELECT",49:"ORDER_BY",53:"ASC",54:"DESC",56:"ARGREF",57:"."},
+symbols_: {"error":2,"program":3,"query":4,"EOF":5,"expr":6,"filter":7,"order_by":8,"select":9,"+":10,"-":11,"*":12,"/":13,"%":14,"AND":15,"OR":16,"EQ":17,"NEQ":18,"RE":19,"GT":20,"GTE":21,"LT":22,"LTE":23,"IN":24,"NOT":25,"(":26,")":27,"array":28,"obj":29,"NUMBER":30,"STRING":31,"TRUE":32,"FALSE":33,"NULL":34,"UNDEFINED":35,"path":36,"[":37,"array_list":38,"]":39,",":40,"{":41,"obj_items":42,"}":43,"obj_item":44,"obj_non_id":45,":":46,"IDENT":47,"SELECT":48,"ORDER_BY":49,"order_list":50,"order_spec":51,"local_path":52,"ASC":53,"DESC":54,"arg_path":55,"ARGREF":56,".":57,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",10:"+",11:"-",12:"*",13:"/",14:"%",15:"AND",16:"OR",17:"EQ",18:"NEQ",19:"RE",20:"GT",21:"GTE",22:"LT",23:"LTE",24:"IN",25:"NOT",26:"(",27:")",30:"NUMBER",31:"STRING",32:"TRUE",33:"FALSE",34:"NULL",35:"UNDEFINED",37:"[",39:"]",40:",",41:"{",43:"}",46:":",47:"IDENT",48:"SELECT",49:"ORDER_BY",53:"ASC",54:"DESC",56:"ARGREF",57:"."},
 productions_: [0,[3,2],[4,1],[4,1],[4,2],[7,1],[7,2],[7,1],[7,2],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,3],[6,2],[6,2],[6,3],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[28,3],[28,2],[38,1],[38,3],[29,3],[29,2],[42,1],[42,3],[45,1],[45,1],[45,1],[45,1],[45,1],[45,1],[44,3],[44,3],[44,1],[9,2],[8,2],[50,1],[50,3],[51,1],[51,2],[51,2],[36,1],[36,1],[55,1],[55,3],[52,1],[52,3]],
 performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$) {
 
@@ -43,7 +43,7 @@ case 16: this.$ = yy.node('eq', $$[$0-2], $$[$0]);
 break;
 case 17: this.$ = yy.node('neq', $$[$0-2], $$[$0]); 
 break;
-case 18: this.$ = yy.node('regex', $$[$0-2], $$[$0]); 
+case 18: this.$ = yy.node('re', $$[$0-2], $$[$0]); 
 break;
 case 19: this.$ = yy.node('gt', $$[$0-2], $$[$0]); 
 break;

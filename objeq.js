@@ -427,9 +427,183 @@
     return node;
   }
 
+  // Evaluator Generation Functions
+
+  function evalArgPath(index, pathComponents) {
+    return function _argpath(obj, args) {
+      return getPath(args[index], pathComponents);
+    };
+  }
+
+  function evalLocalPath(pathComponents) {
+    return function _localpath(obj, args) {
+      return getPath(obj, pathComponents);
+    };
+  }
+
+  function evalObj(template) {
+    return function _obj(obj, args) {
+      var result = {};
+      for ( var key in template ) {
+        var item = template[key];
+        result[key] = typeof item === 'function' ? item(obj, args) : item;
+      }
+      return result;
+    };
+  }
+
+  function evalArr(template) {
+    return function _arr(obj, args) {
+      var result = [];
+      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+        var item = template[i];
+        result[i] = typeof item === 'function' ? item(obj, args) : item;
+      }
+      return result;
+    };
+  }
+
+  function evalNOT(left, leftLiteral) {
+    return function _not(obj, args) {
+      return !(left ? left(obj, args) : leftLiteral);
+    };
+  }
+
+  function evalNEG(left, leftLiteral) {
+    return function _neg(obj, args) {
+      return -(left ? left(obj, args) : leftLiteral);
+    };
+  }
+
+  function evalAND(left, leftLiteral, right, rightLiteral) {
+    return function _and(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral;
+      return !lval ? lval : (right ? right(obj, args) : rightLiteral);
+    };
+  }
+
+  function evalOR(left, leftLiteral, right, rightLiteral) {
+    return function _or(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral;
+      return left ? lval : (right ? right(obj, args) : rightLiteral);
+    };
+  }
+
+  function evalADD(left, leftLiteral, right, rightLiteral) {
+    return function _add(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval + rval;
+    };
+  }
+
+  function evalSUB(left, leftLiteral, right, rightLiteral) {
+    return function _sub(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval - rval;
+    };
+  }
+
+  function evalMUL(left, leftLiteral, right, rightLiteral) {
+    return function _mul(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval * rval;
+    };
+  }
+
+  function evalDIV(left, leftLiteral, right, rightLiteral) {
+    return function _div(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval / rval;
+    };
+  }
+
+  function evalMOD(left, leftLiteral, right, rightLiteral) {
+    return function _mod(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval % rval;
+    };
+  }
+
+  function evalEQ(left, leftLiteral, right, rightLiteral) {
+    return function _eq(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval == rval;
+    };
+  }
+
+  function evalNEQ(left, leftLiteral, right, rightLiteral) {
+    return function _neq(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval != rval;
+    };
+  }
+
+  function evalGT(left, leftLiteral, right, rightLiteral) {
+    return function _gt(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval > rval;
+    };
+  }
+
+  function evalGTE(left, leftLiteral, right, rightLiteral) {
+    return function _gte(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval >= rval;
+    };
+  }
+
+  function evalLT(left, leftLiteral, right, rightLiteral) {
+    return function _lt(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval < rval;
+    };
+  }
+
+  function evalLTE(left, leftLiteral, right, rightLiteral) {
+    return function _lte(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral
+        , rval = right ? right(obj, args) : rightLiteral;
+      return lval <= rval;
+    };
+  }
+
+  function evalIN(right, rightLiteral, left, leftLiteral) {
+    return function _in(obj, args) {
+      var rval = right ? right(obj, args) : rightLiteral;
+      if ( isArray(rval) ) {
+        return rval.indexOf(left ? left(obj, args) : leftLiteral) !== -1;
+      }
+      else if ( typeof rval === 'object' ) {
+        return (left ? left(obj, args) : leftLiteral) in rval;
+      }
+      return false
+    };
+  }
+
   var regexCache = {}; // TODO: LRU Cache
 
-  // TODO: Maybe break this up into separate function generators
+  function evalRE(left, leftLiteral, right, rightLiteral) {
+    return function _re(obj, args) {
+      var lval = left ? left(obj, args) : leftLiteral;
+      if ( typeof lval !== 'string' ) {
+        return false;
+      }
+      var rval = right ? right(obj, args) : rightLiteral
+        , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
+      return re.test(rval);
+    };
+  }
+
   function createEvaluator(node, forceFunction) {
     if ( !isArray(node) || !node.isNode ) {
       return forceFunction ? function() { return node; } : node;
@@ -439,55 +613,29 @@
     var op = node[0];
     switch ( op ) {
       case 'path':
-        var index = node[1]
-          , pathComponents;
-                  
-        if ( typeof index === 'number' ) {
-          pathComponents = node.slice(2);
-          return function _argpath(obj, args) {
-            return getPath(args[index], pathComponents);
-          };
+        var index = node[1], isNumber = typeof index === 'number';
+        if ( !isNumber ) {
+          return evalLocalPath(node.slice(1));
         }
-        else {
-          pathComponents = node.slice(1);
-          return function _localpath(obj, args) {
-            return getPath(obj, pathComponents);
-          };
-        }
+        return evalArgPath(index, node.slice(2));
 
       case 'obj':
         // create evaluators for the values
         var hash = node[1], template = {};
         for ( var key in hash ) {
-          var item = hash[key]
-            , isNode = isArray(item) && item.isNode;
+          var item = hash[key], isNode = isArray(item) && item.isNode;
           template[key] = isNode ? createEvaluator(item) : item;
         }
-        return function _obj(obj, args) {
-          var result = {};
-          for ( var key in template ) {
-            var item = template[key];
-            result[key] = typeof item === 'function' ? item(obj, args) : item;
-          }
-          return result;
-        };
+        return evalObj(template);
 
       case 'arr':
         // create evaluators for the items
         var items = node[1], template = [];
         for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
-          var item = items[i]
-            , isNode = isArray(item) && item.isNode;
+          var item = items[i], isNode = isArray(item) && item.isNode;
           template[i] = isNode ? createEvaluator(item) : item;
         }
-        return function _arr(obj, args) {
-          var result = [];
-          for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
-            var item = template[i];
-            result[i] = typeof item === 'function' ? item(obj, args) : item;
-          }
-          return result;
-        };
+        return evalArr(template);
     }
 
     // Unary Operators
@@ -495,15 +643,8 @@
     typeof l === 'function' ? left = l : leftLiteral = l;
 
     switch ( op ) {
-      case 'not':
-        return function _not(obj, args) {
-          return !(left ? left(obj, args) : leftLiteral);
-        };
-
-      case 'neg':
-        return function _neg(obj, args) {
-          return -(left ? left(obj, args) : leftLiteral);
-        };
+      case 'not': return evalNOT(left, leftLiteral);
+      case 'neg': return evalNEG(left, leftLiteral);
     }
 
     // Binary Operators
@@ -511,140 +652,25 @@
     typeof r === 'function' ? right = r : rightLiteral = r;
 
     switch ( op ) {
-      case 'and':
-        return function _and(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral;
-          return !lval ? lval : (right ? right(obj, args) : rightLiteral);
-        };
-
-      case 'or':
-        return function _or(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral;
-          return left ? lval : (right ? right(obj, args) : rightLiteral);
-        };
-
-      case 'add':
-        return function _add(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval + rval;
-        };
-
-      case 'sub':
-        return function _sub(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval - rval;
-        };
-
-      case 'mul':
-        return function _mul(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval * rval;
-        };
-
-      case 'div':
-        return function _mul(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval / rval;
-        };
-
-      case 'mod':
-        return function _mod(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval % rval;
-        };
-
-      case 'eq':
-        return function _eq(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval == rval;
-        };
-
-      case 'neq':
-        return function _neq(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval != rval;
-        };
-
-      case 'gt':
-        return function _gt(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval > rval;
-        };
-
-      case 'gte':
-        return function _gte(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval >= rval;
-        };
-
-      case 'lt':
-        return function _lt(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval < rval;
-        };
-
-      case 'lte':
-        return function _lte(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral
-            , rval = right ? right(obj, args) : rightLiteral;
-          return lval <= rval;
-        };
-
-      case 'in':
-        return function _in(obj, args) {
-          var rval = right ? right(obj, args) : rightLiteral;
-          if ( isArray(rval) ) {
-            return rval.indexOf(left ? left(obj, args) : leftLiteral) !== -1;
-          }
-          else if ( typeof rval === 'object' ) {
-            return (left ? left(obj, args) : leftLiteral) in rval;
-          }
-          return false
-        };
-
-      case 'regex':
-        return function _regex(obj, args) {
-          var lval = left ? left(obj, args) : leftLiteral;
-          if ( typeof lval !== 'string' ) {
-            return false;
-          }
-          var rval = right ? right(obj, args) : rightLiteral
-            , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
-          return re.test(rval);
-        };
+      case 'and': return evalAND(left, leftLiteral, right, rightLiteral);
+      case 'or':  return evalOR(left, leftLiteral, right, rightLiteral);
+      case 'add': return evalADD(left, leftLiteral, right, rightLiteral);
+      case 'sub': return evalSUB(left, leftLiteral, right, rightLiteral);
+      case 'mul': return evalMUL(left, leftLiteral, right, rightLiteral);
+      case 'div': return evalDIV(left, leftLiteral, right, rightLiteral);
+      case 'mod': return evalMOD(left, leftLiteral, right, rightLiteral);
+      case 'eq':  return evalEQ(left, leftLiteral, right, rightLiteral);
+      case 'neq': return evalNEQ(left, leftLiteral, right, rightLiteral);
+      case 'gt':  return evalGT(left, leftLiteral, right, rightLiteral);
+      case 'gte': return evalGTE(left, leftLiteral, right, rightLiteral);
+      case 'lt':  return evalLT(left, leftLiteral, right, rightLiteral);
+      case 'lte': return evalLTE(left, leftLiteral, right, rightLiteral);
+      case 'in':  return evalIN(right, rightLiteral, left, leftLiteral);
+      case 're':  return evalRE(left, leftLiteral, right, rightLiteral);
     }
 
     // This should hopefully never happen
     throw new Error('Invalid Parser Node: '+op);
-  }
-
-  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
-    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
-      var node = paths[i]
-        , index = node[1]
-        , target, start, callback;
-
-      if ( typeof index === 'number' ) {
-        target = args[index]; start = 2; callback = invalidateQuery;
-      }
-      else {
-        target = null; start = 1; callback = invalidateResults;
-      }
-
-      for ( var j = start, jlen = node.length; j < jlen; j++ ) {
-        addListener(target, node[j], callback);
-      }
-    }
   }
 
   function createComparator(path, ascending) {
@@ -682,6 +708,26 @@
     };
   }
 
+
+  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
+    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
+      var node = paths[i]
+        , index = node[1]
+        , target, start, callback;
+
+      if ( typeof index === 'number' ) {
+        target = args[index]; start = 2; callback = invalidateQuery;
+      }
+      else {
+        target = null; start = 1; callback = invalidateResults;
+      }
+
+      for ( var j = start, jlen = node.length; j < jlen; j++ ) {
+        addListener(target, node[j], callback);
+      }
+    }
+  }
+
   function yynode() {
     var result = makeArray(arguments);
     result.isNode = true;
@@ -696,9 +742,9 @@
     return result;
   }
 
-  var parserPool = [],
-      parseCache = {}, // TODO: LRU Cache
-      EmptyPath = yynode('path');
+  var parserPool = []
+    , parseCache = {} // TODO: LRU Cache
+    , EmptyPath = yynode('path');
 
   function parse(queryString) {
     var result = parseCache[queryString];
@@ -851,7 +897,7 @@
       invalidateQuery: invalidateQuery,
       refreshQueries: refreshQueries,
       getPath: getPath,
-      regexCache: regexCache,
+      reCache: regexCache,
       addQueryListeners: addQueryListeners,
       createEvaluator: createEvaluator,
       createComparator: createComparator,

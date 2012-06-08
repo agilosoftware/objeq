@@ -71,7 +71,7 @@ ws    [\s]
 "in"                          return "IN";
 "=="                          return 'EQ';
 "!="                          return 'NEQ';
-"=~"                          return 'REGEX';
+"=~"                          return 'RE';
 "<="                          return 'LTE';
 ">="                          return 'GTE';
 "&&"                          return 'AND';
@@ -106,7 +106,7 @@ ws    [\s]
 %left '*' '/'
 %left '%'
 %left AND OR
-%left EQ NEQ IN REGEX
+%left EQ NEQ IN RE
 %left GT GTE LT LTE
 %left NOT NEG
 %left '.'
@@ -147,7 +147,7 @@ expr
   | expr OR expr     { $$ = yy.node('or', $1, $3); }
   | expr EQ expr     { $$ = yy.node('eq', $1, $3); }
   | expr NEQ expr    { $$ = yy.node('neq', $1, $3); }
-  | expr REGEX expr  { $$ = yy.node('regex', $1, $3); }
+  | expr RE expr     { $$ = yy.node('re', $1, $3); }
   | expr GT expr     { $$ = yy.node('gt', $1, $3); }
   | expr GTE expr    { $$ = yy.node('gte', $1, $3); }
   | expr LT expr     { $$ = yy.node('lt', $1, $3); }
