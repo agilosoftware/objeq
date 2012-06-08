@@ -332,7 +332,7 @@
       if ( typeof value !== 'undefined' ) {
         var oldLen = this.length;
         this[index] = decorate(value);
-        var newLen = this.length
+        var newLen = this.length;
         queueEvent(this, getArrayContentKey(this), newLen, null);
         if ( newLen != oldLen ) {
           queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
