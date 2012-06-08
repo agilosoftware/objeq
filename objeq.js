@@ -1,31 +1,7 @@
-/*
- * Copyright (c) 2012 Agilo Software GmbH
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
-/**
+/*!
  * objeq (JavaScript Object Querying)
- *
- * objeq is a simple library that allows POJSO's (Plain-Old JavaScript
- * Objects) to be queried in real-time.  As it relies on property setters,
- * it will only work in more recent browsers,
+ * Licensed under the MIT License
+ * see LICENSE.md
  *
  * @author Thom Bradford (github/bradford653)
  * @author Stefano Rago (github/sterago)
@@ -591,7 +567,7 @@
       case 'in':
         return function _in(obj, args) {
           var rval = right ? right(obj, args) : rnode;
-          return rval && rval.indexOf(left ? left(obj, args) : lnode) != -1;
+          return rval && rval.indexOf(left ? left(obj, args) : lnode) !== -1;
         };
 
       case 'regex':
@@ -778,6 +754,10 @@
     // Process a "dynamic" query whose results update with data changes
     var args = makeArray(arguments)
       , queryString = args.shift();
+    // Decorate the Items, but no need to decorate the Array
+    for ( var i = 0, ilen = args.length; i < ilen; i++ ) {
+      args[i] = decorate(args[i]);
+    }
     return processQuery(this, queryString, args, true);
   }
 

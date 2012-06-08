@@ -1,6 +1,6 @@
 # objeq (JavaScript Object Querying)
 
-objeq (Object Querying) - is a simple library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.  As it relies on property setters, it will only work in more recent browsers and JavaScript environments.
+objeq (Object Querying) - is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.  As it relies on property setters, it will only work in more recent browsers and JavaScript environments.
 
 ## Current Status
 
