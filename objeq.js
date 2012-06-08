@@ -49,12 +49,13 @@
     }
   }
 
-  var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2
-    , toString = Object.prototype.toString;
-
-  var isArray = Array.isArray || function _isArray(obj) {
+  function fallbackIsArray(obj) {
     return obj != null && toString.call(obj) === '[object Array]';
-  };
+  }
+
+  var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2
+    , toString = Object.prototype.toString
+    , isArray = Array.isArray || fallbackIsArray;
 
   // Utility Functions ********************************************************
 
@@ -388,46 +389,23 @@
     return value;
   }
 
-  // Query Implementation *****************************************************
+  // 'Compilation' Functions **************************************************
 
-  // Invalidated Queries are marked and processed after notifyListeners
-  var invalidated = {}
-    , pendingRefresh = {};
-
-  function invalidateQuery(results, refreshFunction) {
-    var tkey = getObjectId(results);
-    if ( !pendingRefresh[tkey] ) {
-      invalidated[tkey] = refreshFunction;
-    }
-  }
-
-  function refreshQueries() {
-    pendingRefresh = invalidated;
-    invalidated = {};
-    for ( var key in pendingRefresh ) {
-      var refreshFunction = pendingRefresh[key];
-      delete pendingRefresh[key];
-      refreshFunction();
-    }
-  }
-
-  function getPath(node, path) {
-    for ( var i = 0, ilen = path.length; node && i < ilen; i++ ) {
-      if ( isArray(node) && isDecorated(node) ) {
-        if ( node.length === 0 ) {
+  function getPath(value, path) {
+    for ( var i = 0, ilen = path.length; value && i < ilen; i++ ) {
+      if ( isArray(value) && isDecorated(value) ) {
+        if ( value.length === 0 ) {
           return null;
         }
-        node = node[0];
+        value = value[0];
       }
-      node = node[path[i]];
-      if ( node == null ) {
-        return node;
+      value = value[path[i]];
+      if ( value == null ) {
+        return value;
       }
     }
-    return node;
+    return value;
   }
-
-  // Evaluator Generation Functions
 
   function evalArgPath(index, pathComponents) {
     return function _argpath(obj, args) {
@@ -735,25 +713,7 @@
     };
   }
 
-
-  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
-    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
-      var node = paths[i]
-        , index = node[1]
-        , target, start, callback;
-
-      if ( typeof index === 'number' ) {
-        target = args[index]; start = 2; callback = invalidateQuery;
-      }
-      else {
-        target = null; start = 1; callback = invalidateResults;
-      }
-
-      for ( var j = start, jlen = node.length; j < jlen; j++ ) {
-        addListener(target, node[j], callback);
-      }
-    }
-  }
+  // Parsing Functions ********************************************************
 
   function yynode() {
     var result = makeArray(arguments);
@@ -793,6 +753,48 @@
     // Push the Parser back onto the pool and return the result
     parserPool.push(parser);
     return result;
+  }
+
+  // Query Processing Functions ***********************************************
+
+  // Invalidated Queries are marked and processed after notifyListeners
+  var invalidated = {}
+    , pendingRefresh = {};
+
+  function invalidateQuery(results, refreshFunction) {
+    var tkey = getObjectId(results);
+    if ( !pendingRefresh[tkey] ) {
+      invalidated[tkey] = refreshFunction;
+    }
+  }
+
+  function refreshQueries() {
+    pendingRefresh = invalidated;
+    invalidated = {};
+    for ( var key in pendingRefresh ) {
+      var refreshFunction = pendingRefresh[key];
+      delete pendingRefresh[key];
+      refreshFunction();
+    }
+  }
+
+  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
+    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
+      var node = paths[i]
+        , index = node[1]
+        , target, start, callback;
+
+      if ( typeof index === 'number' ) {
+        target = args[index]; start = 2; callback = invalidateQuery;
+      }
+      else {
+        target = null; start = 1; callback = invalidateResults;
+      }
+
+      for ( var j = start, jlen = node.length; j < jlen; j++ ) {
+        addListener(target, node[j], callback);
+      }
+    }
   }
 
   function processQuery(source, queryString, args, dynamic) {
