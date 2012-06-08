@@ -291,7 +291,7 @@
 
     function wrapCallback(arr, callback) {
       // If it's already wrapped, return the wrapper
-      for ( var i = 0, ilen = callbackMapping; i < ilen; i++ ) {
+      for ( var i = 0, ilen = callbackMapping.length; i < ilen; i++ ) {
         var item = callbackMapping[i];
         if ( item.callback === callback ) {
           return item.wrapped;
