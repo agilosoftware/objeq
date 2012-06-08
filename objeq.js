@@ -463,150 +463,167 @@
     };
   }
 
-  function evalNOT(left, leftLiteral) {
+  function evalNOT(left, leftLit) {
+    if ( !left ) return !leftLit;
     return function _not(obj, args) {
-      return !(left ? left(obj, args) : leftLiteral);
+      return !left(obj, args);
     };
   }
 
-  function evalNEG(left, leftLiteral) {
+  function evalNEG(left, leftLit) {
+    if ( !left ) return -leftLit;
     return function _neg(obj, args) {
-      return -(left ? left(obj, args) : leftLiteral);
+      return -left(obj, args);
     };
   }
 
-  function evalAND(left, leftLiteral, right, rightLiteral) {
+  function evalAND(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit && rightLit;
     return function _and(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral;
-      return !lval ? lval : (right ? right(obj, args) : rightLiteral);
+      var lval = left ? left(obj, args) : leftLit;
+      return !lval ? lval : (right ? right(obj, args) : rightLit);
     };
   }
 
-  function evalOR(left, leftLiteral, right, rightLiteral) {
+  function evalOR(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit || rightLit;
     return function _or(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral;
-      return left ? lval : (right ? right(obj, args) : rightLiteral);
+      var lval = left ? left(obj, args) : leftLit;
+      return left ? lval : (right ? right(obj, args) : rightLit);
     };
   }
 
-  function evalADD(left, leftLiteral, right, rightLiteral) {
+  function evalADD(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit + rightLit;
     return function _add(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval + rval;
     };
   }
 
-  function evalSUB(left, leftLiteral, right, rightLiteral) {
+  function evalSUB(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit - rightLit;
     return function _sub(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval - rval;
     };
   }
 
-  function evalMUL(left, leftLiteral, right, rightLiteral) {
+  function evalMUL(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit * rightLit;
     return function _mul(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval * rval;
     };
   }
 
-  function evalDIV(left, leftLiteral, right, rightLiteral) {
+  function evalDIV(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit / rightLit;
     return function _div(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval / rval;
     };
   }
 
-  function evalMOD(left, leftLiteral, right, rightLiteral) {
+  function evalMOD(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit % rightLit;
     return function _mod(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval % rval;
     };
   }
 
-  function evalEQ(left, leftLiteral, right, rightLiteral) {
+  function evalEQ(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit == rightLit;
     return function _eq(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval == rval;
     };
   }
 
-  function evalNEQ(left, leftLiteral, right, rightLiteral) {
+  function evalNEQ(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit != rightLit;
     return function _neq(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval != rval;
     };
   }
 
-  function evalGT(left, leftLiteral, right, rightLiteral) {
+  function evalGT(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit > rightLit;
     return function _gt(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval > rval;
     };
   }
 
-  function evalGTE(left, leftLiteral, right, rightLiteral) {
+  function evalGTE(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit >= rightLit;
     return function _gte(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval >= rval;
     };
   }
 
-  function evalLT(left, leftLiteral, right, rightLiteral) {
+  function evalLT(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit < rightLit;
     return function _lt(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval < rval;
     };
   }
 
-  function evalLTE(left, leftLiteral, right, rightLiteral) {
+  function evalLTE(left, leftLit, right, rightLit) {
+    if ( !left && !right ) return leftLit <= rightLit;
     return function _lte(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral
-        , rval = right ? right(obj, args) : rightLiteral;
+      var lval = left ? left(obj, args) : leftLit
+        , rval = right ? right(obj, args) : rightLit;
       return lval <= rval;
     };
   }
 
-  function evalIN(right, rightLiteral, left, leftLiteral) {
-    return function _in(obj, args) {
-      var rval = right ? right(obj, args) : rightLiteral;
+  function evalIN(left, leftLit, right, rightLit) {
+    var func = function _in(obj, args) {
+      var rval = right ? right(obj, args) : rightLit;
       if ( isArray(rval) ) {
-        return rval.indexOf(left ? left(obj, args) : leftLiteral) !== -1;
+        return rval.indexOf(left ? left(obj, args) : leftLit) !== -1;
       }
       else if ( typeof rval === 'object' ) {
-        return (left ? left(obj, args) : leftLiteral) in rval;
+        return (left ? left(obj, args) : leftLit) in rval;
       }
       return false
     };
+    return left || right ? func : func();
   }
 
   var regexCache = {}; // TODO: LRU Cache
 
-  function evalRE(left, leftLiteral, right, rightLiteral) {
-    return function _re(obj, args) {
-      var lval = left ? left(obj, args) : leftLiteral;
+  function evalRE(left, leftLit, right, rightLit) {
+    var func = function _re(obj, args) {
+      var lval = left ? left(obj, args) : leftLit;
       if ( typeof lval !== 'string' ) {
         return false;
       }
-      var rval = right ? right(obj, args) : rightLiteral
+      var rval = right ? right(obj, args) : rightLit
         , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
       return re.test(rval);
     };
+    return left || right ? func : func();
   }
 
-  function createEvaluator(node, forceFunction) {
+  function createEvaluator(node) {
     if ( !isArray(node) || !node.isNode ) {
-      return forceFunction ? function() { return node; } : node;
+      return node;
     }
 
     // Resolving Operators
@@ -639,34 +656,34 @@
     }
 
     // Unary Operators
-    var l = createEvaluator(node[1]), left, leftLiteral;
-    typeof l === 'function' ? left = l : leftLiteral = l;
+    var l = createEvaluator(node[1]), left, leftLit;
+    typeof l === 'function' ? left = l : leftLit = l;
 
     switch ( op ) {
-      case 'not': return evalNOT(left, leftLiteral);
-      case 'neg': return evalNEG(left, leftLiteral);
+      case 'not': return evalNOT(left, leftLit);
+      case 'neg': return evalNEG(left, leftLit);
     }
 
     // Binary Operators
-    var r = createEvaluator(node[2]), right, rightLiteral;
-    typeof r === 'function' ? right = r : rightLiteral = r;
+    var r = createEvaluator(node[2]), right, rightLit;
+    typeof r === 'function' ? right = r : rightLit = r;
 
     switch ( op ) {
-      case 'and': return evalAND(left, leftLiteral, right, rightLiteral);
-      case 'or':  return evalOR(left, leftLiteral, right, rightLiteral);
-      case 'add': return evalADD(left, leftLiteral, right, rightLiteral);
-      case 'sub': return evalSUB(left, leftLiteral, right, rightLiteral);
-      case 'mul': return evalMUL(left, leftLiteral, right, rightLiteral);
-      case 'div': return evalDIV(left, leftLiteral, right, rightLiteral);
-      case 'mod': return evalMOD(left, leftLiteral, right, rightLiteral);
-      case 'eq':  return evalEQ(left, leftLiteral, right, rightLiteral);
-      case 'neq': return evalNEQ(left, leftLiteral, right, rightLiteral);
-      case 'gt':  return evalGT(left, leftLiteral, right, rightLiteral);
-      case 'gte': return evalGTE(left, leftLiteral, right, rightLiteral);
-      case 'lt':  return evalLT(left, leftLiteral, right, rightLiteral);
-      case 'lte': return evalLTE(left, leftLiteral, right, rightLiteral);
-      case 'in':  return evalIN(right, rightLiteral, left, leftLiteral);
-      case 're':  return evalRE(left, leftLiteral, right, rightLiteral);
+      case 'and': return evalAND(left, leftLit, right, rightLit);
+      case 'or':  return evalOR(left, leftLit, right, rightLit);
+      case 'add': return evalADD(left, leftLit, right, rightLit);
+      case 'sub': return evalSUB(left, leftLit, right, rightLit);
+      case 'mul': return evalMUL(left, leftLit, right, rightLit);
+      case 'div': return evalDIV(left, leftLit, right, rightLit);
+      case 'mod': return evalMOD(left, leftLit, right, rightLit);
+      case 'eq':  return evalEQ(left, leftLit, right, rightLit);
+      case 'neq': return evalNEQ(left, leftLit, right, rightLit);
+      case 'gt':  return evalGT(left, leftLit, right, rightLit);
+      case 'gte': return evalGTE(left, leftLit, right, rightLit);
+      case 'lt':  return evalLT(left, leftLit, right, rightLit);
+      case 'lte': return evalLTE(left, leftLit, right, rightLit);
+      case 'in':  return evalIN(left, leftLit, right, rightLit);
+      case 're':  return evalRE(left, leftLit, right, rightLit);
     }
 
     // This should hopefully never happen
@@ -688,6 +705,16 @@
         return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
       };
     }
+  }
+
+  function wrapEvaluator(node) {
+    var result = createEvaluator(node);
+    if ( typeof result !== 'function' ) {
+      return function _evalWrapper() {
+        return result;
+      };
+    }
+    return result;
   }
 
   function createSorter(order) {
@@ -759,8 +786,8 @@
     // Parse the Query, include paths and evaluators in the result
     var result = parseCache[queryString] = parser.parse(queryString);
     result.paths = parser.yy.paths;
-    result.evaluate = createEvaluator(result.expr, true);
-    result.select = createEvaluator(result.select || EmptyPath, true);
+    result.evaluate = wrapEvaluator(result.expr);
+    result.select = wrapEvaluator(result.select || EmptyPath);
     result.sort = result.order && createSorter(result.order);
 
     // Push the Parser back onto the pool and return the result
@@ -863,51 +890,18 @@
     return {
       CurrentVersion: CurrentVersion,
       self: self,
-      hasDefineProperty: hasDefineProperty,
-      hasDefineSetter: hasDefineSetter,
       objeqParser: objeqParser,
-      defineProperty1: defineProperty1,
-      defineProperty2: defineProperty2,
-      defineProperty: defineProperty,
-      toString: toString,
-      isArray: isArray,
       queue: queue,
       pending: pending,
       listeners: listeners,
       targets: targets,
-      makeArray: makeArray,
-      hasListeners: hasListeners,
-      addListener: addListener,
-      removeListener: removeListener,
-      getCallbacks: getCallbacks,
-      inNotifyListeners: inNotifyListeners,
-      notifyListeners: notifyListeners,
-      queueEvent: queueEvent,
-      createAccessors: createAccessors,
       nextObjectId: nextObjectId,
-      decorateObject: decorateObject,
-      ArrayFuncs: ArrayFuncs,
-      addEventMethods: addEventMethods,
-      DecoratedArrayMixin: DecoratedArrayMixin,
-      wrapArrayFunction: wrapArrayFunction,
-      decorateArray: decorateArray,
-      decorate: decorate,
       invalidated: invalidated,
       pendingRefresh: pendingRefresh,
-      invalidateQuery: invalidateQuery,
-      refreshQueries: refreshQueries,
-      getPath: getPath,
       reCache: regexCache,
-      addQueryListeners: addQueryListeners,
-      createEvaluator: createEvaluator,
-      createComparator: createComparator,
-      createSorter: createSorter,
-      yynode: yynode,
-      yypath: yypath,
       parserPool: parserPool,
       parseCache: parseCache,
       parse: parse,
-      processQuery: processQuery,
       dynamic: dynamic,
       query: query,
       objeq: objeq
