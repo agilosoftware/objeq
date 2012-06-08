@@ -17,7 +17,7 @@
     , hasDefineSetter = Object.prototype.__defineSetter__;
 
   if ( !hasDefineProperty && !hasDefineSetter ) {
-    throw new Error("Property definitions are not available!  Not Good!");
+    throw new Error("Property Definitions not available!");
   }
 
   var objeqParser = null;
@@ -29,7 +29,7 @@
       objeqParser = require('objeq-parser').parser;
     }
     else {
-      throw new Error("The objeq Parser doesn't seem to be available!");
+      throw new Error("objeq Parser not available!");
     }
   }
 
@@ -171,7 +171,7 @@
     }
     inNotifyListeners = false;
     if ( count === MaxNotifyCycles ) {
-      throw new Error('Too Many Notification Cycles');
+      throw new Error("Too many notification cycles!");
     }
   }
 
@@ -257,8 +257,7 @@
   function wrapArrayFunction(arr, name, additive) {
     var oldFunc = arr[name];
     if ( !oldFunc ) {
-      console.log('Attempting to wrap an Array, but it is missing: '+name);
-      return;
+      throw new Error("Missing function: " + name);
     }
 
     arr[name] = function wrapped() {
@@ -669,7 +668,7 @@
     }
 
     // This should hopefully never happen
-    throw new Error('Invalid Parser Node: '+op);
+    throw new Error("Invalid parser node: " + op);
   }
 
   function createComparator(path, ascending) {
@@ -843,24 +842,21 @@
         }
       }
 
-      if ( dynamic ) {
+      if ( dynamic && isDecorated(results) ) {
         queueEvent(results, getArrayContentKey(results), results.length, prev);
       }
     }
 
     function sourceListener(target, key, value, prev) {
-      console.log(queryString + ': source invalidated');
-      invalidateQuery(results, refreshResults);
+      invalidateQuery(results, refreshResults); // for now
     }
 
     function queryListener(target, key, value, prev) {
-      console.log(queryString + ': query invalidated');
-      invalidateQuery(results, refreshResults);
+      invalidateQuery(results, refreshResults); // for now
     }
 
     function resultListener(target, key, value, prev) {
-      console.log(queryString + ': results invalidated');
-      invalidateQuery(results, refreshResults);
+      invalidateQuery(results, refreshResults); // for now
     }
 
     if ( dynamic ) {
