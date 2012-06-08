@@ -262,19 +262,19 @@
     }
 
     arr[name] = function wrapped() {
-      var prev = -this.length;
+      var oldLen = this.length;
       oldFunc.apply(this, arguments);
+      var newLen = this.length;
       if ( additive ) {
         // TODO: This is not ideal because we only care about new items
         for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
           this[i] = decorate(this[i]);
         }
       }
-      var value = this.length;
       // TODO: Check if the Content *really* changed
-      queueEvent(this, getArrayContentKey(this), value, prev);
-      if ( value != prev ) {
-        queueEvent(this, getArrayLengthKey(this), value, prev);
+      queueEvent(this, getArrayContentKey(this), newLen, null);
+      if ( newLen != oldLen ) {
+        queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
       }
     };
   }
@@ -331,9 +331,13 @@
 
     item: function _item(index, value) {
       if ( typeof value !== 'undefined' ) {
-        var prev = this[index];
+        var oldLen = this.length;
         this[index] = decorate(value);
-        queueEvent(this, getArrayContentKey(this), value, prev);
+        var newLen = this.length
+        queueEvent(this, getArrayContentKey(this), newLen, null);
+        if ( newLen != oldLen ) {
+          queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
+        }
       }
       return this[index];
     },
