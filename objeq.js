@@ -918,7 +918,6 @@
 
   function debug() {
     return {
-      CurrentVersion: CurrentVersion,
       self: self,
       objeqParser: objeqParser,
       queue: queue,
@@ -933,8 +932,7 @@
       parseCache: parseCache,
       parse: parse,
       dynamic: dynamic,
-      query: query,
-      objeq: objeq
+      query: query
     };
   }
 
