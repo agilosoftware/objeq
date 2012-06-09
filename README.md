@@ -58,15 +58,28 @@ Queries can also be Parameterized where any Objects passed in are also Decorated
     var result = items.dynamic("name == %1.name", param); // 0 -> William
     param.name = 'Stephen';                               // 0 -> Stephen
 
-## Observables (Not Fully Implemented)
+## Observables
 
-Presently, you can only create Observers on Result Sets in the following way:
+Presently, you can create Observers on Result Sets in the following ways.
+
+### Membership Changes
+Monitoring the Result Set for membership changes.  Notice that the first parameter to the 'on' method is '.content'.  All Observable keys that start with a '.' are considered to be special properties of the Result Set itself.
 
     // query all items that start with the letter 't'
     var items = $objeq([{name:'William'}, {name:'Stephen'});
     var query = items.dynamic("'^W' =~ name");
-    query.on('change', function(target) {
-        console.log("There are " + target.length + " results");
+    query.on('.content', function(target) {
+        // target is the array itself
+        console.log("The Query Results have changed!");
+    });
+    items[1].name = 'William';
+
+### Property Changes
+Monitoring the Result Set for Property changes.  Here we just specify the property name as is (or names, separated by spaces).
+
+    query.on('name', function(target, key, newValue, oldValue) {
+        // target is the object that changed
+        console.log("The Query Results have changed!");
     });
     items[1].name = 'William'; // -> There are 2 results
 
