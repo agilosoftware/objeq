@@ -261,7 +261,7 @@
   function wrapArrayFunction(arr, name, additive) {
     var oldFunc = arr[name];
     if ( !oldFunc ) {
-      throw new Error("Missing function: " + name);
+      throw new Error("Missing Array function: " + name);
     }
 
     arr[name] = function wrapped() {
@@ -699,6 +699,16 @@
     throw new Error("Invalid parser node: " + op);
   }
 
+  function wrapEvaluator(node) {
+    var result = createEvaluator(node);
+    if ( typeof result !== 'function' ) {
+      return function _evalWrapper() {
+        return result;
+      };
+    }
+    return result;
+  }
+
   function createComparator(path, ascending) {
     if ( ascending ) {
       return function ascendingComparator(item1, item2) {
@@ -714,16 +724,6 @@
         return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
       };
     }
-  }
-
-  function wrapEvaluator(node) {
-    var result = createEvaluator(node);
-    if ( typeof result !== 'function' ) {
-      return function _evalWrapper() {
-        return result;
-      };
-    }
-    return result;
   }
 
   function createSorter(order) {
@@ -967,6 +967,7 @@
     }
     return results;
   }
+  
   defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
   defineProperty(objeq, 'fn', function() { return fn; });
 
