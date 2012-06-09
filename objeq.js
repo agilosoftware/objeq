@@ -967,8 +967,8 @@
     }
     return results;
   }
-  objeq.VERSION = CurrentVersion;
-  objeq.fn = fn;
+  defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
+  defineProperty(objeq, 'fn', function() { return fn; });
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {

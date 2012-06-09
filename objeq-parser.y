@@ -180,7 +180,7 @@ array
 
 expr_list
   : expr                       { $$ = [$1]; }
-  | array_list ',' expr        { $$ = $1; $1.push($3); }
+  | expr_list ',' expr         { $$ = $1; $1.push($3); }
   ;
 
 obj
