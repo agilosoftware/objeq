@@ -90,7 +90,12 @@
 
   // Extension Functions ******************************************************
 
-  var fn = {};
+  var fn = {
+    'query': function(ctx) {
+      var source = ctx.source;
+      return source.query.apply(source, makeArray(arguments).slice(1));
+    }
+  };
 
   // Listener Implementation **************************************************
 
@@ -415,187 +420,187 @@
   }
 
   function evalArgPath(index, pathComponents) {
-    return function _argpath(obj, args) {
-      return getPath(args[index], pathComponents);
+    return function _argpath(obj, ctx) {
+      return getPath(ctx.params[index], pathComponents);
     };
   }
 
   function evalLocalPath(pathComponents) {
-    return function _localpath(obj, args) {
+    return function _localpath(obj) {
       return getPath(obj, pathComponents);
     };
   }
 
   function evalObj(template) {
-    return function _obj(obj, args) {
+    return function _obj(obj, ctx) {
       var result = {};
       for ( var key in template ) {
         var item = template[key];
-        result[key] = typeof item === 'function' ? item(obj, args) : item;
+        result[key] = typeof item === 'function' ? item(obj, ctx) : item;
       }
       return result;
     };
   }
 
   function evalArr(template) {
-    return function _arr(obj, args) {
+    return function _arr(obj, ctx) {
       var result = [];
       for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
         var item = template[i];
-        result[i] = typeof item === 'function' ? item(obj, args) : item;
+        result[i] = typeof item === 'function' ? item(obj, ctx) : item;
       }
       return result;
     };
   }
 
   function evalFunc(func, template) {
-    return function _func(obj, args) {
+    return function _func(obj, ctx) {
       var funcArgs = [];
       for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
         var item = template[i];
-        funcArgs[i] = typeof item === 'function' ? item(obj, args) : item;
+        funcArgs[i] = typeof item === 'function' ? item(obj, ctx) : item;
       }
-      return func.apply(obj, funcArgs);
+      return func.apply(obj, [ctx].concat(funcArgs));
     }
   }
 
   function evalNOT(leftEval, leftLit) {
     if ( !leftEval ) return !leftLit;
-    return function _not(obj, args) {
-      return !leftEval(obj, args);
+    return function _not(obj, ctx) {
+      return !leftEval(obj, ctx);
     };
   }
 
   function evalNEG(leftEval, leftLit) {
     if ( !leftEval ) return -leftLit;
-    return function _neg(obj, args) {
-      return -leftEval(obj, args);
+    return function _neg(obj, ctx) {
+      return -leftEval(obj, ctx);
     };
   }
 
   function evalAND(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit && rightLit;
-    return function _and(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit;
-      return !lval ? lval : (rightEval ? rightEval(obj, args) : rightLit);
+    return function _and(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
+      return !lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
     };
   }
 
   function evalOR(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit || rightLit;
-    return function _or(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit;
-      return leftEval ? lval : (rightEval ? rightEval(obj, args) : rightLit);
+    return function _or(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
+      return leftEval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
     };
   }
 
   function evalADD(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit + rightLit;
-    return function _add(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _add(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval + rval;
     };
   }
 
   function evalSUB(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit - rightLit;
-    return function _sub(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _sub(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval - rval;
     };
   }
 
   function evalMUL(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit * rightLit;
-    return function _mul(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _mul(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval * rval;
     };
   }
 
   function evalDIV(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit / rightLit;
-    return function _div(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _div(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval / rval;
     };
   }
 
   function evalMOD(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit % rightLit;
-    return function _mod(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _mod(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval % rval;
     };
   }
 
   function evalEQ(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit == rightLit;
-    return function _eq(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _eq(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval == rval;
     };
   }
 
   function evalNEQ(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit != rightLit;
-    return function _neq(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _neq(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval != rval;
     };
   }
 
   function evalGT(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit > rightLit;
-    return function _gt(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _gt(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval > rval;
     };
   }
 
   function evalGTE(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit >= rightLit;
-    return function _gte(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _gte(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval >= rval;
     };
   }
 
   function evalLT(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit < rightLit;
-    return function _lt(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _lt(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval < rval;
     };
   }
 
   function evalLTE(leftEval, leftLit, rightEval, rightLit) {
     if ( !leftEval && !rightEval ) return leftLit <= rightLit;
-    return function _lte(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit
-        , rval = rightEval ? rightEval(obj, args) : rightLit;
+    return function _lte(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit
+        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
       return lval <= rval;
     };
   }
 
   function evalIN(leftEval, leftLit, rightEval, rightLit) {
-    var func = function _in(obj, args) {
-      var rval = rightEval ? rightEval(obj, args) : rightLit;
+    var func = function _in(obj, ctx) {
+      var rval = rightEval ? rightEval(obj, ctx) : rightLit;
       if ( isArray(rval) ) {
-        return rval.indexOf(leftEval ? leftEval(obj, args) : leftLit) !== -1;
+        return rval.indexOf(leftEval ? leftEval(obj, ctx) : leftLit) !== -1;
       }
       else if ( typeof rval === 'object' ) {
-        return (leftEval ? leftEval(obj, args) : leftLit) in rval;
+        return (leftEval ? leftEval(obj, ctx) : leftLit) in rval;
       }
       return false
     };
@@ -605,12 +610,12 @@
   var regexCache = {}; // TODO: LRU Cache
 
   function evalRE(leftEval, leftLit, rightEval, rightLit) {
-    var func = function _re(obj, args) {
-      var lval = leftEval ? leftEval(obj, args) : leftLit;
+    var func = function _re(obj, ctx) {
+      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
       if ( typeof lval !== 'string' ) {
         return false;
       }
-      var rval = rightEval ? rightEval(obj, args) : rightLit
+      var rval = rightEval ? rightEval(obj, ctx) : rightLit
         , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
       return re.test(rval);
     };
@@ -618,10 +623,10 @@
   }
 
   function evalTern(cmpEval, cmpLit, trueEval, trueLit, falseEval, falseLit) {
-    var func = function _tern(obj, args) {
-      var cval = cmpEval ? cmpEval(obj, args) : cmpLit
-        , tval = trueEval ? trueEval(obj, args) : trueLit
-        , fval = falseEval ? falseEval(obj, args) : falseLit;
+    var func = function _tern(obj, ctx) {
+      var cval = cmpEval ? cmpEval(obj, ctx) : cmpLit
+        , tval = trueEval ? trueEval(obj, ctx) : trueLit
+        , fval = falseEval ? falseEval(obj, ctx) : falseLit;
       return cval ? tval : fval;
     };
     return cmpEval || trueEval || falseEval ? func : func();
@@ -826,14 +831,14 @@
     }
   }
 
-  function addQueryListeners(paths, args, invalidateQuery, invalidateResults) {
+  function addQueryListeners(paths, ctx, invalidateQuery, invalidateResults) {
     for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
       var node = paths[i]
         , index = node[1]
         , target, start, callback;
 
       if ( typeof index === 'number' ) {
-        target = args[index]; start = 2; callback = invalidateQuery;
+        target = ctx.params[index]; start = 2; callback = invalidateQuery;
       }
       else {
         target = null; start = 1; callback = invalidateResults;
@@ -845,13 +850,17 @@
     }
   }
 
-  function processQuery(source, queryString, args, dynamic) {
+  function processQuery(source, queryString, params, dynamic) {
     var root = parse(queryString)
       , results = []
       , evaluate = root.evaluate
       , select = root.select
       , sort = root.sort
       , sortFirst = root.sortFirst;
+
+    var ctx = { };
+    defineProperty(ctx, 'source', function() { return source; });
+    defineProperty(ctx, 'params', function() { return params; });
 
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
@@ -862,11 +871,11 @@
         // Post-Drilldown Sorting
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( !evaluate(obj, args) ) {
+          if ( !evaluate(obj, ctx) ) {
             continue;
           }
 
-          results[j++] = select(obj, args);
+          results[j++] = select(obj, ctx);
         }
         if ( sort ) {
           results.sort(sort);
@@ -877,13 +886,13 @@
         var temp = [];
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( evaluate(obj, args) ) {
+          if ( evaluate(obj, ctx) ) {
             temp[j++] = obj;
           }
         }
         temp.sort(sort);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          results[j++] = select(temp[i], args);
+          results[j++] = select(temp[i], ctx);
         }
       }
 
@@ -906,7 +915,7 @@
 
     if ( dynamic ) {
       addListener(source, getArrayContentKey(source), sourceListener);
-      addQueryListeners(root.paths, args, queryListener, resultListener);
+      addQueryListeners(root.paths, ctx, queryListener, resultListener);
     }
     refreshResults();
 
@@ -915,20 +924,20 @@
 
   function dynamic() {
     // Process a "dynamic" query whose results update with data changes
-    var args = makeArray(arguments)
-      , queryString = args.shift();
+    var params = makeArray(arguments)
+      , queryString = params.shift();
     // Decorate the Items, but no need to decorate the Array
-    for ( var i = 0, ilen = args.length; i < ilen; i++ ) {
-      args[i] = decorate(args[i]);
+    for ( var i = 0, ilen = params.length; i < ilen; i++ ) {
+      params[i] = decorate(params[i]);
     }
-    return processQuery(this, queryString, args, true);
+    return processQuery(this, queryString, params, true);
   }
 
   function query() {
     // Process a "snapshot" query with static results
-    var args = makeArray(arguments)
-      , queryString = args.shift();
-    return processQuery(this, queryString, args, false);
+    var params = makeArray(arguments)
+      , queryString = params.shift();
+    return processQuery(this, queryString, params, false);
   }
 
   // Debug and Testing Interface **********************************************
