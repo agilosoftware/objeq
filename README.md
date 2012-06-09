@@ -17,11 +17,11 @@ A pre-built version of the Parser is already included, but if you'd like to buil
 
 ## Usage
 
-There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the $objeq function:
+There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the `$objeq()` function:
 
     var data = $objeq({name:'Ronald'}, {name:'Robert'}, {name:'Thomas'});
 
-Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that $objeq() returns.  The first method is called 'query' and creates an immediate (or snapshot) Result Set.  The second method is called 'dynamic' and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items that match the original Query criteria.
+Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that `$objeq()` returns.  The first method is called `query()` and creates an immediate (or snapshot) Result Set.  The second method is called `dynamic()` and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items that match the original Query criteria.
 
     // The Result Set membership will not change as its Items are modified
     var result = data.query("'^Ro' =~ name");
@@ -52,7 +52,7 @@ These are chainable, so you can also do:
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var will = items.query("name == 'William'")[0];
 
-Queries can also be Parameterized where any Objects passed in are also Decorated and treated as 'live' Parameters.  This means that the Result Set will be updated every time the Parameter's Properties change:
+Queries can also be Parameterized where any Objects passed in are also Decorated and treated as *live* Parameters.  This means that the Result Set will be updated every time the Parameter's Properties change:
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var param = { name: 'William' };
@@ -64,7 +64,7 @@ Queries can also be Parameterized where any Objects passed in are also Decorated
 Presently, you can create Observers on Result Sets in the following ways.
 
 ### Membership Changes
-Monitoring the Result Set for membership changes.  Notice that the first parameter to the 'on' method is '.content'.  All Observable keys that start with a '.' are considered to be special properties of the Result Set itself.
+Monitoring the Result Set for membership changes.  Notice that the first parameter to the `on()` method is '.content'.  All Observable keys that start with a '.' are considered to be special properties of the Result Set itself.
 
     // query all items that start with the letter 't'
     var items = $objeq([{name:'William'}, {name:'Stephen'});
@@ -78,11 +78,13 @@ Monitoring the Result Set for membership changes.  Notice that the first paramet
 ### Property Changes
 Monitoring the Result Set for Property changes.  Here we just specify the property name as is (or names, separated by spaces).
 
+    ```javascript
     query.on('name', function(target, key, newValue, oldValue) {
         // target is the object that changed
         console.log("The Query Results have changed!");
     });
     items[1].name = 'William'; // -> There are 2 results
+    ```
 
 ## More Information
 

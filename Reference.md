@@ -48,7 +48,7 @@ These two Queries would only work if spouses always have the same last name, but
 The Predicate is a set of richly expressed conditions used to determine which Items from the [Source Set] will be returned as part of the [Result Set].  For the most part, the syntax is the same as JavaScript's, but with some differences.
 
 #### Keywords
-The keywords 'and', 'or' and 'not' may be used instead of '&&', '||' and '!' respectively, so the following Queries are equivalent.
+The keywords `and`, `or` and `not` may be used instead of `&&`, `||` and `!` respectively, so the following Queries are equivalent.
 
     firstName == 'William' and lastName == 'Beck'
     firstName == 'William' && lastName == 'Beck'
@@ -59,12 +59,12 @@ As are these:
     firstName == 'William' && !happy
 
 #### The IN Operator
-objeq supports an operator called 'IN' which will return true if the left operand exists as an element of the right operand.  Presently only the searching of Arrays is supported.  The following predicate returns all Objects with a pet Property belonging to the specified set of animals.
+objeq supports an operator called `IN` which will return true if the left operand exists as an element of the right operand.  Presently only the searching of Arrays is supported.  The following predicate returns all Objects with a pet Property belonging to the specified set of animals.
 
     pet in ['dog', 'cat', 'pig', 'goat', 'donkey']
 
 #### Regular Expressions
-objeq supports Regular Expression matching using the Ruby '=~' operator, where the left operand is a regular expression and the right operand is a string to be matched.  Unlike the Ruby operator, objeq's Regular Expression matching only returns a true or false result.  The following predicate returns all unhappy Objects that have a firstName Property beginning with the letter 'W'.
+objeq supports Regular Expression matching using the Ruby `=~` operator, where the left operand is a regular expression and the right operand is a string to be matched.  Unlike the Ruby operator, objeq's Regular Expression matching only returns a true or false result.  The following predicate returns all unhappy Objects that have a firstName Property beginning with the letter 'W'.
 
     "^W" =~ firstName && !happy
     
@@ -95,9 +95,9 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
     param.name = 'Stephen';                               // 0 -> Stephen
 
 ## Extensions
-Defining Extension Functions for objeq is a relatively painless process.  Simply assign the function to the 'fn' hash that is exposed by the $objeq function instance:
+Defining Extension Functions for objeq is a relatively painless process.  Simply assign the function to the `fn` hash that is exposed by the `$objeq` function instance:
 
-    $objeq.fn['hello'] = function(firstName, lastName) {
+    $objeq.fn['hello'] = function(ctx, firstName, lastName) {
         return "Hello " + firstName + " " + lastName;
     }
 
@@ -105,10 +105,11 @@ And then call the function from within your [Query]:
 
     var result = items.query("-> hello(firstName, lastName)");
     
-### Three Simple Rules for Extension Writers
-1. Your Extension should be side-effect free.  This is *very* important!
-2. Inside of your Extension, the 'this' variable will always refer to the Object that is being evaluated
-3. Extensions can be called from the [Predicate] and [Selector], but not from the [Collator]
+### Four Simple Rules for Extension Writers
+1. Your Extension should be side-effect free.  This is **very** important!
+2. Inside of your Extension, the `this` variable will always refer to the Object that is being evaluated
+3. The first argument passed to an Extension will always be the current [Query] Context followed by arguments passed as part of the [Query] itself
+4. Extensions can be called from the [Predicate] and [Selector], but not from the [Collator]
     
 ## Decoration Notes
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array.  
@@ -117,9 +118,9 @@ JavaScript is limited in what it allows you to do with its metaprogramming facil
 What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for live [Query] updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being [Decorated].
 
 ### Arrays
-Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets (myArray[0] = 'blah') can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for live queries.
+Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for live queries.
 
-To work around this problem, objeq has to introduce a method to each Array that it decorates.  This is the 'item' method, and can be utilized as follows:
+To work around this problem, objeq has to introduce a method to each Array that it decorates.  This is the `item()` method, and can be utilized as follows:
 
     // To set a value
     myArray.item(0, 'blah');
