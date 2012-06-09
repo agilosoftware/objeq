@@ -156,6 +156,7 @@ expr
   | NOT expr         { $$ = yy.node('not', $2); }
   | '-' expr         %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'     { $$ = $2; }
+  | func             { $$ = $1; }
   | array            { $$ = $1; }
   | obj              { $$ = $1; }
   | NUMBER           { $$ = Number(yytext); }
@@ -167,12 +168,17 @@ expr
   | path             { $$ = $1; }
   ;
 
+func
+  : IDENT '(' expr_list ')'    { $$ = yy.node('func', $1, $3); }
+  | IDENT '(' ')'              { $$ = yy.node('func', $1, []); }
+  ;
+
 array
-  : '[' array_list ']'         { $$ = yy.node('arr', $2); }
+  : '[' expr_list ']'          { $$ = yy.node('arr', $2); }
   | '[' ']'                    { $$ = yy.node('arr', []); }
   ;
 
-array_list
+expr_list
   : expr                       { $$ = [$1]; }
   | array_list ',' expr        { $$ = $1; $1.push($3); }
   ;

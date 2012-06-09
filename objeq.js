@@ -88,6 +88,10 @@
     return getObjectId(arr) + '_length';
   }
 
+  // Extension Functions ******************************************************
+
+  var fn = {};
+
   // Listener Implementation **************************************************
 
   var queue = []                // The queue of pending notifications
@@ -444,6 +448,17 @@
     };
   }
 
+  function evalFunc(func, template) {
+    return function _func(obj, args) {
+      var funcArgs = [];
+      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+        var item = template[i];
+        funcArgs[i] = typeof item === 'function' ? item(obj, args) : item;
+      }
+      return func.apply(obj, funcArgs);
+    }
+  }
+
   function evalNOT(left, leftLit) {
     if ( !left ) return !leftLit;
     return function _not(obj, args) {
@@ -602,6 +617,24 @@
     return left || right ? func : func();
   }
 
+  function objectEvalTemplate(hash) {
+    var template = {};
+    for ( var key in hash ) {
+      var item = hash[key], isNode = isArray(item) && item.isNode;
+      template[key] = isNode ? createEvaluator(item) : item;
+    }
+    return template;
+  }
+
+  function arrayEvalTemplate(items) {
+    var template = [];
+    for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
+      var item = items[i], isNode = isArray(item) && item.isNode;
+      template[i] = isNode ? createEvaluator(item) : item;
+    }
+    return template;
+  }
+
   function createEvaluator(node) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
@@ -618,22 +651,17 @@
         return evalArgPath(index, node.slice(2));
 
       case 'obj':
-        // create evaluators for the values
-        var hash = node[1], template = {};
-        for ( var key in hash ) {
-          var item = hash[key], isNode = isArray(item) && item.isNode;
-          template[key] = isNode ? createEvaluator(item) : item;
-        }
-        return evalObj(template);
+        return evalObj(objectEvalTemplate(node[1]));
 
       case 'arr':
-        // create evaluators for the items
-        var items = node[1], template = [];
-        for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
-          var item = items[i], isNode = isArray(item) && item.isNode;
-          template[i] = isNode ? createEvaluator(item) : item;
+        return evalArr(arrayEvalTemplate(node[1]));
+
+      case 'func':
+        var name = node[1], func = fn[name];
+        if ( !func || typeof func !== 'function' ) {
+          throw new Error("Extension '" + name + "' does not exist!");
         }
-        return evalArr(template);
+        return evalFunc(func, arrayEvalTemplate(node[2]));
     }
 
     // Unary Operators
@@ -940,6 +968,7 @@
     return results;
   }
   objeq.VERSION = CurrentVersion;
+  objeq.fn = fn;
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {
