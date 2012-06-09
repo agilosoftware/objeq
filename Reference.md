@@ -93,6 +93,22 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
     var param = { name: 'William' };
     var result = items.dynamic("name == %1.name", param); // 0 -> William
     param.name = 'Stephen';                               // 0 -> Stephen
+
+## Extensions
+Defining Extension Functions for objeq is a relatively painless process.  Simply assign the function to the 'fn' hash that is exposed by the $objeq function instance:
+
+    $objeq.fn['hello'] = function(firstName, lastName) {
+        return "Hello " + firstName + " " + lastName;
+    }
+
+And then call the function from within your [Query]:
+
+    var result = items.query("-> hello(firstName, lastName)");
+    
+### Three Simple Rules for Extension Writers
+1. Your Extension should be side-effect free.  This is *very* important!
+2. Inside of your Extension, the 'this' variable will always refer to the Object that is being evaluated
+3. Extensions can be called from the [Predicate] and [Selector], but not from the [Collator]
     
 ## Decoration Notes
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array.  
