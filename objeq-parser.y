@@ -86,6 +86,7 @@ ws    [\s]
 "]"                           return ']';
 "{"                           return '{';
 "}"                           return '}';
+"?"                           return '?';
 ":"                           return ':';
 "."                           return '.';
 ","                           return ',';
@@ -102,12 +103,13 @@ ws    [\s]
 
 /* Operator Associativity and Precedence */
 
-%left '+' '-'
-%left '*' '/'
-%left '%'
-%left AND OR
+%left '?'
+%left OR
+%left AND
 %left EQ NEQ IN RE
 %left GT GTE LT LTE
+%left '+' '-'
+%left '*' '/' '%'
 %left NOT NEG
 %left '.'
 
@@ -156,6 +158,7 @@ expr
   | NOT expr         { $$ = yy.node('not', $2); }
   | '-' expr         %prec NEG { $$ = yy.node('neg', $2); }
   | '(' expr ')'     { $$ = $2; }
+  | ternary          { $$ = $1; }
   | func             { $$ = $1; }
   | array            { $$ = $1; }
   | obj              { $$ = $1; }
@@ -166,6 +169,10 @@ expr
   | NULL             { $$ = null; }
   | UNDEFINED        { $$ = undefined; }
   | path             { $$ = $1; }
+  ;
+
+ternary
+  : expr '?' expr ':' expr     { $$ = yy.node('tern', $1, $3, $5); }
   ;
 
 func

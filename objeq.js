@@ -459,162 +459,172 @@
     }
   }
 
-  function evalNOT(left, leftLit) {
-    if ( !left ) return !leftLit;
+  function evalNOT(leftEval, leftLit) {
+    if ( !leftEval ) return !leftLit;
     return function _not(obj, args) {
-      return !left(obj, args);
+      return !leftEval(obj, args);
     };
   }
 
-  function evalNEG(left, leftLit) {
-    if ( !left ) return -leftLit;
+  function evalNEG(leftEval, leftLit) {
+    if ( !leftEval ) return -leftLit;
     return function _neg(obj, args) {
-      return -left(obj, args);
+      return -leftEval(obj, args);
     };
   }
 
-  function evalAND(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit && rightLit;
+  function evalAND(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit && rightLit;
     return function _and(obj, args) {
-      var lval = left ? left(obj, args) : leftLit;
-      return !lval ? lval : (right ? right(obj, args) : rightLit);
+      var lval = leftEval ? leftEval(obj, args) : leftLit;
+      return !lval ? lval : (rightEval ? rightEval(obj, args) : rightLit);
     };
   }
 
-  function evalOR(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit || rightLit;
+  function evalOR(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit || rightLit;
     return function _or(obj, args) {
-      var lval = left ? left(obj, args) : leftLit;
-      return left ? lval : (right ? right(obj, args) : rightLit);
+      var lval = leftEval ? leftEval(obj, args) : leftLit;
+      return leftEval ? lval : (rightEval ? rightEval(obj, args) : rightLit);
     };
   }
 
-  function evalADD(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit + rightLit;
+  function evalADD(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit + rightLit;
     return function _add(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval + rval;
     };
   }
 
-  function evalSUB(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit - rightLit;
+  function evalSUB(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit - rightLit;
     return function _sub(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval - rval;
     };
   }
 
-  function evalMUL(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit * rightLit;
+  function evalMUL(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit * rightLit;
     return function _mul(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval * rval;
     };
   }
 
-  function evalDIV(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit / rightLit;
+  function evalDIV(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit / rightLit;
     return function _div(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval / rval;
     };
   }
 
-  function evalMOD(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit % rightLit;
+  function evalMOD(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit % rightLit;
     return function _mod(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval % rval;
     };
   }
 
-  function evalEQ(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit == rightLit;
+  function evalEQ(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit == rightLit;
     return function _eq(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval == rval;
     };
   }
 
-  function evalNEQ(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit != rightLit;
+  function evalNEQ(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit != rightLit;
     return function _neq(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval != rval;
     };
   }
 
-  function evalGT(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit > rightLit;
+  function evalGT(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit > rightLit;
     return function _gt(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval > rval;
     };
   }
 
-  function evalGTE(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit >= rightLit;
+  function evalGTE(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit >= rightLit;
     return function _gte(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval >= rval;
     };
   }
 
-  function evalLT(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit < rightLit;
+  function evalLT(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit < rightLit;
     return function _lt(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval < rval;
     };
   }
 
-  function evalLTE(left, leftLit, right, rightLit) {
-    if ( !left && !right ) return leftLit <= rightLit;
+  function evalLTE(leftEval, leftLit, rightEval, rightLit) {
+    if ( !leftEval && !rightEval ) return leftLit <= rightLit;
     return function _lte(obj, args) {
-      var lval = left ? left(obj, args) : leftLit
-        , rval = right ? right(obj, args) : rightLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit
+        , rval = rightEval ? rightEval(obj, args) : rightLit;
       return lval <= rval;
     };
   }
 
-  function evalIN(left, leftLit, right, rightLit) {
+  function evalIN(leftEval, leftLit, rightEval, rightLit) {
     var func = function _in(obj, args) {
-      var rval = right ? right(obj, args) : rightLit;
+      var rval = rightEval ? rightEval(obj, args) : rightLit;
       if ( isArray(rval) ) {
-        return rval.indexOf(left ? left(obj, args) : leftLit) !== -1;
+        return rval.indexOf(leftEval ? leftEval(obj, args) : leftLit) !== -1;
       }
       else if ( typeof rval === 'object' ) {
-        return (left ? left(obj, args) : leftLit) in rval;
+        return (leftEval ? leftEval(obj, args) : leftLit) in rval;
       }
       return false
     };
-    return left || right ? func : func();
+    return leftEval || rightEval ? func : func();
   }
 
   var regexCache = {}; // TODO: LRU Cache
 
-  function evalRE(left, leftLit, right, rightLit) {
+  function evalRE(leftEval, leftLit, rightEval, rightLit) {
     var func = function _re(obj, args) {
-      var lval = left ? left(obj, args) : leftLit;
+      var lval = leftEval ? leftEval(obj, args) : leftLit;
       if ( typeof lval !== 'string' ) {
         return false;
       }
-      var rval = right ? right(obj, args) : rightLit
+      var rval = rightEval ? rightEval(obj, args) : rightLit
         , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
       return re.test(rval);
     };
-    return left || right ? func : func();
+    return leftEval || rightEval ? func : func();
+  }
+
+  function evalTern(cmpEval, cmpLit, trueEval, trueLit, falseEval, falseLit) {
+    var func = function _tern(obj, args) {
+      var cval = cmpEval ? cmpEval(obj, args) : cmpLit
+        , tval = trueEval ? trueEval(obj, args) : trueLit
+        , fval = falseEval ? falseEval(obj, args) : falseLit;
+      return cval ? tval : fval;
+    };
+    return cmpEval || trueEval || falseEval ? func : func();
   }
 
   function objectEvalTemplate(hash) {
@@ -665,34 +675,41 @@
     }
 
     // Unary Operators
-    var l = createEvaluator(node[1]), left, leftLit;
-    typeof l === 'function' ? left = l : leftLit = l;
+    var n1 = createEvaluator(node[1]), n1Eval, n1Lit;
+    typeof n1 === 'function' ? n1Eval = n1 : n1Lit = n1;
 
     switch ( op ) {
-      case 'not': return evalNOT(left, leftLit);
-      case 'neg': return evalNEG(left, leftLit);
+      case 'not': return evalNOT(n1Eval, n1Lit);
+      case 'neg': return evalNEG(n1Eval, n1Lit);
     }
 
     // Binary Operators
-    var r = createEvaluator(node[2]), right, rightLit;
-    typeof r === 'function' ? right = r : rightLit = r;
+    var n2 = createEvaluator(node[2]), n2Eval, n2Lit;
+    typeof n2 === 'function' ? n2Eval = n2 : n2Lit = n2;
 
     switch ( op ) {
-      case 'and': return evalAND(left, leftLit, right, rightLit);
-      case 'or':  return evalOR(left, leftLit, right, rightLit);
-      case 'add': return evalADD(left, leftLit, right, rightLit);
-      case 'sub': return evalSUB(left, leftLit, right, rightLit);
-      case 'mul': return evalMUL(left, leftLit, right, rightLit);
-      case 'div': return evalDIV(left, leftLit, right, rightLit);
-      case 'mod': return evalMOD(left, leftLit, right, rightLit);
-      case 'eq':  return evalEQ(left, leftLit, right, rightLit);
-      case 'neq': return evalNEQ(left, leftLit, right, rightLit);
-      case 'gt':  return evalGT(left, leftLit, right, rightLit);
-      case 'gte': return evalGTE(left, leftLit, right, rightLit);
-      case 'lt':  return evalLT(left, leftLit, right, rightLit);
-      case 'lte': return evalLTE(left, leftLit, right, rightLit);
-      case 'in':  return evalIN(left, leftLit, right, rightLit);
-      case 're':  return evalRE(left, leftLit, right, rightLit);
+      case 'and': return evalAND(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'or':  return evalOR(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'add': return evalADD(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'sub': return evalSUB(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'mul': return evalMUL(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'div': return evalDIV(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'mod': return evalMOD(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'eq':  return evalEQ(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'neq': return evalNEQ(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'gt':  return evalGT(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'gte': return evalGTE(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'lt':  return evalLT(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'lte': return evalLTE(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'in':  return evalIN(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 're':  return evalRE(n1Eval, n1Lit, n2Eval, n2Lit);
+    }
+
+    // Ternary Operator
+    if ( op === 'tern' ) {
+      var n3 = createEvaluator(node[3]), n3Eval, n3Lit;
+      typeof n3 === 'function' ? n3Eval = n3 : n3Lit = n3;
+      return evalTern(n1Eval, n1Lit, n2Eval, n2Lit, n3Eval, n3Lit);
     }
 
     // This should hopefully never happen
