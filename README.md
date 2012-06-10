@@ -78,13 +78,11 @@ Monitoring the Result Set for membership changes.  Notice that the first paramet
 ### Property Changes
 Monitoring the Result Set for Property changes.  Here we just specify the property name as is (or names, separated by spaces).
 
-    ```javascript
     query.on('name', function(target, key, newValue, oldValue) {
         // target is the object that changed
         console.log("The Query Results have changed!");
     });
     items[1].name = 'William'; // -> There are 2 results
-    ```
 
 ## More Information
 
