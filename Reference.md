@@ -95,15 +95,15 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
     param.name = 'Stephen';                               // 0 -> Stephen
 
 ## Extensions
-Defining Extension Functions for objeq is a relatively painless process.  Simply assign the function to the `fn` hash that is exposed by the `$objeq` function instance:
+Defining Extension Functions for objeq is a relatively painless process.  Simply register the function with the `registerExtension()` method that is exposed by the `$objeq()` function instance:
 
-    $objeq.fn['hello'] = function(ctx, firstName, lastName) {
-        return "Hello " + firstName + " " + lastName;
-    }
+    $objeq.registerExtension('hello', function(ctx, firstName) {
+        return "Hello " + firstName;
+    });
 
 And then call the function from within your [Query]:
 
-    var result = items.query("-> hello(firstName, lastName)");
+    var result = items.query("-> hello(firstName)");
     
 ### Four Simple Rules for Extension Writers
 1. Your Extension should be side-effect free.  This is **very** important!

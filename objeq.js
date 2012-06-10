@@ -90,27 +90,27 @@
 
   // Extension Functions ******************************************************
 
-  var fn = {
+  var ext = {
     select: function _select(ctx) {
       var source = ctx.source;
       return source.query.apply(source, makeArray(arguments).slice(1));
-    },
-
-    upper: function _upper(ctx, value) {
-      return typeof value === 'string' ? value.toUpperCase() : value;
-    },
-
-    lower: function _lower(ctx, value) {
-      return typeof value === 'string' ? value.toLowerCase() : value;
-    },
-
-    title: function _title(ctx, value) {
-      if ( typeof value !== 'string' ) return value;
-      return value.replace(/\w\S*/g, function(word) {
-        return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
-      });
     }
   };
+
+  function registerExtension(name, func) {
+    var hash = typeof name === 'object' ? name : {};
+    if ( typeof name === 'string' && typeof func === 'function' ) {
+      hash[name] = func;
+    }
+    for ( var key in hash ) {
+      if ( !hash.hasOwnProperty(key) ) continue;
+
+      var func = hash[key];
+      if ( typeof key === 'string' && typeof func === 'function' ) {
+        ext[key.toLowerCase()] = func;
+      }
+    }
+  }
 
   // Listener Implementation **************************************************
 
@@ -687,7 +687,7 @@
         return evalArr(arrayEvalTemplate(node[1]));
 
       case 'func':
-        var name = node[1], func = fn[name];
+        var name = node[1], func = ext[name.toLowerCase()];
         if ( !func || typeof func !== 'function' ) {
           throw new Error("Extension '" + name + "' does not exist!");
         }
@@ -1006,9 +1006,9 @@
     }
     return results;
   }
-  
+
   defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
-  defineProperty(objeq, 'fn', function() { return fn; });
+  objeq.registerExtension = registerExtension;
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {
