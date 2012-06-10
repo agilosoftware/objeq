@@ -91,9 +91,24 @@
   // Extension Functions ******************************************************
 
   var fn = {
-    'query': function(ctx) {
+    select: function _select(ctx) {
       var source = ctx.source;
       return source.query.apply(source, makeArray(arguments).slice(1));
+    },
+
+    upper: function _upper(ctx, value) {
+      return typeof value === 'string' ? value.toUpperCase() : value;
+    },
+
+    lower: function _lower(ctx, value) {
+      return typeof value === 'string' ? value.toLowerCase() : value;
+    },
+
+    title: function _title(ctx, value) {
+      if ( typeof value !== 'string' ) return value;
+      return value.replace(/\w\S*/g, function(word) {
+        return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+      });
     }
   };
 
@@ -161,7 +176,7 @@
   function notifyListeners() {
     inNotifyListeners = true;
     for ( var count = 0; queue.length && count < MaxNotifyCycles; count++ ) {
-      var currentQueue = [].concat(queue);
+      var currentQueue = queue.slice(0);
       pending = {};
       queue = [];
 
