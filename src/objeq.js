@@ -36,6 +36,8 @@
   // By default, try to use standard ECMAScript defineProperty
   function defineProperty1(obj, key, getter, setter) {
     Object.defineProperty(obj, key, {
+      configurable: setter && true,
+      enumerable: setter && true,
       get: getter,
       set: setter
     });
