@@ -1,7 +1,7 @@
 /*!
  * objeq (JavaScript Object Querying)
  * Licensed under the MIT License
- * see LICENSE.md
+ * see doc/LICENSE.md
  *
  * @author Thom Bradford (github/bradford653)
  * @author Stefano Rago (github/sterago)

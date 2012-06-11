@@ -86,7 +86,7 @@ Monitoring the Result Set for Property changes.  Here we just specify the proper
 
 ## More Information
 
-See Reference.md for more information on the objeq Query Language.
+See doc/Reference.md for more information on the objeq Query Language.
 
 ## License (MIT License)
 

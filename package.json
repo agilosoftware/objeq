@@ -4,7 +4,7 @@
   "author": "Agilo Software GmbH",
   "version": "0.0.1",
   "homepage": "http://www.objeq.org/",
-  "main": "objeq.js",
+  "main": "index.js",
   "keywords": ["javascript", "json", "query", "language", "server", "client"],
   "contributors": [
     { "name": "Thom Bradford", "email": "thomas.bradford@agilosoftware.com" },

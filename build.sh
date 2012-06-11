@@ -1,7 +1,7 @@
 #!/bin/sh
-jison objeq-parser.y -m commonjs -o "\$objeqParser.js"
-mv "\$objeqParser.js" objeq-parser.js
+jison src/objeq-parser.y -m commonjs -o "src/\$objeqParser.js"
+mv "src/\$objeqParser.js" src/objeq-parser.js
 
-cat objeq-parser.js objeq.js > "\$objeqBuildInput.js"
-uglifyjs "\$objeqBuildInput.js" > objeq.min.js
-rm "\$objeqBuildInput.js"
+cat src/objeq-parser.js src/objeq.js > "src/\$objeqBuildInput.js"
+uglifyjs "src/\$objeqBuildInput.js" > objeq.min.js
+rm "src/\$objeqBuildInput.js"
