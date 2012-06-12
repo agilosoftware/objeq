@@ -982,35 +982,32 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    if ( arguments.length === 1 && isArray(arguments[0]) ) {
-      // Fast Path for single Array calls
-      return decorate(arguments[0]);
-    }
-    else if ( arguments.length === 0 ) {
-      // For testing and debugging only
-      return debug();
-    }
+    switch ( arguments.length ) {
+      case 0: return decorateArray([]);
+      case 1: return decorate(arguments[0]);
+      default:
+        var args = makeArray(arguments)
+          , source = isDecorated(this) ? this : decorateArray([])
+          , results = null;
 
-    var args = makeArray(arguments)
-      , source = isDecorated(this) ? this : decorateArray([])
-      , results = null;
-
-    while ( args.length ) {
-      var arg = args.shift();
-      if ( typeof arg === 'string' ) {
-        // short circuit if it's a query
-        return processQuery(source, arg, args, true);
-      }
-      else {
-        results = results || ( source = results = decorateArray([]) );
-        results.push.apply(results, isArray(arg) ? arg : [arg]);
-      }
+        while ( args.length ) {
+          var arg = args.shift();
+          if ( typeof arg === 'string' ) {
+            // short circuit if it's a query
+            return processQuery(source, arg, args, true);
+          }
+          else {
+            results = results || ( source = results = decorateArray([]) );
+            results.push.apply(results, isArray(arg) ? arg : [arg]);
+          }
+        }
+        return results;
     }
-    return results;
   }
 
   defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
   objeq.registerExtension = registerExtension;
+  objeq.debug = debug;
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {
