@@ -212,9 +212,11 @@ path
 arg_path
   : ARGREF                    { $$ = yy.path(Number($1)-1); }
   | arg_path '.' IDENT        { $$ = $1; $1.push($3); }
+  | arg_path '[' expr ']'     { $$ = $1; $1.push($3); }
   ;
 
 local_path
   : IDENT                     { $$ = yy.path($1); }
   | local_path '.' IDENT      { $$ = $1; $1.push($3); }
+  | local_path '[' expr ']'   { $$ = $1; $1.push($3); }
   ;

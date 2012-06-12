@@ -36,8 +36,6 @@
   // By default, try to use standard ECMAScript defineProperty
   function defineProperty1(obj, key, getter, setter) {
     Object.defineProperty(obj, key, {
-      configurable: setter && true,
-      enumerable: setter && true,
       get: getter,
       set: setter
     });
@@ -420,32 +418,59 @@
 
   // 'Compilation' Functions **************************************************
 
-  function getPath(value, path) {
-    for ( var i = 0, ilen = path.length; value && i < ilen; i++ ) {
-      if ( isArray(value) && isDecorated(value) ) {
-        if ( value.length === 0 ) {
-          return null;
-        }
-        value = value[0];
-      }
-      value = value[path[i]];
-      if ( value == null ) {
-        return value;
-      }
+  function objectEvalTemplate(hash) {
+    var template = {};
+    for ( var key in hash ) {
+      var item = hash[key], isNode = isArray(item) && item.isNode;
+      template[key] = isNode ? createEvaluator(item) : item;
     }
-    return value;
+    return template;
+  }
+
+  function arrayEvalTemplate(items) {
+    var template = [];
+    for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
+      var item = items[i], isNode = isArray(item) && item.isNode;
+      template[i] = isNode ? createEvaluator(item) : item;
+    }
+    return template;
+  }
+
+  function evalPath(evalRoot, pathComponents) {
+    var path = arrayEvalTemplate(pathComponents);
+    return function _path(obj, ctx) {
+      var value = evalRoot(obj, ctx);
+      for ( var i = 0, ilen = path.length; value != null && i < ilen; i++ ) {
+        var comp = path[i];
+        value = typeof comp === 'function' ? comp(obj, ctx) : value[comp];
+        if ( isArray(value) && isDecorated(value) ) {
+          if ( value.length === 0 ) return null;
+
+          value = value[0];
+        }
+        if ( value == null ) return value;
+      }
+      return value;
+    };
   }
 
   function evalArgPath(index, pathComponents) {
-    return function _argpath(obj, ctx) {
-      return getPath(ctx.params[index], pathComponents);
+    var evalRoot = function _arg(obj, ctx) {
+      if ( index >= ctx.params.length ) return null;
+      var value = ctx.params[index];
+      if ( isArray(value) && isDecorated(value) ) {
+        return value.length !== 0 ? value[0] : null;
+      }
+      return value;
     };
+    return evalPath(evalRoot, pathComponents);
   }
 
   function evalLocalPath(pathComponents) {
-    return function _localpath(obj) {
-      return getPath(obj, pathComponents);
+    var evalRoot = function _local(obj) {
+      return obj;
     };
+    return evalPath(evalRoot, pathComponents);
   }
 
   function evalObj(template) {
@@ -649,24 +674,6 @@
     return cmpEval || trueEval || falseEval ? func : func();
   }
 
-  function objectEvalTemplate(hash) {
-    var template = {};
-    for ( var key in hash ) {
-      var item = hash[key], isNode = isArray(item) && item.isNode;
-      template[key] = isNode ? createEvaluator(item) : item;
-    }
-    return template;
-  }
-
-  function arrayEvalTemplate(items) {
-    var template = [];
-    for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
-      var item = items[i], isNode = isArray(item) && item.isNode;
-      template[i] = isNode ? createEvaluator(item) : item;
-    }
-    return template;
-  }
-
   function createEvaluator(node) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
@@ -749,17 +756,18 @@
   }
 
   function createComparator(path, ascending) {
+    var getPath = evalLocalPath(path);
     if ( ascending ) {
       return function ascendingComparator(item1, item2) {
-        var val1 = getPath(item1, path)
-          , val2 = getPath(item2, path);
+        var val1 = getPath(item1)
+          , val2 = getPath(item2);
         return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
       };
     }
     else {
       return function descendingComparator(item1, item2) {
-        var val1 = getPath(item1, path)
-          , val2 = getPath(item2, path);
+        var val1 = getPath(item1)
+          , val2 = getPath(item2);
         return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
       };
     }
@@ -982,32 +990,35 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    switch ( arguments.length ) {
-      case 0: return decorateArray([]);
-      case 1: return decorate(arguments[0]);
-      default:
-        var args = makeArray(arguments)
-          , source = isDecorated(this) ? this : decorateArray([])
-          , results = null;
-
-        while ( args.length ) {
-          var arg = args.shift();
-          if ( typeof arg === 'string' ) {
-            // short circuit if it's a query
-            return processQuery(source, arg, args, true);
-          }
-          else {
-            results = results || ( source = results = decorateArray([]) );
-            results.push.apply(results, isArray(arg) ? arg : [arg]);
-          }
-        }
-        return results;
+    if ( arguments.length === 1 && isArray(arguments[0]) ) {
+      // Fast Path for single Array calls
+      return decorate(arguments[0]);
     }
+    else if ( arguments.length === 0 ) {
+      // For testing and debugging only
+      return debug();
+    }
+
+    var args = makeArray(arguments)
+      , source = isDecorated(this) ? this : decorateArray([])
+      , results = null;
+
+    while ( args.length ) {
+      var arg = args.shift();
+      if ( typeof arg === 'string' ) {
+        // short circuit if it's a query
+        return processQuery(source, arg, args, true);
+      }
+      else {
+        results = results || ( source = results = decorateArray([]) );
+        results.push.apply(results, isArray(arg) ? arg : [arg]);
+      }
+    }
+    return results;
   }
 
   defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
   objeq.registerExtension = registerExtension;
-  objeq.debug = debug;
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {
