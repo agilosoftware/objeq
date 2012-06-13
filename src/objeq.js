@@ -440,15 +440,16 @@
     var path = arrayEvalTemplate(pathComponents);
     return function _path(obj, ctx) {
       var value = evalRoot(obj, ctx);
-      for ( var i = 0, ilen = path.length; value != null && i < ilen; i++ ) {
-        var comp = path[i];
-        value = typeof comp === 'function' ? comp(obj, ctx) : value[comp];
+      for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
+        // If we're drilling in, resolve the first Item
         if ( isArray(value) && isDecorated(value) ) {
           if ( value.length === 0 ) return null;
-
           value = value[0];
         }
         if ( value == null ) return value;
+
+        var comp = path[i];
+        value =  value[typeof comp === 'function' ? comp(obj, ctx) : comp];
       }
       return value;
     };
@@ -456,15 +457,10 @@
 
   function evalArgPath(index, pathComponents) {
     var evalRoot = function _arg(obj, ctx) {
-      if ( index >= ctx.params.length ) return null;
-      var value = ctx.params[index];
-      if ( isArray(value) && isDecorated(value) ) {
-        return value.length !== 0 ? value[0] : null;
-      }
-      return value;
+      return ctx.params[index];
     };
     return evalPath(evalRoot, pathComponents);
-  }
+  }exp
 
   function evalLocalPath(pathComponents) {
     var evalRoot = function _local(obj) {
