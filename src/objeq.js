@@ -460,7 +460,7 @@
       return ctx.params[index];
     };
     return evalPath(evalRoot, pathComponents);
-  }exp
+  }
 
   function evalLocalPath(pathComponents) {
     var evalRoot = function _local(obj) {
