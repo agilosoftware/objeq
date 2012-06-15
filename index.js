@@ -1,1 +1,1 @@
-module.exports = require('./src/objeq');
+module.exports = require('./objeq/objeq');
