@@ -7,7 +7,7 @@
  * @author Stefano Rago (github/sterago)
  */
 
-(function() {
+(function () {
   var CurrentVersion = "0.0.1"
     , self = this || { $objeqParser: null };
 
@@ -263,7 +263,7 @@
 
     // Read-only Property
     var objectId = 'o' + (nextObjectId++);
-    defineProperty(obj, '__objeq_id__', function() { return objectId; });
+    defineProperty(obj, '__objeq_id__', function () { return objectId; });
 
     return obj;
   }
@@ -396,7 +396,7 @@
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
-    defineProperty(arr, '__objeq_id__', function() { return objectId; });
+    defineProperty(arr, '__objeq_id__', function () { return objectId; });
 
     return arr;
   }
@@ -776,7 +776,7 @@
       chain.push(createComparator(item.path.slice(1), item.ascending));
     }
 
-    return function(item1, item2) {
+    return function _sorter(item1, item2) {
       for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
         var result = chain[i](item1, item2);
         if ( result !== 0 ) {
@@ -880,8 +880,8 @@
       , sortFirst = root.sortFirst;
 
     var ctx = { };
-    defineProperty(ctx, 'source', function() { return source; });
-    defineProperty(ctx, 'params', function() { return params; });
+    defineProperty(ctx, 'source', function () { return source; });
+    defineProperty(ctx, 'params', function () { return params; });
 
     // TODO: Right now this is brute force, but we need to do deltas
     function refreshResults() {
@@ -1013,7 +1013,7 @@
     return results;
   }
 
-  defineProperty(objeq, 'VERSION', function() { return CurrentVersion; });
+  defineProperty(objeq, 'VERSION', function () { return CurrentVersion; });
   objeq.registerExtension = registerExtension;
 
   // Node.js and CommonJS Exporting
