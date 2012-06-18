@@ -41,6 +41,7 @@ exports.predicates = nodeunit.testCase({
   "Boolean Comparisons Work": function (test) {
     this.resultCountOk(test, 1, "age >= 45 and lastName == 'Williams'");
     this.resultCountOk(test, 3, "age > 70 or lastName == 'Williams'");
+    this.resultCountOk(test, 11, "not (age > 70 or lastName == 'Williams')");
 
     test.done();
   },
