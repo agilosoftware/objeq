@@ -8,7 +8,7 @@
  */
 
 (function () {
-  var CurrentVersion = "0.0.1"
+  var CurrentVersion = "0.1.0"
     , self = this || { $objeqParser: null };
 
   // Feature Checking *********************************************************
@@ -26,7 +26,7 @@
   }
   else {
     if ( typeof require === 'function' ) {
-      objeqParser = require('objeq-parser').parser;
+      objeqParser = require('./objeq-parser').parser;
     }
     else {
       throw new Error("objeq Parser not available!");
