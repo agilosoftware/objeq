@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "jison": "*",
-    "uglify-js": "*"
+    "uglify-js": "*",
+    "nodeunit": "*"
   },
   "engines": {
     "node": "*"

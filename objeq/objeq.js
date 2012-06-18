@@ -63,6 +63,7 @@
     return Array.prototype.slice.call(arr, 0);
   }
 
+  // we control usage, so we don't need to check for hasOwnProperty
   function mixin(obj) {
     for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
       var hash = arguments[i];
@@ -91,6 +92,7 @@
   // Extension Functions ******************************************************
 
   var ext = {
+    // We only have one Extension by default, and that is sub-select support
     select: function _select(ctx) {
       var source = ctx.source;
       return source.query.apply(source, makeArray(arguments).slice(1));
@@ -528,7 +530,7 @@
     if ( !leftEval && !rightEval ) return leftLit || rightLit;
     return function _or(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit;
-      return leftEval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
+      return lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
     };
   }
 
