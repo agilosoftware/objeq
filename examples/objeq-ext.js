@@ -1,3 +1,4 @@
+// Some Sample Extensions that are *not* imported by default
 $objeq.registerExtension({
   count: function _count(ctx, value) {
     return Array.isArray(value) ? value.length : 0;
