@@ -20,7 +20,7 @@ exports.predicates = nodeunit.testCase({
       { "firstName": "Ted", "lastName": "Turner", "age": 15 }
     ]);
 
-    this.resultCountOk = function (test, count, query) {
+    this.resultCountOk = function(test, query, count) {
       test.equal(this.data.query(query).length, count, query);
     };
 
@@ -28,25 +28,33 @@ exports.predicates = nodeunit.testCase({
   },
 
   "Normal Comparisons Work": function (test) {
-    this.resultCountOk(test, 8, "age >= 45");
-    this.resultCountOk(test, 6, "age > 45");
-    this.resultCountOk(test, 6, "age < 45");
-    this.resultCountOk(test, 8, "age <= 45");
-    this.resultCountOk(test, 2, "age == 45");
-    this.resultCountOk(test, 12, "age != 45");
+    this.resultCountOk(test, "age >= 45", 8);
+    this.resultCountOk(test, "age > 45", 6);
+    this.resultCountOk(test, "age < 45", 6);
+    this.resultCountOk(test, "age <= 45", 8);
+    this.resultCountOk(test, "age == 45", 2);
+    this.resultCountOk(test, "age != 45", 12);
+    this.resultCountOk(test, "'^T' =~ firstName", 4);
 
     test.done();
   },
 
   "Boolean Comparisons Work": function (test) {
-    this.resultCountOk(test, 1, "age >= 45 and lastName == 'Williams'");
-    this.resultCountOk(test, 3, "age > 70 or lastName == 'Williams'");
-    this.resultCountOk(test, 11, "not (age > 70 or lastName == 'Williams')");
+    this.resultCountOk(test, "age >= 45 and lastName == 'Williams'", 1);
+    this.resultCountOk(test, "age > 70 or lastName == 'Williams'", 3);
+    this.resultCountOk(test, "not (age > 70 or lastName == 'Williams')", 11);
+    this.resultCountOk(test, "firstName in ['Bill', 'Ted']", 4);
 
     test.done();
   },
 
   "Simple Maths Work": function (test) {
+    this.resultCountOk(test, "age + 100 >= 145", 8);
+    this.resultCountOk(test, "age - 45 > 0", 6);
+    this.resultCountOk(test, "age * 2 >= 90", 8);
+    this.resultCountOk(test, "age / 2 > 25", 5);
+    this.resultCountOk(test, "age % 5 != 0", 3);
+
     test.done();
   }
 });
