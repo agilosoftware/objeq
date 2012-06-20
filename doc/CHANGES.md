@@ -1,5 +1,11 @@
 # Change History
 
+## 0.2.0 - First Stable Release
+
+### Notes
+
+### Known Bugs
+
 ## 0.1.0 - Initial Release (Unstable)
 
 ### Notes
