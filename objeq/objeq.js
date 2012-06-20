@@ -20,17 +20,24 @@
     throw new Error("Property Definitions not available!");
   }
 
-  var objeqParser = null;
-  if ( self.$objeqParser ) {
-    objeqParser = self.$objeqParser;
-  }
-  else {
-    if ( typeof require === 'function' ) {
-      objeqParser = require('./objeq-parser').parser;
+  var ObjeqParser = null;
+
+  function createParser() {
+    if ( ObjeqParser ) return new ObjeqParser();
+
+    if ( self.$objeqParser ) {
+      ObjeqParser = self.$objeqParser.Parser;
     }
     else {
-      throw new Error("objeq Parser not available!");
+      if ( typeof require === 'function' ) {
+        ObjeqParser = require('./objeq-parser').Parser;
+      }
+      else {
+        throw new Error("objeq Parser not available!");
+      }
     }
+
+    return new ObjeqParser();
   }
 
   // By default, try to use standard ECMAScript defineProperty
@@ -816,7 +823,7 @@
     }
 
     // Get a Parser from the pool, if possible
-    var parser = parserPool.pop() || new objeqParser.Parser();
+    var parser = parserPool.pop() || createParser();
     parser.yy = { node: yynode, path: yypath, paths: [] };
 
     // Parse the Query, include paths and evaluators in the result
@@ -968,7 +975,7 @@
   function debug() {
     return {
       self: self,
-      objeqParser: objeqParser,
+      ObjeqParser: ObjeqParser,
       queue: queue,
       pending: pending,
       listeners: listeners,
