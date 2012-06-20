@@ -988,17 +988,13 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    switch ( arguments.length ) {
-      case 0:
-        // Fast Path for an empty Array
-        return decorateArray([]);
+    // Fast Path for decorating an existing Array
+    if ( arguments.length === 1 && isArray(arguments[0]) )
+      return decorate(arguments[0]);
 
-      case 1:
-        // Fast Path for Single-Object calls
-        var arg0 = arguments[0];
-        if ( typeof arg0 === 'object' )
-          return decorate(arg0);
-    }
+    // Fast Path for creating a new Array
+    if ( arguments.length === 0 )
+      return decorateArray([]);
 
     var args = makeArray(arguments)
       , source = isDecorated(this) ? this : decorateArray([])
