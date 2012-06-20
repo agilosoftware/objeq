@@ -1,5 +1,11 @@
 # Change History
 
+## 0.2.0 - First Stable Release
+
+### Notes
+
+### Known Bugs
+
 ## 0.1.0 - Initial Release (Unstable)
 
 ### Notes
@@ -13,3 +19,5 @@
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
 * Synthesized results (those using the array and object literal syntax) are presently not consistent between refreshes of a dynamic query and will become stale or orphaned if the source data is modified.  This will be addressed when optimizations for dynamic queries are introduced.
+
+* Even though it's only necessary for the results of dynamic queries, everything is decorated right now.

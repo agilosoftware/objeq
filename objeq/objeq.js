@@ -995,14 +995,13 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    if ( arguments.length === 1 && isArray(arguments[0]) ) {
-      // Fast Path for single Array calls
+    // Fast Path for decorating an existing Array
+    if ( arguments.length === 1 && isArray(arguments[0]) )
       return decorate(arguments[0]);
-    }
-    else if ( arguments.length === 0 ) {
-      // For testing and debugging only
-      return debug();
-    }
+
+    // Fast Path for creating a new Array
+    if ( arguments.length === 0 )
+      return decorateArray([]);
 
     var args = makeArray(arguments)
       , source = isDecorated(this) ? this : decorateArray([])
@@ -1024,6 +1023,7 @@
 
   defineProperty(objeq, 'VERSION', function () { return CurrentVersion; });
   objeq.registerExtension = registerExtension;
+  objeq.debug = debug;
 
   // Node.js and CommonJS Exporting
   if ( typeof exports !== 'undefined' ) {
