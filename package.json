@@ -2,7 +2,7 @@
   "name": "objeq",
   "description": "JavaScript Object Querying",
   "author": "Agilo Software GmbH",
-  "version": "0.2.0",
+  "version": "0.1.1",
   "homepage": "http://www.objeq.org/",
   "main": "index.js",
   "keywords": ["javascript", "json", "query", "language", "server", "client"],

@@ -8,7 +8,7 @@
  */
 
 (function () {
-  var CurrentVersion = "0.1.0"
+  var CurrentVersion = "0.1.1"
     , self = this;
 
   // Feature Checking *********************************************************
