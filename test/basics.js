@@ -37,14 +37,31 @@ exports.basics = nodeunit.testCase({
     var data = this.data;
     var result = objeq(data);
 
-    test.ok(result[0] === data[0],
+    test.ok(result.__objeq_id__, "Array has been decorated");
+
+    test.equal(result[0], data[0],
       "First wrapped item is correct");
 
-    test.ok(result[result.length-1], data[data.length-1],
+    test.equal(result[result.length-1], data[data.length-1],
       "Last wrapped item is correct");
 
     test.equal(data.length, result.length,
       "Original data length and Result are equal");
+
+    test.done();
+  },
+
+  "Modify an Array Instance": function (test) {
+    var data = this.data;
+    var result = objeq(data);
+    var oldLength = data.length;
+
+    var newItem = { "firstName": "Bill", "lastName": "Bradley", "age": 30 };
+    data.push(newItem);
+
+    test.equal(oldLength+1, data.length, "Result is one item longer");
+    test.equal(result[result.length-1], newItem, "New item is in Result");
+    test.ok(newItem.__objeq_id__, "New item has been decorated");
 
     test.done();
   }

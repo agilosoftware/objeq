@@ -14,6 +14,10 @@ A pre-built version of the Parser is already included, but if you'd like to buil
 
     > npm -g install jison uglify-js
 
+You can then build the Parser and Minified Code by typing:
+
+    > npm run-script build
+
 ## Usage
 
 There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the `$objeq()` function:

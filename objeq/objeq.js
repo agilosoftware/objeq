@@ -9,7 +9,7 @@
 
 (function () {
   var CurrentVersion = "0.1.0"
-    , self = this || { $objeqParser: null };
+    , self = this;
 
   // Feature Checking *********************************************************
 
@@ -25,8 +25,8 @@
   function createParser() {
     if ( ObjeqParser ) return new ObjeqParser();
 
-    if ( self.$objeqParser ) {
-      ObjeqParser = self.$objeqParser.Parser;
+    if ( self.$objeq && self.$objeq.parser ) {
+      ObjeqParser = self.$objeq.parser.Parser;
     }
     else {
       if ( typeof require === 'function' ) {
@@ -1034,6 +1034,10 @@
   }
   else {
     // Global Exporting
+    if ( self.$objeq && self.$objeq.parser ) {
+      // If the Parser has already been defined, pull it in
+      objeq.parser = self.$objeq.parser;
+    }
     self.$objeq = objeq;
   }
 })();
