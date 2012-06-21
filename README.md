@@ -10,13 +10,11 @@ Still under active development and still quite a bit to do. Unless you *really* 
 
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
 
-A pre-built version of the Parser is already included, but if you'd like to build it yourself, and you have node.js, then you can install Jison and UglifyJS using npm by issuing the following command:
+A pre-built version of the parser and minified code are already included, but if you'd like to build them yourself, and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
 
-    > npm -g install jison uglify-js
+    > npm install
 
-You can then build the Parser and Minified Code by typing:
-
-    > npm run-script build
+This will also install any development dependencies and run the nodeunit test suite.
 
 ## Usage
 
