@@ -78,14 +78,14 @@ catch ( err ) {
   process.exit(4);
 }
 
-var orig_code = objeqCode + "\n" + parserCode.replace(replaceString, minCode);
-var ast = jsp.parse(orig_code); // parse code and get the initial AST
-ast = pro.ast_mangle(ast); // get a new AST with mangled names
-ast = pro.ast_squeeze(ast); // get an AST with compression optimizations
-var final_code = pro.gen_code(ast); // compressed code here
+var origCode = objeqCode + "\n" + parserCode.replace(replaceString, minCode);
+var ast = jsp.parse(origCode);
+ast = pro.ast_mangle(ast);
+ast = pro.ast_squeeze(ast);
+var finalCode = pro.gen_code(ast);
 
 console.log("* Writing ./objeq.min.js"); // ***********************************
-fs.writeFile("./objeq.min.js", final_code, function(err) {
+fs.writeFile("./objeq.min.js", finalCode, function(err) {
   if ( !err ) return;
   console.log('Oops! Error writing Minified Code');
   console.log('Reason: '+err);

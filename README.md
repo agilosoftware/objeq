@@ -10,7 +10,7 @@ Still under active development and still quite a bit to do. Unless you *really* 
 
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
 
-A pre-built version of the parser and minified code are already included, but if you'd like to build them yourself, and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
+A pre-built version of the parser and minified code are already included, but if you'd like to build them yourself and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
 
     > npm install
 

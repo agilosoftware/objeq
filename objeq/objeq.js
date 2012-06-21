@@ -26,9 +26,11 @@
     if ( ObjeqParser ) return new ObjeqParser();
 
     if ( self.$objeq && self.$objeq.parser ) {
+      // This will be the case when running in the Browser
       ObjeqParser = self.$objeq.parser.Parser;
     }
     else {
+      // Otherwise, perhaps we're using node.js?
       if ( typeof require === 'function' ) {
         ObjeqParser = require('./objeq-parser').Parser;
       }
