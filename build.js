@@ -39,6 +39,11 @@ catch ( err ) {
 }
 
 var replaceString = "var parser = (function(){";
+if ( parserCode.indexOf(replaceString) === -1 ) {
+  console.log('Oops! Assignment string not found in generated Parser!');
+  console.log();
+  process.exit(3);
+}
 
 var minCode = "\n" +
   "this.$objeq.parser = (function () {";
@@ -63,7 +68,7 @@ fs.writeFile("./objeq/objeq-parser.js", out + endCode, function(err) {
   console.log('Oops! Error writing Parser');
   console.log('Reason: '+err);
   console.log();
-  process.exit(3);
+  process.exit(4);
 });
 
 // Now use Uglify to compress the JavaScript
@@ -75,7 +80,7 @@ catch ( err ) {
   console.log('Oops! Error reading objeq Processor Code');
   console.log('Reason: '+err);
   console.log();
-  process.exit(4);
+  process.exit(5);
 }
 
 var origCode = objeqCode + "\n" + parserCode.replace(replaceString, minCode);
@@ -90,7 +95,7 @@ fs.writeFile("./objeq.min.js", finalCode, function(err) {
   console.log('Oops! Error writing Minified Code');
   console.log('Reason: '+err);
   console.log();
-  process.exit(5);
+  process.exit(6);
 });
 
 console.log("Finished!");
