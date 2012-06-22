@@ -8,7 +8,7 @@
  */
 
 (function () {
-  var CurrentVersion = "0.1.1"
+  var CurrentVersion = "0.2.0"
     , self = this;
 
   // Feature Checking *********************************************************
@@ -278,6 +278,8 @@
 
     return obj;
   }
+
+  // Array Decoration *********************************************************
 
   var ArrayFuncs = [
     { name: 'push', additive: true },
