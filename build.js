@@ -18,6 +18,11 @@ var TermCodes = {
   "bold_suffix": "\u001B[22m"
 };
 
+var grammarFilename = "./objeq/objeq-parser.y";
+var parserFilename = "./objeq/objeq-parser.js";
+var objeqFilename = "./objeq/objeq.js";
+var minifiedFilename = "./objeq.min.js";
+
 function fmt(type, value) {
   return TermCodes[type+"_prefix"] + value + TermCodes[type+"_suffix"];
 }
@@ -25,7 +30,7 @@ function fmt(type, value) {
 console.log(fmt("bold", "Starting objeq Build"));
 
 try {
-  var raw = IO.read(IO.join(IO.cwd(), "objeq/objeq-parser.y"));
+  var raw = IO.read(IO.join(IO.cwd(), grammarFilename));
   var grammar = bnf.parse(raw);
 }
 catch ( err ) {
@@ -75,18 +80,18 @@ var endCode = "\n" +
 
 var out = parserCode.replace(replaceString, startCode);
 
-fs.writeFile("./objeq/objeq-parser.js", out + endCode, function(err) {
+fs.writeFile(parserFilename, out + endCode, function(err) {
   if ( !err ) return;
   console.log(fmt("error", 'Oops! Error writing Parser'));
   console.log('Reason: '+err);
   console.log();
   process.exit(4);
 });
-console.log("✔ Wrote ./objeq/objeq-parser.js");
+console.log("✔ Wrote " + parserFilename);
 
 // Now use Uglify to compress the JavaScript
 try {
-  var objeqCode = fs.readFileSync("./objeq/objeq.js");
+  var objeqCode = fs.readFileSync(objeqFilename);
 }
 catch ( err ) {
   console.log(fmt("error", 'Oops! Error reading objeq Processor Code'));
@@ -102,13 +107,13 @@ ast = pro.ast_mangle(ast);
 ast = pro.ast_squeeze(ast);
 var finalCode = pro.gen_code(ast);
 
-fs.writeFile("./objeq.min.js", finalCode, function(err) {
+fs.writeFile(minifiedFilename, finalCode, function(err) {
   if ( !err ) return;
   console.log(fmt("error", 'Oops! Error writing Minified Code'));
   console.log('Reason: '+err);
   console.log();
   process.exit(6);
 });
-console.log("✔ Wrote ./objeq.min.js");
+console.log("✔ Wrote " + minifiedFilename);
 
 console.log(fmt("ok", "Finished!"));
