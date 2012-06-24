@@ -767,14 +767,14 @@
   function createComparator(path, ascending) {
     var getPath = evalLocalPath(path);
     if ( ascending ) {
-      return function ascendingComparator(item1, item2) {
+      return function _ascendingComparator(item1, item2) {
         var val1 = getPath(item1)
           , val2 = getPath(item2);
         return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
       };
     }
     else {
-      return function descendingComparator(item1, item2) {
+      return function _descendingComparator(item1, item2) {
         var val1 = getPath(item1)
           , val2 = getPath(item2);
         return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
@@ -892,7 +892,7 @@
       , sort = root.sort
       , source = ctx.source;
 
-    return function postRefreshResults() {
+    return function _postRefreshResults() {
       var prev = -results.length;
       results.length = 0;
 
@@ -918,7 +918,7 @@
       , sort = root.sort
       , source = ctx.source;
 
-    return function preRefreshResults() {
+    return function _preRefreshResults() {
       var prev = -results.length;
       results.length = 0;
 
