@@ -116,9 +116,9 @@
     for ( var key in hash ) {
       if ( !hash.hasOwnProperty(key) ) continue;
 
-      var func = hash[key];
-      if ( typeof key === 'string' && typeof func === 'function' ) {
-        ext[key.toLowerCase()] = func;
+      var value = hash[key];
+      if ( typeof key === 'string' && typeof value === 'function' ) {
+        ext[key.toLowerCase()] = value;
       }
     }
   }
@@ -399,7 +399,7 @@
       arr[i] = decorate(arr[i]);
     }
 
-    for ( var i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
+    for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
       var arrayFunc = ArrayFuncs[i];
       wrapArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
     }
@@ -831,7 +831,7 @@
     parser.yy = { node: yynode, path: yypath, paths: [] };
 
     // Parse the Query, include paths and evaluators in the result
-    var result = parseCache[queryString] = parser.parse(queryString);
+    result = parseCache[queryString] = parser.parse(queryString);
     result.paths = parser.yy.paths;
     result.evaluate = wrapEvaluator(result.expr);
     result.select = wrapEvaluator(result.select || EmptyPath);
@@ -884,56 +884,73 @@
     }
   }
 
-  function processQuery(source, queryString, params, dynamic) {
-    var root = parse(queryString)
-      , results = []
-      , evaluate = root.evaluate
+  // TODO: Right now these are brute force, but we need to do deltas
+
+  function createPostRefresh(root, ctx, source, results, dynamic) {
+    var evaluate = root.evaluate
       , select = root.select
-      , sort = root.sort
-      , sortFirst = root.sortFirst;
+      , sort = root.sort;
 
-    var ctx = { };
-    defineProperty(ctx, 'source', function () { return source; });
-    defineProperty(ctx, 'params', function () { return params; });
-
-    // TODO: Right now this is brute force, but we need to do deltas
-    function refreshResults() {
+    return function postRefreshResults() {
       var prev = -results.length;
       results.length = 0;
 
-      if ( !sort || !sortFirst || select === EmptyPath ) {
-        // Post-Drilldown Sorting
-        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-          var obj = source[i];
-          if ( !evaluate(obj, ctx) ) {
-            continue;
-          }
-
-          results[j++] = select(obj, ctx);
+      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+        var obj = source[i];
+        if ( !evaluate(obj, ctx) ) {
+          continue;
         }
-        if ( sort ) {
-          results.sort(sort);
+
+        results[j++] = select(obj, ctx);
+      }
+      if ( sort ) results.sort(sort);
+
+      if ( dynamic && isDecorated(results) ) {
+        queueEvent(results, getArrayContentKey(results), results.length, prev);
+      }
+    };
+  }
+
+  function createPreRefresh(root, ctx, source, results, dynamic) {
+    var evaluate = root.evaluate
+      , select = root.select
+      , sort = root.sort;
+
+    return function preRefreshResults() {
+      var prev = -results.length;
+      results.length = 0;
+
+      var temp = [];
+      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+        var obj = source[i];
+        if ( evaluate(obj, ctx) ) {
+          temp[j++] = obj;
         }
       }
-      else {
-        // Pre-Drilldown Sorting
-        var temp = [];
-        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-          var obj = source[i];
-          if ( evaluate(obj, ctx) ) {
-            temp[j++] = obj;
-          }
-        }
-        temp.sort(sort);
-        for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          results[j++] = select(temp[i], ctx);
-        }
+      temp.sort(sort);
+      for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
+        results[j++] = select(temp[i], ctx);
       }
 
       if ( dynamic && isDecorated(results) ) {
         queueEvent(results, getArrayContentKey(results), results.length, prev);
       }
-    }
+    };
+  }
+
+  function processQuery(source, queryString, params, dynamic) {
+    var root = parse(queryString)
+      , results = []
+      , ctx = {};
+
+    defineProperty(ctx, 'source', function () { return source; });
+    defineProperty(ctx, 'params', function () { return params; });
+
+    var refreshResults;
+    if ( !root.sort || !root.sortFirst || root.select === EmptyPath )
+      refreshResults = createPostRefresh(root, ctx, source, results, dynamic);
+    else
+      refreshResults = createPreRefresh(root, ctx, source, results, dynamic);
 
     function sourceListener(target, key, value, prev) {
       invalidateQuery(results, refreshResults); // for now
