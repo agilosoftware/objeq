@@ -886,10 +886,11 @@
 
   // TODO: Right now these are brute force, but we need to do deltas
 
-  function createPostRefresh(root, ctx, source, results, dynamic) {
+  function createPostRefresh(root, ctx, results, dynamic) {
     var evaluate = root.evaluate
       , select = root.select
-      , sort = root.sort;
+      , sort = root.sort
+      , source = ctx.source;
 
     return function postRefreshResults() {
       var prev = -results.length;
@@ -911,10 +912,11 @@
     };
   }
 
-  function createPreRefresh(root, ctx, source, results, dynamic) {
+  function createPreRefresh(root, ctx, results, dynamic) {
     var evaluate = root.evaluate
       , select = root.select
-      , sort = root.sort;
+      , sort = root.sort
+      , source = ctx.source;
 
     return function preRefreshResults() {
       var prev = -results.length;
@@ -948,9 +950,9 @@
 
     var refreshResults;
     if ( !root.sort || !root.sortFirst || root.select === EmptyPath )
-      refreshResults = createPostRefresh(root, ctx, source, results, dynamic);
+      refreshResults = createPostRefresh(root, ctx, results, dynamic);
     else
-      refreshResults = createPreRefresh(root, ctx, source, results, dynamic);
+      refreshResults = createPreRefresh(root, ctx, results, dynamic);
 
     function sourceListener(target, key, value, prev) {
       invalidateQuery(results, refreshResults); // for now
