@@ -15,7 +15,7 @@
     "url": "https://github.com/agilosoftware/objeq.git"
   },
   "scripts": {
-    "postinstall": "node build.js; nodeunit test"
+    "build": "node build.js; nodeunit test"
   },
   "dependencies": {
   },
