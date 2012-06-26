@@ -83,8 +83,7 @@
   }
 
   function isMonitored(value) {
-    var objectId = value.__objeq_id__;
-    return objectId && objectId.charAt(0) === 'm' ? true : false;
+    return value.__objeq_mon__;
   }
 
   function isDecorated(value) {
@@ -343,9 +342,7 @@
       return this[index];
     };
 
-    // Redefine the Array's objectId Property to mark it as being monitored
-    var objectId = 'm' + arr.__objeq_id__.substring(1);
-    defineProperty(arr, '__objeq_id__', function () { return objectId; });
+    defineProperty(arr, '__objeq_mon__', function() { return true; });
   }
 
   function getArrayListenerInfo(arr, name) {
