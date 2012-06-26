@@ -83,7 +83,7 @@
   }
 
   function isMonitored(value) {
-    var objectId = value.__objeq_id;
+    var objectId = value.__objeq_id__;
     return objectId && objectId.charAt(0) === 'm' ? true : false;
   }
 
@@ -320,6 +320,34 @@
     };
   }
 
+  function monitorArray(arr) {
+    for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+      arr[i] = decorate(arr[i]);
+    }
+
+    for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
+      var arrayFunc = ArrayFuncs[i];
+      monitorArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
+    }
+
+    arr.item =  function _monitoredItem(index, value) {
+      if ( typeof value !== 'undefined' ) {
+        var oldLen = this.length;
+        this[index] = decorate(value);
+        var newLen = this.length;
+        queueEvent(this, getArrayContentKey(this), newLen, null);
+        if ( newLen != oldLen ) {
+          queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
+        }
+      }
+      return this[index];
+    };
+
+    // Redefine the Array's objectId Property to mark it as being monitored
+    var objectId = 'm' + arr.__objeq_id__.substring(1);
+    defineProperty(arr, '__objeq_id__', function () { return objectId; });
+  }
+
   function getArrayListenerInfo(arr, name) {
     switch( name ) {
       case '.content': return { target: arr, key: getArrayContentKey(arr) };
@@ -348,7 +376,9 @@
     }
 
     arr.on = function _on(events, callback) {
+      // If the Array isn't already monitored, then we need to
       if ( !isMonitored(this) ) monitorArray(this);
+
       var evt = events.split(/\s/);
       for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
         var info = getArrayListenerInfo(this, evt[i]);
@@ -391,34 +421,6 @@
       return typeof first === 'object' ? first[key] : null;
     }
   };
-
-  function monitorArray(arr) {
-    for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
-      arr[i] = decorate(arr[i]);
-    }
-
-    for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
-      var arrayFunc = ArrayFuncs[i];
-      monitorArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
-    }
-
-    arr.item =  function _monitoredItem(index, value) {
-      if ( typeof value !== 'undefined' ) {
-        var oldLen = this.length;
-        this[index] = decorate(value);
-        var newLen = this.length;
-        queueEvent(this, getArrayContentKey(this), newLen, null);
-        if ( newLen != oldLen ) {
-          queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
-        }
-      }
-      return this[index];
-    };
-
-    // Redefine the Array's objectId Property to mark it as being monitored
-    var objectId = 'm' + arr.__objeq_id__.substring(1);
-    defineProperty(arr, '__objeq_id__', function () { return objectId; });
-  }
 
   function decorateArray(arr) {
     mixin(arr, DecoratedArrayMixin);
