@@ -1070,7 +1070,7 @@
     if ( typeof module !== 'undefined' && module.exports ) {
       exports = module.exports = objeq;
     }
-    exports.$objeq = objeq;
+    exports.objeq = objeq;
   }
   else {
     // Global Exporting
