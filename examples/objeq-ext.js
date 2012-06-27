@@ -1,6 +1,10 @@
 // Some Sample Extensions that are *not* imported by default
 // These are also *not* tested, so use them at your own risk
 
+if ( typeof require === 'function' ) {
+  var $objeq = require('objeq');
+}
+
 $objeq.registerExtension({
   count: function _count(ctx, value) {
     return Array.isArray(value) ? value.length : 0;
@@ -75,5 +79,10 @@ $objeq.registerExtension({
 
   number: function _number(ctx, value) {
     return Number(value);
+  },
+
+  split: function _split(ctx, value, delim, idx) {     
+    var val = String(value).split(delim || ' \n\r\t');
+    return typeof idx !== 'undefined' ? val[idx] : val;
   }
 });
