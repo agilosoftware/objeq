@@ -23,7 +23,9 @@
   var ObjeqParser = null;
 
   function createParser() {
-    if ( ObjeqParser ) return new ObjeqParser();
+    if ( ObjeqParser ) {
+      return new ObjeqParser();
+    }
 
     if ( self.$objeq && self.$objeq.parser ) {
       // This will be the case when running in the Browser
@@ -118,7 +120,9 @@
       hash[name] = func;
     }
     for ( var key in hash ) {
-      if ( !hash.hasOwnProperty(key) ) continue;
+      if ( !hash.hasOwnProperty(key) ) {
+        continue;
+      }
 
       var value = hash[key];
       if ( typeof key === 'string' && typeof value === 'function' ) {
@@ -130,7 +134,6 @@
   // Listener Implementation **************************************************
 
   var queue = []                // The queue of pending notifications
-    , pending = {}              // Reverse Lookup: Target -> queue Entry
     , listeners = {}            // Property@Target -> Callbacks
     , targets = {}              // Reverse Lookup: Target -> Property@Target
     , inNotifyListeners = false // to avoid recursion with notifyListeners
@@ -191,18 +194,15 @@
   function notifyListeners() {
     inNotifyListeners = true;
     for ( var count = 0; queue.length && count < MaxNotifyCycles; count++ ) {
-      var currentQueue = queue.slice(0);
-      pending = {};
-      queue = [];
+      var currentQueue = queue, queue = [];
 
       for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
         var event = currentQueue[i]
-          , target = event.target
-          , key = event.key
-          , callbacks = getCallbacks(target, key);
+          , callbacks = getCallbacks(event.target, event.key);
 
         for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
-          callbacks[j](target, key, event.value, event.prev);
+          var callback = callbacks[j];
+          callback.apply(callback, event.args);
         }
       }
 
@@ -214,27 +214,13 @@
     }
   }
 
-  function queueEvent(target, key, value, prev) {
-    if ( value === prev || !hasListeners(target, key) ) {
+  function queueEvent(target, key) {
+    if ( !hasListeners(target, key) ) {
       return;
     }
 
-    var tkey = getObjectId(target)
-      , events = pending[tkey] || (pending[tkey] = {})
-      , event = events[key];
+    queue.push({ target: target, key: key, args: arguments });
 
-    if ( !event ) {
-      queue.push({ target: target, key: key, value: value, prev: prev });
-    }
-    else {
-      if ( value === event.prev ) {
-        // If we've reverted to the original value, remove from queue
-        queue.splice(queue.indexOf(event), 1);
-        delete events[key];
-        return;
-      }
-      event.value = value;
-    }
     if ( !inNotifyListeners ) {
       notifyListeners();
     }
@@ -312,7 +298,7 @@
         }
       }
       // TODO: Check if the Content *really* changed
-      queueEvent(this, getArrayContentKey(this), newLen, null);
+      queueEvent(this, getArrayContentKey(this), newLen);
       if ( newLen != oldLen ) {
         queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
       }
@@ -334,7 +320,7 @@
         var oldLen = this.length;
         this[index] = decorate(value);
         var newLen = this.length;
-        queueEvent(this, getArrayContentKey(this), newLen, null);
+        queueEvent(this, getArrayContentKey(this), newLen);
         if ( newLen != oldLen ) {
           queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
         }
@@ -366,6 +352,7 @@
       }
       // Otherwise create the wrapper
       var wrapped = function _wrappedCallback(target, key, value, prev) {
+        // TODO: Use a hash lookup instead of an Array scan
         arr.indexOf(target) !== -1 && callback(target, key, value, prev);
       };
       callbackMapping.push({ callback: callback, wrapped: wrapped });
@@ -374,12 +361,16 @@
 
     arr.on = function _on(events, callback) {
       // If the Array isn't already monitored, then we need to
-      if ( !isMonitored(this) ) monitorArray(this);
+      if ( !isMonitored(this) ) {
+        monitorArray(this);
+      }
 
       var evt = events.split(/\s/);
       for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
         var info = getArrayListenerInfo(this, evt[i]);
-        if ( !info.target ) callback = wrapCallback(this, callback);
+        if ( !info.target ) {
+          callback = wrapCallback(this, callback);
+        }
         addListener(info.target, info.key, callback);
       }
     };
@@ -388,7 +379,9 @@
       var evt = events.split(/\s/);
       for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
         var info = getArrayListenerInfo(this, evt[i]);
-        if ( !info.target ) callback = wrapCallback(this, callback);
+        if ( !info.target ) {
+          callback = wrapCallback(this, callback);
+        }
         removeListener(info.target, info.key, callback);
       }
     };
@@ -399,7 +392,9 @@
     query: query,     // for snapshot queries
 
     item: function _item(index, value) {
-      if ( typeof value !== 'undefined' ) this[index] = value;
+      if ( typeof value !== 'undefined' ) {
+        this[index] = value;
+      }
       return this[index];
     },
 
@@ -472,10 +467,14 @@
       for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
         if ( isArray(value) && isDecorated(value) ) {
-          if ( value.length === 0 ) return null;
+          if ( value.length === 0 ) {
+            return null;
+          }
           value = value[0];
         }
-        if ( value == null ) return value;
+        if ( value == null ) {
+          return value;
+        }
 
         var comp = path[i];
         value =  value[typeof comp === 'function' ? comp(obj, ctx) : comp];
@@ -532,21 +531,27 @@
   }
 
   function evalNOT(leftEval, leftLit) {
-    if ( !leftEval ) return !leftLit;
+    if ( !leftEval ) {
+      return !leftLit;
+    }
     return function _not(obj, ctx) {
       return !leftEval(obj, ctx);
     };
   }
 
   function evalNEG(leftEval, leftLit) {
-    if ( !leftEval ) return -leftLit;
+    if ( !leftEval ) {
+      return -leftLit;
+    }
     return function _neg(obj, ctx) {
       return -leftEval(obj, ctx);
     };
   }
 
   function evalAND(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit && rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit && rightLit;
+    }
     return function _and(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit;
       return !lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
@@ -554,7 +559,9 @@
   }
 
   function evalOR(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit || rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit || rightLit;
+    }
     return function _or(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit;
       return lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
@@ -562,7 +569,9 @@
   }
 
   function evalADD(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit + rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit + rightLit;
+    }
     return function _add(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -571,7 +580,9 @@
   }
 
   function evalSUB(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit - rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit - rightLit;
+    }
     return function _sub(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -580,7 +591,9 @@
   }
 
   function evalMUL(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit * rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit * rightLit;
+    }
     return function _mul(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -589,7 +602,9 @@
   }
 
   function evalDIV(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit / rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit / rightLit;
+    }
     return function _div(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -598,7 +613,9 @@
   }
 
   function evalMOD(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit % rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit % rightLit;
+    }
     return function _mod(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -607,7 +624,9 @@
   }
 
   function evalEQ(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit == rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit == rightLit;
+    }
     return function _eq(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -616,7 +635,9 @@
   }
 
   function evalNEQ(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit != rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit != rightLit;
+    }
     return function _neq(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -625,7 +646,9 @@
   }
 
   function evalGT(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit > rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit > rightLit;
+    }
     return function _gt(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -634,7 +657,9 @@
   }
 
   function evalGTE(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit >= rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit >= rightLit;
+    }
     return function _gte(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -643,7 +668,9 @@
   }
 
   function evalLT(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit < rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit < rightLit;
+    }
     return function _lt(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -652,7 +679,9 @@
   }
 
   function evalLTE(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) return leftLit <= rightLit;
+    if ( !leftEval && !rightEval ) {
+      return leftLit <= rightLit;
+    }
     return function _lte(obj, ctx) {
       var lval = leftEval ? leftEval(obj, ctx) : leftLit
         , rval = rightEval ? rightEval(obj, ctx) : rightLit;
@@ -909,7 +938,6 @@
       , source = ctx.source;
 
     return function _postRefreshResults() {
-      var prev = -results.length;
       results.length = 0;
 
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
@@ -920,10 +948,12 @@
 
         results[j++] = select(obj, ctx);
       }
-      if ( sort ) results.sort(sort);
+      if ( sort ) {
+        results.sort(sort);
+      }
 
       if ( dynamic && isDecorated(results) ) {
-        queueEvent(results, getArrayContentKey(results), results.length, prev);
+        queueEvent(results, getArrayContentKey(results), results.length);
       }
     };
   }
@@ -935,7 +965,6 @@
       , source = ctx.source;
 
     return function _preRefreshResults() {
-      var prev = -results.length;
       results.length = 0;
 
       var temp = [];
@@ -951,7 +980,7 @@
       }
 
       if ( dynamic && isDecorated(results) ) {
-        queueEvent(results, getArrayContentKey(results), results.length, prev);
+        queueEvent(results, getArrayContentKey(results), results.length);
       }
     };
   }
@@ -1016,7 +1045,6 @@
       self: self,
       ObjeqParser: ObjeqParser,
       queue: queue,
-      pending: pending,
       listeners: listeners,
       targets: targets,
       nextObjectId: nextObjectId,
