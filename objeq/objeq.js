@@ -1050,7 +1050,7 @@
       nextObjectId: nextObjectId,
       invalidated: invalidated,
       pendingRefresh: pendingRefresh,
-      reCache: regexCache,
+      regexCache: regexCache,
       parserPool: parserPool,
       parseCache: parseCache,
       parse: parse,
