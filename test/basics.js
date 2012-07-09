@@ -61,7 +61,6 @@ exports.basics = nodeunit.testCase({
 
     test.equal(oldLength+1, data.length, "Result is one item longer");
     test.equal(result[result.length-1], newItem, "New item is in Result");
-    test.ok(newItem.__objeq_id__, "New item has been decorated");
 
     test.done();
   }
