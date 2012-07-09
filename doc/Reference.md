@@ -29,15 +29,15 @@ Essentially the [Predicate] must come first, followed by an optional [Collator] 
 For example, the following are *entirely* different Queries:
 
     firstName == 'William' order by lastName select spouse
-    
+
     firstName == 'William' select spouse order by lastName
 
 For brevity and to visually isolate the filter conditions, these two Queries could have also been written:
 
     firstName == 'William' by lastName -> spouse
-    
+
     firstName == 'William' -> spouse by lastName
-    
+
 The first Query selects all Objects that have a firstName Property equal to 'William', orders those by the lastName Property of the same Object, and then returns the spouse Property of that Object.
 
 The second Query selects all Objects that have a firstName Property equal to 'William', returns the spouse Property for each of those Objects, sorting them by the spouse's lastName Property.
@@ -67,25 +67,25 @@ objeq supports an operator called `IN` which will return true if the left operan
 objeq supports Regular Expression matching using the Ruby `=~` operator, where the left operand is a regular expression and the right operand is a string to be matched.  Unlike the Ruby operator, objeq's Regular Expression matching only returns a true or false result.  The following predicate returns all unhappy Objects that have a firstName Property beginning with the letter 'W'.
 
     "^W" =~ firstName && !happy
-    
+
 ### Selector
-After a [Predicate] is processed, the [Working Set] will consist of a subset of the original [Source Set].  The Selector is used to evaluate these Items and return derived content as the [Result Set].  Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays.  
+After a [Predicate] is processed, the [Working Set] will consist of a subset of the original [Source Set].  The Selector is used to evaluate these Items and return derived content as the [Result Set].  Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays
 
 The following [Query] finds all Objects with a lastName Property of 'Beck' and returns only the firstName Properties from those Objects.
 
     lastName == 'Beck' select firstName
-    
+
 This [Query] is similar, but generates new Objects as its [Result Set]:
 
     lastName == 'Beck' select { fullName: firstName + ' ' + lastName }
-    
+
 ### Collator
 A Collator is used to sort the [Working Set] based on a list of provided sort criteria.  A Collator must be placed after a [Predicate] and can appear before or after a [Selector].  The order of the [Collator] and [Selector] is important because it determines whether or not the sorting is executed against the [Selector] results.
-   
+
 This [Query] sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the [Result Set].
 
     order by lastName, firstName desc -> [ lastName + ', ' + firstName ]
-    
+
 ### Parameters
 A [Query] can be Parameterized such that any Objects passed into it are also [Decorated] and treated as 'live' parameters.  This means that the [Result Set] will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
 
@@ -104,15 +104,15 @@ Defining Extension Functions for objeq is a relatively painless process.  Simply
 And then call the function from within your [Query]:
 
     var result = items.query("-> hello(firstName)");
-    
+
 ### Four Simple Rules for Extension Writers
 1. Your Extension should be side-effect free.  This is **very** important!
 2. Inside of your Extension, the `this` variable will always refer to the Object that is being evaluated
 3. The first argument passed to an Extension will always be the current [Query] Context followed by arguments passed as part of the [Query] itself
 4. Extensions can be called from the [Predicate] and [Selector], but not from the [Collator]
-    
+
 ## Decoration Notes
-JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array.  
+JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array
 
 ### Objects
 What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for live [Query] updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being [Decorated].
@@ -124,6 +124,6 @@ To work around this problem, objeq has to introduce a method to each Array that 
 
     // To set a value
     myArray.item(0, 'blah');
-    
+
     // To get a value
     var blah = myArray.item(0);

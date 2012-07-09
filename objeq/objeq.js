@@ -349,6 +349,7 @@
         if ( !info.target ) callback = wrapCallback(this, callback);
         addListener(info.target, info.key, callback);
       }
+      return this;
     };
 
     arr.off = function _off(events, callback) {
@@ -358,6 +359,7 @@
         if ( !info.target ) callback = wrapCallback(this, callback);
         removeListener(info.target, info.key, callback);
       }
+      return this;
     };
   }
 
@@ -896,6 +898,7 @@
       var prev = -results.length;
       results.length = 0;
 
+      // In this case, we can filter and select in one pass
       for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
         var obj = source[i];
         if ( !evaluate(obj, ctx) ) {
@@ -904,6 +907,7 @@
 
         results[j++] = select(obj, ctx);
       }
+
       if ( sort ) results.sort(sort);
 
       if ( dynamic && isDecorated(results) ) {
@@ -929,6 +933,7 @@
           temp[j++] = obj;
         }
       }
+
       temp.sort(sort);
       for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
         results[j++] = select(temp[i], ctx);
@@ -940,9 +945,9 @@
     };
   }
 
-  function processQuery(source, queryString, params, dynamic) {
+  function processQuery(source, queryString, params, callback, dynamic) {
     var root = parse(queryString)
-      , results = []
+      , results = decorateArray([])
       , ctx = {};
 
     defineProperty(ctx, 'source', function () { return source; });
@@ -970,27 +975,54 @@
       addListener(source, getArrayContentKey(source), sourceListener);
       addQueryListeners(root.paths, ctx, queryListener, resultListener);
     }
+
+    if ( callback ) {
+      addListener(results, getArrayContentKey(results), callback);
+    }
     refreshResults();
 
-    return decorateArray(results);
+    return results;
+  }
+
+  function processArguments() {
+    var params = []
+      , result = { queryString: arguments[0], params: params };
+
+    for ( var i = 1, len = arguments.length; i < len; i++ ) {
+      var item = arguments[i];
+      if ( typeof item === 'function' ) {
+        result.callback = item;
+        return result;
+      }
+      params.push(item);
+    }
+
+    return result;
   }
 
   function dynamic() {
     // Process a "dynamic" query whose results update with data changes
-    var params = makeArray(arguments)
-      , queryString = params.shift();
+    var result = processArguments.apply(this, arguments)
+      , queryString = result.queryString
+      , params = result.params
+      , callback = result.callback;
+
     // Decorate the Items, but no need to decorate the Array
     for ( var i = 0, ilen = params.length; i < ilen; i++ ) {
       params[i] = decorate(params[i]);
     }
-    return processQuery(this, queryString, params, true);
+
+    return processQuery(this, queryString, params, callback, true);
   }
 
   function query() {
     // Process a "snapshot" query with static results
-    var params = makeArray(arguments)
-      , queryString = params.shift();
-    return processQuery(this, queryString, params, false);
+    var result = processArguments.apply(this, arguments)
+      , queryString = result.queryString
+      , params = result.params
+      , callback = result.callback;
+
+    return processQuery(this, queryString, params, callback, false);
   }
 
   // Debug and Testing Interface **********************************************

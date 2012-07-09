@@ -3,7 +3,7 @@
 // being used both from the browser and from node.js
 
 var fs = require("fs");
-var jison = require("jison/");
+var jison = require("jison");
 var IO = require("jison/lib/jison/util/io");
 var bnf = require("jison/lib/jison/bnf");
 var jsp = require("uglify-js").parser;
@@ -24,6 +24,7 @@ var objeqFilename = "./objeq/objeq.js";
 var minifiedFilename = "./objeq.min.js";
 
 function fmt(type, value) {
+  if ( !process.stdout.isTTY ) return value;
   return TermCodes[type+"_prefix"] + value + TermCodes[type+"_suffix"];
 }
 
