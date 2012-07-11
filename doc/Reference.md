@@ -7,16 +7,16 @@ This document serves as a quick introduction to the objeq Query Language.
 Before diving in deep, we should define some of the terms that will be used throughout this section:
 
 ### Source Set
-An array used as the source of queried data.  As Queries may be chained, a [Result Set] may also serve as a Source Set.  The Items of a Source Set will be [Decorated] by objeq in order to allow live querying of modified data.
+An array used as the source of queried data.  As Queries may be chained, a [Result Set] may also serve as a Source Set.  The Items of a Source Set will be [Decorated] by objeq in order to allow dynamic querying of modified data.
 
 ### Decorated
-Any Arrays or Objects that objeq encounters while processing live [Queries] will be Decorated.  What this means is that the library will replace certain Properties and methods with wrapper functions such that changes can be observed. (see [Decoration Notes])
+Any Arrays or Objects that objeq encounters while processing dynamic [Queries] will be Decorated.  What this means is that the library will replace certain Properties and methods with wrapper functions such that changes can be observed. (see [Decoration Notes])
 
 ### Working Set
 The Working Set is a set of Items based on the original [Source Set].  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
 
 ### Result Set
-An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by live [Queries] will be overwritten if any of the Query's [Source Set] data or [Parameters] change.
+An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic [Queries] will be overwritten if any of the Query's [Source Set] data or [Parameters] change.
 
 ## Query
 
@@ -97,7 +97,7 @@ A [Query] can be Parameterized such that any Objects passed into it are also [De
 ## Extensions
 Defining Extension Functions for objeq is a relatively painless process.  Simply register the function with the `registerExtension()` method that is exposed by the `$objeq()` function instance:
 
-    $objeq.registerExtension('hello', function(ctx, firstName) {
+    $objeq.registerExtension('hello', function (ctx, firstName) {
         return "Hello " + firstName;
     });
 
@@ -115,10 +115,10 @@ And then call the function from within your [Query]:
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array
 
 ### Objects
-What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for live [Query] updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being [Decorated].
+What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for dynamic [Query] updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being [Decorated].
 
 ### Arrays
-Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for live queries.
+Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for dynamic queries.
 
 To work around this problem, objeq has to introduce a method to each Array that it decorates.  This is the `item()` method, and can be utilized as follows:
 

@@ -18,37 +18,40 @@ This will also install any development dependencies and run the nodeunit test su
 
 ## Usage
 
-There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the `$objeq()` function:
+There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the `$objeq()` function which returns a Decorated Array that we'll call the 'Source Set':
 
     var data = $objeq({name:'Ronald'}, {name:'Robert'}, {name:'Thomas'});
 
-Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that `$objeq()` returns.  The first method is called `query()` and creates an immediate (or snapshot) Result Set.  The second method is called `dynamic()` and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items that match the original Query criteria.
+Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that `$objeq()` returns.  The first method is called `query()` and creates an immediate (or snapshot) Result Set.  The second method is called `dynamic()` and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items from the Source Setthat match the original Query criteria.
 
-    // The Result Set membership will not change as its Items are modified
+    // The Result Set membership will not change as its Source Set is modified
     var result = data.query("'^Ro' =~ name");
-    
+
 Or
-    
-    // The Result Set membership will update as soon as its Items are modified
+
+    // The Result Set membership will update as the Source Set is modified
     var result = data.dynamic("'^Ro' =~ name");
-    
+
 And finally, if you want to monitor changes to your results as they happen, you can register an Observer on the Result Set.  Note that this really is only useful for the results of a Dynamic Query.
 
-    result.on('change', function(target) {
+    result.on('.content', function (target) {
       alert('My Data Changed!');
     });
-    
+
+A shorthand would be to pass the callback in the original query call, and as this callback will be notified with the initial Result Set, it is also useful for immediate queries.
+
+    data.dynamic("'^Ro' =~ name", function (result) {
+        alert('My Data Changed!');
+    });
+
 ## Things Worth Mentioning
 
-Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was decorated, so you have to be careful to retrieve the first Item in the Result Set if you want to modify it:
+Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was passed to the `$objeq()` function, so you have to be careful to retrieve the first Item in the result if you want to modify it:
 
     var items = $objeq({name:'William'}); // -> [{name:'William'}]
     var will = items[0];
 
-    // is the same as the following
-    var will = $objeq([{name:'William'})[0];
-
-These are chainable, so you can also do:
+The resulting decorated array is what exposes the query functions, so you can do the following:
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var will = items.query("name == 'William'")[0];
@@ -70,7 +73,7 @@ Monitoring the Result Set for membership changes.  Notice that the first paramet
     // query all items that start with the letter 't'
     var items = $objeq([{name:'William'}, {name:'Stephen'});
     var query = items.dynamic("'^W' =~ name");
-    query.on('.content', function(target) {
+    query.on('.content', function (target) {
         // target is the array itself
         console.log("The Query Results have changed!");
     });
@@ -79,7 +82,7 @@ Monitoring the Result Set for membership changes.  Notice that the first paramet
 ### Property Changes
 Monitoring the Result Set for Property changes.  Here we just specify the property name as is (or names, separated by spaces).
 
-    query.on('name', function(target, key, newValue, oldValue) {
+    query.on('name', function (target, key, newValue, oldValue) {
         // target is the object that changed
         console.log("The Query Results have changed!");
     });
