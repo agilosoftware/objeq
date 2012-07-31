@@ -7,18 +7,12 @@
  * @author Stefano Rago (github/sterago)
  */
 
-(function () {
-  var CurrentVersion = "0.2.0"
-    , self = this;
+(function (self) {
+  "use strict"
+
+  var CURRENT_VERSION = "0.3.0";
 
   // Feature Checking *********************************************************
-
-  var hasDefineProperty = Object.prototype.defineProperty
-    , hasDefineSetter = Object.prototype.__defineSetter__;
-
-  if ( !hasDefineProperty && !hasDefineSetter ) {
-    throw new Error("Property Definitions not available!");
-  }
 
   var ObjeqParser = null;
 
@@ -44,29 +38,40 @@
     return new ObjeqParser();
   }
 
-  // By default, try to use standard ECMAScript defineProperty
-  function defineProperty1(obj, key, getter, setter) {
-    Object.defineProperty(obj, key, {
-      get: getter,
-      set: setter
-    });
-  }
+  // we control usage, so these shims don't have to be proper
 
-  // Otherwise, well have to fall back to __defineSetter__ / __defineGetter
-  function defineProperty2(obj, key, getter, setter) {
-    obj.__defineGetter__(key, getter);
-    if ( setter ) {
-      obj.__defineSetter__(key, setter);
+  var defineProperty = Object.defineProperty;
+  if ( !defineProperty ) {
+    if ( !Object.prototype.__defineSetter__) {
+      throw new Error("Property Definitions not available!");
     }
+
+    defineProperty = function fallbackDefineProperty(obj, prop, descriptor) {
+      obj.__defineGetter__(prop, descriptor.get);
+      if ( descriptor.set ) {
+        obj.__defineSetter__(prop, descriptor.set);
+      }
+    };
   }
 
-  function fallbackIsArray(obj) {
-    return obj != null && toString.call(obj) === '[object Array]';
+  var defineProperties = Object.defineProperties;
+  if ( !defineProperties ) {
+    defineProperties = function(obj, props) {
+      for ( var key in props ) {
+        var descriptor = props[key];
+        defineProperty(obj, key, descriptor);
+      }
+    };
   }
 
-  var defineProperty = hasDefineProperty ? defineProperty1 : defineProperty2
-    , toString = Object.prototype.toString
-    , isArray = Array.isArray || fallbackIsArray;
+  var isArray = Array.isArray;
+  if ( !isArray ) {
+    isArray = function fallbackIsArray(obj) {
+      return obj != null && toString.call(obj) === '[object Array]';
+    };
+  }
+
+  var toString = Object.prototype.toString
 
   // Utility Functions ********************************************************
 
@@ -133,11 +138,11 @@
 
   // Listener Implementation **************************************************
 
-  var queue = []                // The queue of pending notifications
-    , listeners = {}            // Property@Target -> Callbacks
-    , targets = {}              // Reverse Lookup: Target -> Property@Target
-    , inNotifyListeners = false // to avoid recursion with notifyListeners
-    , MaxNotifyCycles = 128;    // to avoid locking up the browser in loops
+  var MAX_NOTIFY = 128           // to avoid locking up the browser in loops
+    , queue = []                 // The queue of pending notifications
+    , listeners = {}             // Property@Target -> Callbacks
+    , targets = {}               // Reverse Lookup: Target -> Property@Target
+    , inNotifyListeners = false; // to avoid recursion with notifyListeners
 
   function hasListeners(target, key) {
     return listeners['*@*']
@@ -193,23 +198,28 @@
 
   function notifyListeners() {
     inNotifyListeners = true;
-    for ( var count = 0; queue.length && count < MaxNotifyCycles; count++ ) {
-      var currentQueue = queue, queue = [];
+    try {
+      for ( var count = 0; queue.length && count < MAX_NOTIFY; count++ ) {
+        var currentQueue = queue;
+        queue = [];
 
-      for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
-        var event = currentQueue[i]
-          , callbacks = getCallbacks(event.target, event.key);
+        for ( var i = 0, ilen = currentQueue.length; i < ilen; i++ ) {
+          var event = currentQueue[i]
+            , callbacks = getCallbacks(event.target, event.key);
 
-        for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
-          var callback = callbacks[j];
-          callback.apply(callback, event.args);
+          for ( var j = 0, jlen = callbacks.length; j < jlen; j++ ) {
+            var callback = callbacks[j];
+            callback.apply(callback, event.args);
+          }
         }
-      }
 
-      refreshQueries();
+        refreshQueries();
+      }
     }
-    inNotifyListeners = false;
-    if ( count === MaxNotifyCycles ) {
+    finally {
+      inNotifyListeners = false;
+    }
+    if ( count === MAX_NOTIFY ) {
       throw new Error("Too many notification cycles!");
     }
   }
@@ -250,7 +260,7 @@
       return state[key];
     }
 
-    defineProperty(obj, key, getter, setter);
+    defineProperty(obj, key, { get: getter, set: setter });
   }
 
   function decorateObject(obj) {
@@ -264,7 +274,9 @@
 
     // Read-only Property
     var objectId = 'o' + (nextObjectId++);
-    defineProperty(obj, '__objeq_id__', function () { return objectId; });
+    defineProperty(obj, '__objeq_id__', {
+      get: function () { return objectId; }
+    });
 
     return obj;
   }
@@ -292,12 +304,10 @@
       oldFunc.apply(this, arguments);
       var newLen = this.length;
       if ( additive ) {
-        // TODO: This is not ideal because we only care about new items
         for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
           this[i] = decorate(this[i]);
         }
       }
-      // TODO: Check if the Content *really* changed
       queueEvent(this, getArrayContentKey(this), newLen);
       if ( newLen != oldLen ) {
         queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
@@ -328,7 +338,9 @@
       return this[index];
     };
 
-    defineProperty(arr, '__objeq_mon__', function() { return true; });
+    defineProperty(arr, '__objeq_mon__', {
+      get: function() { return true; }
+    });
   }
 
   function getArrayListenerInfo(arr, name) {
@@ -422,7 +434,9 @@
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
-    defineProperty(arr, '__objeq_id__', function () { return objectId; });
+    defineProperty(arr, '__objeq_id__', {
+      get: function () { return objectId; }
+    });
 
     return arr;
   }
@@ -705,7 +719,7 @@
     return leftEval || rightEval ? func : func();
   }
 
-  var regexCache = {}; // TODO: LRU Cache
+  var regexCache = {};
 
   function evalRE(leftEval, leftLit, rightEval, rightLit) {
     var func = function _re(obj, ctx) {
@@ -864,7 +878,7 @@
   }
 
   var parserPool = []
-    , parseCache = {} // TODO: LRU Cache
+    , parseCache = {}
     , EmptyPath = yynode('path');
 
   function parse(queryString) {
@@ -931,7 +945,8 @@
     }
   }
 
-  // TODO: Right now these are brute force, but we need to do deltas
+  // NOTE: Right now these are brute force, but in the future
+  //       we may want to consider doing deltas
 
   function createPostRefresh(root, ctx, results, dynamic) {
     var evaluate = root.evaluate
@@ -995,8 +1010,14 @@
       , results = decorateArray([])
       , ctx = {};
 
-    defineProperty(ctx, 'source', function () { return source; });
-    defineProperty(ctx, 'params', function () { return params; });
+    defineProperties(ctx, {
+      source: {
+        get: function () { return source; }
+      },
+      params: {
+        get: function () { return params; }
+      }
+    });
 
     var refreshResults;
     if ( !root.sort || !root.sortFirst || root.select === EmptyPath )
@@ -1094,6 +1115,8 @@
   // Exported Function ********************************************************
 
   function objeq() {
+    var self = this || EmptyArray;
+
     // Fast Path for decorating an existing Array
     if ( arguments.length === 1 && isArray(arguments[0]) )
       return decorate(arguments[0]);
@@ -1103,7 +1126,7 @@
       return decorateArray([]);
 
     var args = makeArray(arguments)
-      , source = isDecorated(this) ? this : decorateArray([])
+      , source = isDecorated(self) ? self : decorateArray([])
       , results = null;
 
     while ( args.length ) {
@@ -1120,7 +1143,7 @@
     return results;
   }
 
-  defineProperty(objeq, 'VERSION', function () { return CurrentVersion; });
+  defineProperty(objeq, 'VERSION', function () { return CURRENT_VERSION; });
   objeq.registerExtension = registerExtension;
   objeq.debug = debug;
 
@@ -1139,4 +1162,4 @@
     }
     self.$objeq = objeq;
   }
-})();
+})(this);
