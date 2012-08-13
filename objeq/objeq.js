@@ -71,7 +71,7 @@
     };
   }
 
-  var toString = Object.prototype.toString
+  var toString = Object.prototype.toString;
 
   // Utility Functions ********************************************************
 
@@ -260,7 +260,12 @@
       return state[key];
     }
 
-    defineProperty(obj, key, { get: getter, set: setter });
+    defineProperty(obj, key, {
+      get: getter,
+      set: setter,
+      enumerable: true,
+      configurable: true
+    });
   }
 
   function decorateObject(obj) {
@@ -1143,7 +1148,10 @@
     return results;
   }
 
-  defineProperty(objeq, 'VERSION', function () { return CURRENT_VERSION; });
+  defineProperty(objeq, 'VERSION', {
+    get: function () { return CURRENT_VERSION; }
+  });
+
   objeq.registerExtension = registerExtension;
   objeq.debug = debug;
 
