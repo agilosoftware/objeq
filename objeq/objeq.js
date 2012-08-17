@@ -8,7 +8,7 @@
  */
 
 (function (self) {
-  "use strict"
+  "use strict";
 
   var CURRENT_VERSION = "0.3.0";
 
@@ -77,6 +77,20 @@
 
   function makeArray(arr) {
     return Array.prototype.slice.call(arr, 0);
+  }
+
+  function arraysAreEqual(arr1, arr2) {
+    if ( arr1.length !== arr2.length ) {
+      return false;
+    }
+
+    for ( var i = 0, len = arr1.length; i < len; i++ ) {
+      if ( arr1[i] !== arr2[i] ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   // we control usage, so we don't need to check for hasOwnProperty
@@ -253,7 +267,7 @@
       }
 
       state[key] = value;
-      queueEvent(this, key, value, prev);
+      queueEvent(obj, key, value, prev);
     }
 
     function getter() {
@@ -298,114 +312,6 @@
     { name: 'sort', additive: false }
   ];
 
-  function monitorArrayFunction(arr, name, additive) {
-    var oldFunc = arr[name];
-    if ( !oldFunc ) {
-      throw new Error("Missing Array function: " + name);
-    }
-
-    arr[name] = function wrapped() {
-      var oldLen = this.length;
-      oldFunc.apply(this, arguments);
-      var newLen = this.length;
-      if ( additive ) {
-        for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
-          this[i] = decorate(this[i]);
-        }
-      }
-      queueEvent(this, getArrayContentKey(this), newLen);
-      if ( newLen != oldLen ) {
-        queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
-      }
-    };
-  }
-
-  function monitorArray(arr) {
-    for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
-      arr[i] = decorate(arr[i]);
-    }
-
-    for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
-      var arrayFunc = ArrayFuncs[i];
-      monitorArrayFunction(arr, arrayFunc.name, arrayFunc.additive);
-    }
-
-    arr.item =  function _monitoredItem(index, value) {
-      if ( typeof value !== 'undefined' ) {
-        var oldLen = this.length;
-        this[index] = decorate(value);
-        var newLen = this.length;
-        queueEvent(this, getArrayContentKey(this), newLen);
-        if ( newLen != oldLen ) {
-          queueEvent(this, getArrayLengthKey(this), newLen, oldLen);
-        }
-      }
-      return this[index];
-    };
-
-    defineProperty(arr, '__objeq_mon__', {
-      get: function() { return true; }
-    });
-  }
-
-  function getArrayListenerInfo(arr, name) {
-    switch( name ) {
-      case '.content': return { target: arr, key: getArrayContentKey(arr) };
-      case '.length': return { target: arr, key: getArrayLengthKey(arr) };
-      default: return { target: null, key: name };
-    }
-  }
-
-  function addEventMethods(arr) {
-    var callbackMapping = [];
-
-    function wrapCallback(arr, callback) {
-      // If it's already wrapped, return the wrapper
-      for ( var i = 0, ilen = callbackMapping.length; i < ilen; i++ ) {
-        var item = callbackMapping[i];
-        if ( item.callback === callback ) {
-          return item.wrapped;
-        }
-      }
-      // Otherwise create the wrapper
-      var wrapped = function _wrappedCallback(target, key, value, prev) {
-        // TODO: Use a hash lookup instead of an Array scan
-        arr.indexOf(target) !== -1 && callback(target, key, value, prev);
-      };
-      callbackMapping.push({ callback: callback, wrapped: wrapped });
-      return wrapped;
-    }
-
-    arr.on = function _on(events, callback) {
-      // If the Array isn't already monitored, then we need to
-      if ( !isMonitored(this) ) {
-        monitorArray(this);
-      }
-
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        var info = getArrayListenerInfo(this, evt[i]);
-        if ( !info.target ) {
-          callback = wrapCallback(this, callback);
-        }
-        addListener(info.target, info.key, callback);
-      }
-      return this;
-    };
-
-    arr.off = function _off(events, callback) {
-      var evt = events.split(/\s/);
-      for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
-        var info = getArrayListenerInfo(this, evt[i]);
-        if ( !info.target ) {
-          callback = wrapCallback(this, callback);
-        }
-        removeListener(info.target, info.key, callback);
-      }
-      return this;
-    };
-  }
-
   var DecoratedArrayMixin = {
     dynamic: dynamic, // for dynamic sub-queries
     query: query,     // for snapshot queries
@@ -434,8 +340,10 @@
   };
 
   function decorateArray(arr) {
+    var callbackMapping = [];
+
     mixin(arr, DecoratedArrayMixin);
-    addEventMethods(arr);
+    addEventMethods();
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
@@ -443,7 +351,118 @@
       get: function () { return objectId; }
     });
 
+    var arrayContentKey = getArrayContentKey(arr);
+    var arrayLengthKey = getArrayLengthKey(arr);
+
     return arr;
+
+    // Array Event Methods ****************************************************
+
+    function addEventMethods() {
+      arr.on = function _on(events, callback) {
+        // If the Array isn't already monitored, then we need to
+        if ( !isMonitored(arr) ) {
+          monitorArray();
+        }
+
+        var evt = events.split(/\s/);
+        for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+          var info = getArrayListenerInfo(evt[i]);
+          if ( !info.target ) {
+            callback = wrapCallback(callback);
+          }
+          addListener(info.target, info.key, callback);
+        }
+        return arr;
+      };
+
+      arr.off = function _off(events, callback) {
+        var evt = events.split(/\s/);
+        for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+          var info = getArrayListenerInfo(evt[i]);
+          if ( !info.target ) {
+            callback = wrapCallback(callback);
+          }
+          removeListener(info.target, info.key, callback);
+        }
+        return arr;
+      };
+    }
+
+    function monitorArray() {
+      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+        arr[i] = decorate(arr[i]);
+      }
+
+      for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
+        var arrayFunc = ArrayFuncs[i];
+        monitorArrayFunc(arrayFunc.name, arrayFunc.additive);
+      }
+
+      arr.item =  function _monitoredItem(index, value) {
+        if ( typeof value !== 'undefined' ) {
+          var oldLen = arr.length;
+          arr[index] = decorate(value);
+          var newLen = arr.length;
+          queueEvent(arr, arrayContentKey, newLen);
+          if ( newLen != oldLen ) {
+            queueEvent(arr, arrayLengthKey, newLen, oldLen);
+          }
+        }
+        return arr[index];
+      };
+
+      defineProperty(arr, '__objeq_mon__', {
+        get: function() { return true; }
+      });
+    }
+
+    function monitorArrayFunc(name, additive) {
+      var oldFunc = arr[name];
+      if ( !oldFunc ) {
+        throw new Error("Missing Array function: " + name);
+      }
+
+      arr[name] = function wrapped() {
+        var oldLen = arr.length;
+        oldFunc.apply(arr, arguments);
+        var newLen = arr.length;
+        if ( additive ) {
+          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+            arr[i] = decorate(arr[i]);
+          }
+        }
+        queueEvent(arr, arrayContentKey, newLen);
+        if ( newLen != oldLen ) {
+          queueEvent(arr, arrayLengthKey, newLen, oldLen);
+        }
+      };
+    }
+
+    function getArrayListenerInfo(name) {
+      switch( name ) {
+        case '.content': return { target: arr, key: arrayContentKey };
+        case '.length': return { target: arr, key: arrayLengthKey };
+        default: return { target: null, key: name };
+      }
+    }
+
+    function wrapCallback(callback) {
+      // If it's already wrapped, return the wrapper
+      for ( var i = 0, ilen = callbackMapping.length; i < ilen; i++ ) {
+        var item = callbackMapping[i];
+        if ( item.callback === callback ) {
+          return item.wrapped;
+        }
+      }
+      // Otherwise create the wrapper
+      var wrapped = function _wrappedCallback(target, key, value, prev) {
+        // TODO: Use a hash lookup instead of an Array scan
+        arr.indexOf(target) !== -1 && callback(target, key, value, prev);
+      };
+      callbackMapping.push({ callback: callback, wrapped: wrapped });
+      return wrapped;
+    }
   }
 
   function decorate(value) {
@@ -463,14 +482,7 @@
 
   // 'Compilation' Functions **************************************************
 
-  function objectEvalTemplate(hash) {
-    var template = {};
-    for ( var key in hash ) {
-      var item = hash[key], isNode = isArray(item) && item.isNode;
-      template[key] = isNode ? createEvaluator(item) : item;
-    }
-    return template;
-  }
+  var regexCache = {};
 
   function arrayEvalTemplate(items) {
     var template = [];
@@ -518,237 +530,6 @@
     return evalPath(evalRoot, pathComponents);
   }
 
-  function evalObj(template) {
-    return function _obj(obj, ctx) {
-      var result = {};
-      for ( var key in template ) {
-        var item = template[key];
-        result[key] = typeof item === 'function' ? item(obj, ctx) : item;
-      }
-      return result;
-    };
-  }
-
-  function evalArr(template) {
-    return function _arr(obj, ctx) {
-      var result = [];
-      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
-        var item = template[i];
-        result[i] = typeof item === 'function' ? item(obj, ctx) : item;
-      }
-      return result;
-    };
-  }
-
-  function evalFunc(func, template) {
-    return function _func(obj, ctx) {
-      var funcArgs = [];
-      for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
-        var item = template[i];
-        funcArgs[i] = typeof item === 'function' ? item(obj, ctx) : item;
-      }
-      return func.apply(obj, [ctx].concat(funcArgs));
-    }
-  }
-
-  function evalNOT(leftEval, leftLit) {
-    if ( !leftEval ) {
-      return !leftLit;
-    }
-    return function _not(obj, ctx) {
-      return !leftEval(obj, ctx);
-    };
-  }
-
-  function evalNEG(leftEval, leftLit) {
-    if ( !leftEval ) {
-      return -leftLit;
-    }
-    return function _neg(obj, ctx) {
-      return -leftEval(obj, ctx);
-    };
-  }
-
-  function evalAND(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit && rightLit;
-    }
-    return function _and(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
-      return !lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
-    };
-  }
-
-  function evalOR(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit || rightLit;
-    }
-    return function _or(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
-      return lval ? lval : (rightEval ? rightEval(obj, ctx) : rightLit);
-    };
-  }
-
-  function evalADD(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit + rightLit;
-    }
-    return function _add(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval + rval;
-    };
-  }
-
-  function evalSUB(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit - rightLit;
-    }
-    return function _sub(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval - rval;
-    };
-  }
-
-  function evalMUL(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit * rightLit;
-    }
-    return function _mul(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval * rval;
-    };
-  }
-
-  function evalDIV(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit / rightLit;
-    }
-    return function _div(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval / rval;
-    };
-  }
-
-  function evalMOD(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit % rightLit;
-    }
-    return function _mod(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval % rval;
-    };
-  }
-
-  function evalEQ(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit == rightLit;
-    }
-    return function _eq(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval == rval;
-    };
-  }
-
-  function evalNEQ(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit != rightLit;
-    }
-    return function _neq(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval != rval;
-    };
-  }
-
-  function evalGT(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit > rightLit;
-    }
-    return function _gt(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval > rval;
-    };
-  }
-
-  function evalGTE(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit >= rightLit;
-    }
-    return function _gte(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval >= rval;
-    };
-  }
-
-  function evalLT(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit < rightLit;
-    }
-    return function _lt(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval < rval;
-    };
-  }
-
-  function evalLTE(leftEval, leftLit, rightEval, rightLit) {
-    if ( !leftEval && !rightEval ) {
-      return leftLit <= rightLit;
-    }
-    return function _lte(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit
-        , rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      return lval <= rval;
-    };
-  }
-
-  function evalIN(leftEval, leftLit, rightEval, rightLit) {
-    var func = function _in(obj, ctx) {
-      var rval = rightEval ? rightEval(obj, ctx) : rightLit;
-      if ( isArray(rval) ) {
-        return rval.indexOf(leftEval ? leftEval(obj, ctx) : leftLit) !== -1;
-      }
-      else if ( typeof rval === 'object' ) {
-        return (leftEval ? leftEval(obj, ctx) : leftLit) in rval;
-      }
-      return false
-    };
-    return leftEval || rightEval ? func : func();
-  }
-
-  var regexCache = {};
-
-  function evalRE(leftEval, leftLit, rightEval, rightLit) {
-    var func = function _re(obj, ctx) {
-      var lval = leftEval ? leftEval(obj, ctx) : leftLit;
-      if ( typeof lval !== 'string' ) {
-        return false;
-      }
-      var rval = rightEval ? rightEval(obj, ctx) : rightLit
-        , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
-      return re.test(rval);
-    };
-    return leftEval || rightEval ? func : func();
-  }
-
-  function evalTern(cmpEval, cmpLit, trueEval, trueLit, falseEval, falseLit) {
-    var func = function _tern(obj, ctx) {
-      var cval = cmpEval ? cmpEval(obj, ctx) : cmpLit
-        , tval = trueEval ? trueEval(obj, ctx) : trueLit
-        , fval = falseEval ? falseEval(obj, ctx) : falseLit;
-      return cval ? tval : fval;
-    };
-    return cmpEval || trueEval || falseEval ? func : func();
-  }
-
   function createEvaluator(node) {
     if ( !isArray(node) || !node.isNode ) {
       return node;
@@ -783,8 +564,8 @@
     typeof n1 === 'function' ? n1Eval = n1 : n1Lit = n1;
 
     switch ( op ) {
-      case 'not': return evalNOT(n1Eval, n1Lit);
-      case 'neg': return evalNEG(n1Eval, n1Lit);
+      case 'not': return evalNOT();
+      case 'neg': return evalNEG();
     }
 
     // Binary Operators
@@ -792,59 +573,271 @@
     typeof n2 === 'function' ? n2Eval = n2 : n2Lit = n2;
 
     switch ( op ) {
-      case 'and': return evalAND(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'or':  return evalOR(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'add': return evalADD(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'sub': return evalSUB(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'mul': return evalMUL(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'div': return evalDIV(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'mod': return evalMOD(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'eq':  return evalEQ(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'neq': return evalNEQ(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'gt':  return evalGT(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'gte': return evalGTE(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'lt':  return evalLT(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'lte': return evalLTE(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 'in':  return evalIN(n1Eval, n1Lit, n2Eval, n2Lit);
-      case 're':  return evalRE(n1Eval, n1Lit, n2Eval, n2Lit);
+      case 'and': return evalAND();
+      case 'or':  return evalOR();
+      case 'add': return evalADD();
+      case 'sub': return evalSUB();
+      case 'mul': return evalMUL();
+      case 'div': return evalDIV();
+      case 'mod': return evalMOD();
+      case 'eq':  return evalEQ();
+      case 'neq': return evalNEQ();
+      case 'gt':  return evalGT();
+      case 'gte': return evalGTE();
+      case 'lt':  return evalLT();
+      case 'lte': return evalLTE();
+      case 'in':  return evalIN();
+      case 're':  return evalRE();
     }
 
     // Ternary Operator
     if ( op === 'tern' ) {
       var n3 = createEvaluator(node[3]), n3Eval, n3Lit;
       typeof n3 === 'function' ? n3Eval = n3 : n3Lit = n3;
-      return evalTern(n1Eval, n1Lit, n2Eval, n2Lit, n3Eval, n3Lit);
+      return evalTern();
     }
 
     // This should hopefully never happen
     throw new Error("Invalid parser node: " + op);
-  }
 
-  function wrapEvaluator(node) {
-    var result = createEvaluator(node);
-    if ( typeof result !== 'function' ) {
-      return function _evalWrapper() {
+    // Evaluator Generation ***************************************************
+
+    function objectEvalTemplate(hash) {
+      var template = {};
+      for ( var key in hash ) {
+        var item = hash[key], isNode = isArray(item) && item.isNode;
+        template[key] = isNode ? createEvaluator(item) : item;
+      }
+      return template;
+    }
+
+    function evalObj(template) {
+      return function _obj(obj, ctx) {
+        var result = {};
+        for ( var key in template ) {
+          var item = template[key];
+          result[key] = typeof item === 'function' ? item(obj, ctx) : item;
+        }
         return result;
       };
     }
-    return result;
-  }
 
-  function createComparator(path, ascending) {
-    var getPath = evalLocalPath(path);
-    if ( ascending ) {
-      return function _ascendingComparator(item1, item2) {
-        var val1 = getPath(item1)
-          , val2 = getPath(item2);
-        return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
+    function evalArr(template) {
+      return function _arr(obj, ctx) {
+        var result = [];
+        for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+          var item = template[i];
+          result[i] = typeof item === 'function' ? item(obj, ctx) : item;
+        }
+        return result;
       };
     }
-    else {
-      return function _descendingComparator(item1, item2) {
-        var val1 = getPath(item1)
-          , val2 = getPath(item2);
-        return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
+
+    function evalFunc(func, template) {
+      return function _func(obj, ctx) {
+        var funcArgs = [];
+        for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
+          var item = template[i];
+          funcArgs[i] = typeof item === 'function' ? item(obj, ctx) : item;
+        }
+        return func.apply(obj, [ctx].concat(funcArgs));
+      }
+    }
+
+    function evalNOT() {
+      if ( !n1Eval ) {
+        return !n1Lit;
+      }
+      return function _not(obj, ctx) {
+        return !n1Eval(obj, ctx);
       };
+    }
+
+    function evalNEG() {
+      if ( !n1Eval ) {
+        return -n1Lit;
+      }
+      return function _neg(obj, ctx) {
+        return -n1Eval(obj, ctx);
+      };
+    }
+
+    function evalAND() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit && n2Lit;
+      }
+      return function _and(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
+        return !lval ? lval : (n2Eval ? n2Eval(obj, ctx) : n2Lit);
+      };
+    }
+
+    function evalOR() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit || n2Lit;
+      }
+      return function _or(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
+        return lval ? lval : (n2Eval ? n2Eval(obj, ctx) : n2Lit);
+      };
+    }
+
+    function evalADD() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit + n2Lit;
+      }
+      return function _add(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval + rval;
+      };
+    }
+
+    function evalSUB() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit - n2Lit;
+      }
+      return function _sub(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval - rval;
+      };
+    }
+
+    function evalMUL() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit * n2Lit;
+      }
+      return function _mul(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval * rval;
+      };
+    }
+
+    function evalDIV() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit / n2Lit;
+      }
+      return function _div(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval / rval;
+      };
+    }
+
+    function evalMOD() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit % n2Lit;
+      }
+      return function _mod(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval % rval;
+      };
+    }
+
+    function evalEQ() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit == n2Lit;
+      }
+      return function _eq(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval == rval;
+      };
+    }
+
+    function evalNEQ() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit != n2Lit;
+      }
+      return function _neq(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval != rval;
+      };
+    }
+
+    function evalGT() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit > n2Lit;
+      }
+      return function _gt(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval > rval;
+      };
+    }
+
+    function evalGTE() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit >= n2Lit;
+      }
+      return function _gte(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval >= rval;
+      };
+    }
+
+    function evalLT() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit < n2Lit;
+      }
+      return function _lt(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval < rval;
+      };
+    }
+
+    function evalLTE() {
+      if ( !n1Eval && !n2Eval ) {
+        return n1Lit <= n2Lit;
+      }
+      return function _lte(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        return lval <= rval;
+      };
+    }
+
+    function evalIN() {
+      var func = function _in(obj, ctx) {
+        var rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+        if ( isArray(rval) ) {
+          return rval.indexOf(n1Eval ? n1Eval(obj, ctx) : n1Lit) !== -1;
+        }
+        else if ( typeof rval === 'object' ) {
+          return (n1Eval ? n1Eval(obj, ctx) : n1Lit) in rval;
+        }
+        return false
+      };
+      return n1Eval || n2Eval ? func : func();
+    }
+
+    function evalRE() {
+      var func = function _re(obj, ctx) {
+        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
+        if ( typeof lval !== 'string' ) {
+          return false;
+        }
+        var rval = n2Eval ? n2Eval(obj, ctx) : n2Lit
+          , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
+        return re.test(rval);
+      };
+      return n1Eval || n2Eval ? func : func();
+    }
+
+    function evalTern() {
+      var func = function _tern(obj, ctx) {
+        var cval = n1Eval ? n1Eval(obj, ctx) : n1Lit
+          , tval = n2Eval ? n2Eval(obj, ctx) : n2Lit
+          , fval = n3Eval ? n3Eval(obj, ctx) : n3Lit;
+        return cval ? tval : fval;
+      };
+      return n1Eval || n2Eval || n3Eval ? func : func();
     }
   }
 
@@ -864,6 +857,24 @@
       }
       return 0;
     };
+
+    function createComparator(path, ascending) {
+      var getPath = evalLocalPath(path);
+      if ( ascending ) {
+        return function _ascendingComparator(item1, item2) {
+          var val1 = getPath(item1)
+            , val2 = getPath(item2);
+          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
+        };
+      }
+      else {
+        return function _descendingComparator(item1, item2) {
+          var val1 = getPath(item1)
+            , val2 = getPath(item2);
+          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
+        };
+      }
+    }
   }
 
   // Parsing Functions ********************************************************
@@ -906,6 +917,16 @@
     // Push the Parser back onto the pool and return the result
     parserPool.push(parser);
     return result;
+
+    function wrapEvaluator(node) {
+      var result = createEvaluator(node);
+      if ( typeof result !== 'function' ) {
+        return function _evalWrapper() {
+          return result;
+        };
+      }
+      return result;
+    }
   }
 
   // Query Processing Functions ***********************************************
@@ -925,9 +946,9 @@
     pendingRefresh = invalidated;
     invalidated = {};
     for ( var key in pendingRefresh ) {
-      var refreshFunction = pendingRefresh[key];
+      var refreshFunc = pendingRefresh[key];
       delete pendingRefresh[key];
-      refreshFunction();
+      refreshFunc();
     }
   }
 
@@ -950,68 +971,11 @@
     }
   }
 
-  // NOTE: Right now these are brute force, but in the future
-  //       we may want to consider doing deltas
-
-  function createPostRefresh(root, ctx, results, dynamic) {
-    var evaluate = root.evaluate
-      , select = root.select
-      , sort = root.sort
-      , source = ctx.source;
-
-    return function _postRefreshResults() {
-      results.length = 0;
-
-      // In this case, we can filter and select in one pass
-      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-        var obj = source[i];
-        if ( !evaluate(obj, ctx) ) {
-          continue;
-        }
-
-        results[j++] = select(obj, ctx);
-      }
-
-      if ( sort ) {
-        results.sort(sort);
-      }
-
-      if ( dynamic && isDecorated(results) ) {
-        queueEvent(results, getArrayContentKey(results), results.length);
-      }
-    };
-  }
-
-  function createPreRefresh(root, ctx, results, dynamic) {
-    var evaluate = root.evaluate
-      , select = root.select
-      , sort = root.sort
-      , source = ctx.source;
-
-    return function _preRefreshResults() {
-      results.length = 0;
-
-      var temp = [];
-      for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-        var obj = source[i];
-        if ( evaluate(obj, ctx) ) {
-          temp[j++] = obj;
-        }
-      }
-
-      temp.sort(sort);
-      for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-        results[j++] = select(temp[i], ctx);
-      }
-
-      if ( dynamic && isDecorated(results) ) {
-        queueEvent(results, getArrayContentKey(results), results.length);
-      }
-    };
-  }
-
   function processQuery(source, queryString, params, callback, dynamic) {
     var root = parse(queryString)
+      , evaluate = root.evaluate
+      , select = root.select
+      , sort = root.sort
       , results = decorateArray([])
       , ctx = {};
 
@@ -1024,35 +988,94 @@
       }
     });
 
-    var refreshResults;
-    if ( !root.sort || !root.sortFirst || root.select === EmptyPath )
-      refreshResults = createPostRefresh(root, ctx, results, dynamic);
-    else
-      refreshResults = createPreRefresh(root, ctx, results, dynamic);
-
-    function sourceListener(target, key, value, prev) {
-      invalidateQuery(results, refreshResults); // for now
+    var evalResults;
+    if ( !root.sort || !root.sortFirst || root.select === EmptyPath ) {
+      evalResults = createEvalPostSortResults();
+    }
+    else {
+      evalResults = createEvalPreSortResults();
     }
 
-    function queryListener(target, key, value, prev) {
-      invalidateQuery(results, refreshResults); // for now
-    }
-
-    function resultListener(target, key, value, prev) {
-      invalidateQuery(results, refreshResults); // for now
-    }
-
+    var refreshSet, refreshItem;
     if ( dynamic ) {
-      source.on('.content', sourceListener);
-      addQueryListeners(root.paths, ctx, queryListener, resultListener);
+      refreshSet = refreshDynamicSet;
+      refreshItem = refreshDynamicItem;
+      source.on('.content', setListener);
+      addQueryListeners(root.paths, ctx, setListener, itemListener);
+    }
+    else {
+      refreshSet = refreshItem = evalResults;
     }
 
     if ( callback ) {
       addListener(results, getArrayContentKey(results), callback);
     }
-    refreshResults();
 
+    refreshSet();
     return results;
+
+    // Result Refresh Functions ***********************************************
+
+    function setListener(target, key, value, prev) {
+      invalidateQuery(results, refreshSet);
+    }
+
+    function itemListener(target, key, value, prev) {
+      invalidateQuery(results, refreshItem);
+    }
+
+    function refreshDynamicSet() {
+      var oldResults = results.slice(0);
+      evalResults();
+      if ( arraysAreEqual(oldResults, results) ) {
+        return;
+      }
+      queueEvent(results, getArrayContentKey(results), results.length);
+    }
+
+    function refreshDynamicItem() {
+      evalResults();
+      queueEvent(results, getArrayContentKey(results), results.length);
+    }
+
+    function createEvalPostSortResults() {
+      return function _evalPostSortResults() {
+        results.length = 0;
+
+        // In this case, we can filter and select in one pass
+        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+          var obj = source[i];
+          if ( !evaluate(obj, ctx) ) {
+            continue;
+          }
+
+          results[j++] = select(obj, ctx);
+        }
+
+        if ( sort ) {
+          results.sort(sort);
+        }
+      };
+    }
+
+    function createEvalPreSortResults() {
+      return function _evalPreSortResults() {
+        results.length = 0;
+
+        var temp = [];
+        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+          var obj = source[i];
+          if ( evaluate(obj, ctx) ) {
+            temp[j++] = obj;
+          }
+        }
+
+        temp.sort(sort);
+        for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
+          results[j++] = select(temp[i], ctx);
+        }
+      };
+    }
   }
 
   function processArguments() {
@@ -1123,12 +1146,14 @@
     var self = this || EmptyArray;
 
     // Fast Path for decorating an existing Array
-    if ( arguments.length === 1 && isArray(arguments[0]) )
+    if ( arguments.length === 1 && isArray(arguments[0]) ) {
       return decorate(arguments[0]);
+    }
 
     // Fast Path for creating a new Array
-    if ( arguments.length === 0 )
+    if ( arguments.length === 0 ) {
       return decorateArray([]);
+    }
 
     var args = makeArray(arguments)
       , source = isDecorated(self) ? self : decorateArray([])
