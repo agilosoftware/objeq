@@ -70,7 +70,7 @@ Presently, you can create Observers on Result Sets in the following ways.
 ### Membership Changes
 Monitoring the Result Set for membership changes.  Notice that the first parameter to the `on()` method is '.content'.  All Observable keys that start with a '.' are considered to be special properties of the Result Set itself.
 
-    // query all items that start with the letter 't'
+    // query all items that start with the letter 'W'
     var items = $objeq([{name:'William'}, {name:'Stephen'});
     var query = items.dynamic("'^W' =~ name");
     query.on('.content', function (target) {

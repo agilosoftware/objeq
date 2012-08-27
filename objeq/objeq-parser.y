@@ -38,6 +38,8 @@ ws    [\s]
 "null"                    return 'NULL';
 "true"                    return 'TRUE';
 "false"                   return 'FALSE';
+"select"{ws}+"each"       return 'EACH';
+"select"{ws}+"first"      return 'FIRST';
 "select"                  return 'SELECT';
 ("order"{ws}+)?"by"       return 'ORDER_BY';
 "asc"                     return 'ASC';
@@ -54,9 +56,11 @@ ws    [\s]
 "&&"                      return 'AND';
 "||"                      return 'OR';
 "->"                      return 'SELECT';
+"<:"                      return 'EACH';
 "!"                       return 'NOT';
 "<"                       return 'LT';
 ">"                       return 'GT';
+"|"                       return '|';
 "("                       return '(';
 ")"                       return ')';
 "["                       return '[';
@@ -100,52 +104,57 @@ ws    [\s]
  */
 
 program
-  : query EOF        { return $1; }
+  : query EOF          { return $1; }
   ;
 
 query
-  : expr             { $$ = { expr: $1 }; }
-  | filter           { $$ = $1; $1.expr = true; }
-  | expr filter      { $$ = $2; $2.expr = $1; }
+  : step               { $$ = [$1]; }
+  | query '|' step     { $$ = $1; $1.push($3); yy.step += 1; }
+  ;
+
+step
+  : expr               { $$ = { expr: $1 }; }
+  | filter             { $$ = $1; $1.expr = true; }
+  | expr filter        { $$ = $2; $2.expr = $1; }
   ;
 
 filter
-  : order_by         { $$ = { order: $1, sortFirst: true }; }
-  | order_by select  { $$ = { order: $1, select: $2, sortFirst: true }; }
-  | select           { $$ = { select: $1 }; }
-  | select order_by  { $$ = { select: $1, order: $2 }; }
+  : order_by           { $$ = { order: $1, sortFirst: true }; }
+  | order_by selector  { $$ = { order: $1, select: $2, sortFirst: true }; }
+  | selector           { $$ = { select: $1 }; }
+  | selector order_by  { $$ = { select: $1, order: $2 }; }
   ;
 
 expr
-  : expr '+' expr    { $$ = yy.node('add', $1, $3); }
-  | expr '-' expr    { $$ = yy.node('sub', $1, $3); }
-  | expr '*' expr    { $$ = yy.node('mul', $1, $3); }
-  | expr '/' expr    { $$ = yy.node('div', $1, $3); }
-  | expr '%' expr    { $$ = yy.node('mod', $1, $3); }
-  | expr AND expr    { $$ = yy.node('and', $1, $3); }
-  | expr OR expr     { $$ = yy.node('or', $1, $3); }
-  | expr EQ expr     { $$ = yy.node('eq', $1, $3); }
-  | expr NEQ expr    { $$ = yy.node('neq', $1, $3); }
-  | expr RE expr     { $$ = yy.node('re', $1, $3); }
-  | expr GT expr     { $$ = yy.node('gt', $1, $3); }
-  | expr GTE expr    { $$ = yy.node('gte', $1, $3); }
-  | expr LT expr     { $$ = yy.node('lt', $1, $3); }
-  | expr LTE expr    { $$ = yy.node('lte', $1, $3); }
-  | expr IN expr     { $$ = yy.node('in', $1, $3); }
-  | NOT expr         { $$ = yy.node('not', $2); }
-  | '-' expr         %prec NEG { $$ = yy.node('neg', $2); }
-  | '(' expr ')'     { $$ = $2; }
-  | ternary          { $$ = $1; }
-  | func             { $$ = $1; }
-  | array            { $$ = $1; }
-  | obj              { $$ = $1; }
-  | NUMBER           { $$ = Number(yytext); }
-  | STRING           { $$ = yytext; }
-  | TRUE             { $$ = true; }
-  | FALSE            { $$ = false; }
-  | NULL             { $$ = null; }
-  | UNDEFINED        { $$ = undefined; }
-  | path             { $$ = $1; }
+  : expr '+' expr      { $$ = yy.node('add', $1, $3); }
+  | expr '-' expr      { $$ = yy.node('sub', $1, $3); }
+  | expr '*' expr      { $$ = yy.node('mul', $1, $3); }
+  | expr '/' expr      { $$ = yy.node('div', $1, $3); }
+  | expr '%' expr      { $$ = yy.node('mod', $1, $3); }
+  | expr AND expr      { $$ = yy.node('and', $1, $3); }
+  | expr OR expr       { $$ = yy.node('or', $1, $3); }
+  | expr EQ expr       { $$ = yy.node('eq', $1, $3); }
+  | expr NEQ expr      { $$ = yy.node('neq', $1, $3); }
+  | expr RE expr       { $$ = yy.node('re', $1, $3); }
+  | expr GT expr       { $$ = yy.node('gt', $1, $3); }
+  | expr GTE expr      { $$ = yy.node('gte', $1, $3); }
+  | expr LT expr       { $$ = yy.node('lt', $1, $3); }
+  | expr LTE expr      { $$ = yy.node('lte', $1, $3); }
+  | expr IN expr       { $$ = yy.node('in', $1, $3); }
+  | NOT expr           { $$ = yy.node('not', $2); }
+  | '-' expr           %prec NEG { $$ = yy.node('neg', $2); }
+  | '(' expr ')'       { $$ = $2; }
+  | ternary            { $$ = $1; }
+  | func               { $$ = $1; }
+  | array              { $$ = $1; }
+  | obj                { $$ = $1; }
+  | NUMBER             { $$ = Number(yytext); }
+  | STRING             { $$ = yytext; }
+  | TRUE               { $$ = true; }
+  | FALSE              { $$ = false; }
+  | NULL               { $$ = null; }
+  | UNDEFINED          { $$ = undefined; }
+  | path               { $$ = $1; }
   ;
 
 ternary
@@ -185,8 +194,10 @@ obj_item
   | IDENT                      { $$ = [$1, yy.path($1)]; }
   ;
 
-select
-  : SELECT expr                { $$ = $2; }
+selector
+  : SELECT expr                { $$ = yy.node('select', $2); }
+  | FIRST local_path           { $$ = yy.node('first', $2); }
+  | EACH local_path            { $$ = yy.node('each', $2); }
   ;
 
 order_by

@@ -309,7 +309,7 @@
     { name: 'pop', additive: false },
     { name: 'reverse', additive: false },
     { name: 'shift', additive: false },
-    { name: 'sort', additive: false }
+    { name: 'order', additive: false }
   ];
 
   var DecoratedArrayMixin = {
@@ -495,8 +495,8 @@
 
   function evalPath(evalRoot, pathComponents) {
     var path = arrayEvalTemplate(pathComponents);
-    return function _path(obj, ctx) {
-      var value = evalRoot(obj, ctx);
+    return function _path(ctx, obj) {
+      var value = evalRoot(ctx, obj);
       for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
         if ( isArray(value) && isDecorated(value) ) {
@@ -510,21 +510,21 @@
         }
 
         var comp = path[i];
-        value =  value[typeof comp === 'function' ? comp(obj, ctx) : comp];
+        value =  value[typeof comp === 'function' ? comp(ctx, obj) : comp];
       }
       return value;
     };
   }
 
   function evalArgPath(index, pathComponents) {
-    var evalRoot = function _arg(obj, ctx) {
+    var evalRoot = function _arg(ctx, obj) {
       return ctx.params[index];
     };
     return evalPath(evalRoot, pathComponents);
   }
 
   function evalLocalPath(pathComponents) {
-    var evalRoot = function _local(obj) {
+    var evalRoot = function _local(ctx, obj) {
       return obj;
     };
     return evalPath(evalRoot, pathComponents);
@@ -538,6 +538,14 @@
     // Resolving Operators
     var op = node[0];
     switch ( op ) {
+      case 'select':
+      case 'first':
+        return createEvaluator(node[1]);
+
+      case 'each':
+        // TODO: This
+        return createEvaluator(node[1]);
+
       case 'path':
         var index = node[1], isNumber = typeof index === 'number';
         if ( !isNumber ) {
@@ -612,33 +620,33 @@
     }
 
     function evalObj(template) {
-      return function _obj(obj, ctx) {
+      return function _obj(ctx, obj) {
         var result = {};
         for ( var key in template ) {
           var item = template[key];
-          result[key] = typeof item === 'function' ? item(obj, ctx) : item;
+          result[key] = typeof item === 'function' ? item(ctx, obj) : item;
         }
         return result;
       };
     }
 
     function evalArr(template) {
-      return function _arr(obj, ctx) {
+      return function _arr(ctx, obj) {
         var result = [];
         for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
           var item = template[i];
-          result[i] = typeof item === 'function' ? item(obj, ctx) : item;
+          result[i] = typeof item === 'function' ? item(ctx, obj) : item;
         }
         return result;
       };
     }
 
     function evalFunc(func, template) {
-      return function _func(obj, ctx) {
+      return function _func(ctx, obj) {
         var funcArgs = [];
         for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
           var item = template[i];
-          funcArgs[i] = typeof item === 'function' ? item(obj, ctx) : item;
+          funcArgs[i] = typeof item === 'function' ? item(ctx, obj) : item;
         }
         return func.apply(obj, [ctx].concat(funcArgs));
       }
@@ -648,8 +656,8 @@
       if ( !n1Eval ) {
         return !n1Lit;
       }
-      return function _not(obj, ctx) {
-        return !n1Eval(obj, ctx);
+      return function _not(ctx, obj) {
+        return !n1Eval(ctx, obj);
       };
     }
 
@@ -657,8 +665,8 @@
       if ( !n1Eval ) {
         return -n1Lit;
       }
-      return function _neg(obj, ctx) {
-        return -n1Eval(obj, ctx);
+      return function _neg(ctx, obj) {
+        return -n1Eval(ctx, obj);
       };
     }
 
@@ -666,9 +674,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit && n2Lit;
       }
-      return function _and(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
-        return !lval ? lval : (n2Eval ? n2Eval(obj, ctx) : n2Lit);
+      return function _and(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit;
+        return !lval ? lval : (n2Eval ? n2Eval(ctx, obj) : n2Lit);
       };
     }
 
@@ -676,9 +684,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit || n2Lit;
       }
-      return function _or(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
-        return lval ? lval : (n2Eval ? n2Eval(obj, ctx) : n2Lit);
+      return function _or(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit;
+        return lval ? lval : (n2Eval ? n2Eval(ctx, obj) : n2Lit);
       };
     }
 
@@ -686,9 +694,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit + n2Lit;
       }
-      return function _add(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _add(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval + rval;
       };
     }
@@ -697,9 +705,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit - n2Lit;
       }
-      return function _sub(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _sub(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval - rval;
       };
     }
@@ -708,9 +716,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit * n2Lit;
       }
-      return function _mul(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _mul(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval * rval;
       };
     }
@@ -719,9 +727,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit / n2Lit;
       }
-      return function _div(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _div(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval / rval;
       };
     }
@@ -730,9 +738,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit % n2Lit;
       }
-      return function _mod(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _mod(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval % rval;
       };
     }
@@ -741,9 +749,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit == n2Lit;
       }
-      return function _eq(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _eq(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval == rval;
       };
     }
@@ -752,9 +760,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit != n2Lit;
       }
-      return function _neq(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _neq(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval != rval;
       };
     }
@@ -763,9 +771,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit > n2Lit;
       }
-      return function _gt(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _gt(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval > rval;
       };
     }
@@ -774,9 +782,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit >= n2Lit;
       }
-      return function _gte(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _gte(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval >= rval;
       };
     }
@@ -785,9 +793,9 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit < n2Lit;
       }
-      return function _lt(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _lt(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval < rval;
       };
     }
@@ -796,21 +804,21 @@
       if ( !n1Eval && !n2Eval ) {
         return n1Lit <= n2Lit;
       }
-      return function _lte(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      return function _lte(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         return lval <= rval;
       };
     }
 
     function evalIN() {
-      var func = function _in(obj, ctx) {
-        var rval = n2Eval ? n2Eval(obj, ctx) : n2Lit;
+      var func = function _in(ctx, obj) {
+        var rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         if ( isArray(rval) ) {
-          return rval.indexOf(n1Eval ? n1Eval(obj, ctx) : n1Lit) !== -1;
+          return rval.indexOf(n1Eval ? n1Eval(ctx, obj) : n1Lit) !== -1;
         }
         else if ( typeof rval === 'object' ) {
-          return (n1Eval ? n1Eval(obj, ctx) : n1Lit) in rval;
+          return (n1Eval ? n1Eval(ctx, obj) : n1Lit) in rval;
         }
         return false
       };
@@ -818,12 +826,12 @@
     }
 
     function evalRE() {
-      var func = function _re(obj, ctx) {
-        var lval = n1Eval ? n1Eval(obj, ctx) : n1Lit;
+      var func = function _re(ctx, obj) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit;
         if ( typeof lval !== 'string' ) {
           return false;
         }
-        var rval = n2Eval ? n2Eval(obj, ctx) : n2Lit
+        var rval = n2Eval ? n2Eval(ctx, obj) : n2Lit
           , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
         return re.test(rval);
       };
@@ -831,10 +839,10 @@
     }
 
     function evalTern() {
-      var func = function _tern(obj, ctx) {
-        var cval = n1Eval ? n1Eval(obj, ctx) : n1Lit
-          , tval = n2Eval ? n2Eval(obj, ctx) : n2Lit
-          , fval = n3Eval ? n3Eval(obj, ctx) : n3Lit;
+      var func = function _tern(ctx, obj) {
+        var cval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , tval = n2Eval ? n2Eval(ctx, obj) : n2Lit
+          , fval = n3Eval ? n3Eval(ctx, obj) : n3Lit;
         return cval ? tval : fval;
       };
       return n1Eval || n2Eval || n3Eval ? func : func();
@@ -862,15 +870,15 @@
       var getPath = evalLocalPath(path);
       if ( ascending ) {
         return function _ascendingComparator(item1, item2) {
-          var val1 = getPath(item1)
-            , val2 = getPath(item2);
+          var val1 = getPath(NullContext, item1)
+            , val2 = getPath(NullContext, item2);
           return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
         };
       }
       else {
         return function _descendingComparator(item1, item2) {
-          var val1 = getPath(item1)
-            , val2 = getPath(item2);
+          var val1 = getPath(NullContext, item1)
+            , val2 = getPath(NullContext, item2);
           return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
         };
       }
@@ -885,17 +893,26 @@
     return result;
   }
 
+  function yystep(index) {
+    this.step = index;
+  }
+
   function yypath() {
     var args = makeArray(arguments)
       , result = ['path'].concat(args);
     result.isNode = true;
-    this.paths.push(result);
+    var paths = this.paths[this.step];
+    if ( !paths ) {
+      paths = this.paths[this.step] = [];
+    }
+    paths.push(result);
     return result;
   }
 
   var parserPool = []
     , parseCache = {}
-    , EmptyPath = yynode('path');
+    , EmptyPath = yynode('path')
+    , NullContext = {};
 
   function parse(queryString) {
     var result = parseCache[queryString];
@@ -905,14 +922,23 @@
 
     // Get a Parser from the pool, if possible
     var parser = parserPool.pop() || createParser();
-    parser.yy = { node: yynode, path: yypath, paths: [] };
+    var paths = [];
+    parser.yy = { node: yynode, path: yypath, paths: paths, step: 0 };
 
     // Parse the Query, include paths and evaluators in the result
-    result = parseCache[queryString] = parser.parse(queryString);
-    result.paths = parser.yy.paths;
-    result.evaluate = wrapEvaluator(result.expr);
-    result.select = wrapEvaluator(result.select || EmptyPath);
-    result.sort = result.order && createSorter(result.order);
+    var parsedSteps = parser.parse(queryString);
+    result = parseCache[queryString] = [];
+
+    for ( var i = 0, len = parsedSteps.length; i < len; i++ ) {
+      var parsedStep = parsedSteps[i];
+      result.push({
+        evaluate: wrapEvaluator(parsedStep.expr),
+        select: wrapEvaluator(parsedStep.select || EmptyPath),
+        order: parsedStep.order && createSorter(parsedStep.order),
+        sortFirst: parsedStep.sortFirst,
+        paths: paths[i]
+      });
+    }
 
     // Push the Parser back onto the pool and return the result
     parserPool.push(parser);
@@ -952,7 +978,7 @@
     }
   }
 
-  function addQueryListeners(paths, ctx, invalidateQuery, invalidateResults) {
+  function addQueryListeners(ctx, paths, invalidateQuery, invalidateResults) {
     for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
       var node = paths[i]
         , index = node[1]
@@ -972,11 +998,7 @@
   }
 
   function processQuery(source, queryString, params, callback, dynamic) {
-    var root = parse(queryString)
-      , evaluate = root.evaluate
-      , select = root.select
-      , sort = root.sort
-      , results = decorateArray([])
+    var steps = parse(queryString)
       , ctx = {};
 
     defineProperties(ctx, {
@@ -988,8 +1010,29 @@
       }
     });
 
+    var results = source;
+    for ( var i = 0, len = steps.length; i < len; i++ ) {
+      results = processStep(ctx, results, steps[i], dynamic);
+    }
+
+    if ( callback ) {
+      addListener(results, getArrayContentKey(results), callback);
+      queueEvent(results, getArrayContentKey(results), results.length);
+    }
+
+    return results;
+  }
+
+  function processStep(ctx, source, step, dynamic) {
+    var evaluate = step.evaluate
+      , select = step.select
+      , order = step.order
+      , sortFirst = step.sortFirst
+      , paths = step.paths
+      , results = decorateArray([]);
+
     var evalResults;
-    if ( !root.sort || !root.sortFirst || root.select === EmptyPath ) {
+    if ( !order || !sortFirst || select === EmptyPath ) {
       evalResults = createEvalPostSortResults();
     }
     else {
@@ -1001,14 +1044,10 @@
       refreshSet = refreshDynamicSet;
       refreshItem = refreshDynamicItem;
       source.on('.content', setListener);
-      addQueryListeners(root.paths, ctx, setListener, itemListener);
+      addQueryListeners(ctx, paths, setListener, itemListener);
     }
     else {
       refreshSet = refreshItem = evalResults;
-    }
-
-    if ( callback ) {
-      addListener(results, getArrayContentKey(results), callback);
     }
 
     refreshSet();
@@ -1045,15 +1084,15 @@
         // In this case, we can filter and select in one pass
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( !evaluate(obj, ctx) ) {
+          if ( !evaluate(ctx, obj) ) {
             continue;
           }
 
-          results[j++] = select(obj, ctx);
+          results[j++] = select(ctx, obj);
         }
 
-        if ( sort ) {
-          results.sort(sort);
+        if ( order ) {
+          results.sort(order);
         }
       };
     }
@@ -1065,14 +1104,14 @@
         var temp = [];
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( evaluate(obj, ctx) ) {
+          if ( evaluate(ctx, obj) ) {
             temp[j++] = obj;
           }
         }
 
-        temp.sort(sort);
+        temp.sort(order);
         for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          results[j++] = select(temp[i], ctx);
+          results[j++] = select(ctx, temp[i]);
         }
       };
     }

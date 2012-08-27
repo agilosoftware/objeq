@@ -48,7 +48,7 @@ $objeq.registerExtension({
   median: function _median(ctx, value) {
     if ( Array.isArray(value) ) {
       if ( value.length === 0 ) return 0;
-      var temp = value.slice(0).sort();
+      var temp = value.slice(0).order();
       if ( temp.length % 2 === 0 ) {
         var mid = temp.length / 2;
         return (temp[mid-1] + temp[mid]) / 2;

@@ -79,6 +79,10 @@ This [Query] is similar, but generates new Objects as its [Result Set]:
 
     lastName == 'Beck' select { fullName: firstName + ' ' + lastName }
 
+This [Query] generates new Objects as its [Result Set] using a shorthand for directly copying fields:
+
+    lastName == 'Beck' -> { firstName, lastName }
+
 ### Collator
 A Collator is used to sort the [Working Set] based on a list of provided sort criteria.  A Collator must be placed after a [Predicate] and can appear before or after a [Selector].  The order of the [Collator] and [Selector] is important because it determines whether or not the sorting is executed against the [Selector] results.
 
