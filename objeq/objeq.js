@@ -882,7 +882,11 @@
       chain.push(createComparator(item.path.slice(1), item.ascending));
     }
 
-    return function _sorter(item1, item2) {
+    return function _sorter(arr) {
+      arr.sort(sortFunction);
+    };
+
+    function sortFunction(item1, item2) {
       for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
         var result = chain[i](item1, item2);
         if ( result !== 0 ) {
@@ -938,8 +942,7 @@
   }
 
   var parserPool = []
-    , parseCache = {}
-    , EmptySelect = yynode('select', yynode('path'));
+    , parseCache = {};
 
   function parse(queryString) {
     var result = parseCache[queryString];
@@ -960,9 +963,9 @@
       var parsedStep = parsedSteps[i];
 
       result.push({
-        evaluate: wrapEvaluator(parsedStep.expr),
-        select: parsedStep.select && createSelector(parsedStep.select),
-        order: parsedStep.order && createSorter(parsedStep.order),
+        evaluator: wrapEvaluator(parsedStep.expr),
+        selector: parsedStep.select && createSelector(parsedStep.select),
+        sorter: parsedStep.order && createSorter(parsedStep.order),
         sortFirst: parsedStep.sortFirst,
         paths: paths[i]
       });
@@ -1051,16 +1054,28 @@
     return results;
   }
 
+  function EmptyEvaluator(ctx, obj) {
+    return true;
+  }
+
+  function EmptySelector(ctx, obj) {
+    return obj;
+  }
+
+  function EmptySorter(arr) {
+    // NO-OP
+  }
+
   function processStep(ctx, source, step, dynamic) {
-    var evaluate = step.evaluate
-      , select = step.select || createSelector(EmptySelect)
-      , order = step.order
+    var evaluator = step.evaluator || EmptyEvaluator
+      , selector = step.selector || EmptySelector
+      , sorter = step.sorter || EmptySorter
       , sortFirst = step.sortFirst
       , paths = step.paths
       , results = decorateArray([]);
 
     var evalResults;
-    if ( !order || !sortFirst || !step.select ) {
+    if ( !sortFirst || sorter == EmptySorter || selector != EmptySelector ) {
       evalResults = createEvalPostSortResults();
     }
     else {
@@ -1118,34 +1133,33 @@
         // In this case, we can filter and select in one pass
         for ( var i = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( !evaluate(ctx, obj) ) {
-            continue;
+          if ( evaluator(ctx, obj) ) {
+            spliceSelected(selector(ctx, obj));
           }
-
-          spliceSelected(select(ctx, obj));
         }
 
-        if ( order ) {
-          results.sort(order);
-        }
+        sorter(results);
       };
     }
 
     function createEvalPreSortResults() {
+      var temp = [];
+
       return function _evalPreSortResults() {
         results.length = 0;
+        temp.length = 0;
 
-        var temp = [];
+        // In this case, we need to sort between filtering and selecting
         for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
-          if ( evaluate(ctx, obj) ) {
+          if ( evaluator(ctx, obj) ) {
             temp[j++] = obj;
           }
         }
 
-        temp.sort(order);
+        sorter(temp);
         for ( var i = 0, ilen = temp.length; i < ilen; i++ ) {
-          spliceSelected(select(ctx, temp[i]));
+          spliceSelected(selector(ctx, temp[i]));
         }
       };
     }
