@@ -46,7 +46,7 @@ A shorthand would be to pass the callback in the original query call, and as thi
 
 ## Things Worth Mentioning
 
-Objects and Arrays need to be 'Decorated' in order to be queryable.  The result of such decoration is always an Array of Items, even if only a single Object was passed to the `$objeq()` function, so you have to be careful to retrieve the first Item in the result if you want to modify it:
+Objects and Arrays need to be 'Decorated' in order to yield dynamic queries.  The result of such decoration is always an Array of Items, even if only a single Object was passed to the `$objeq()` function, so you have to be careful to retrieve the first Item in the result if you want to modify it:
 
     var items = $objeq({name:'William'}); // -> [{name:'William'}]
     var will = items[0];

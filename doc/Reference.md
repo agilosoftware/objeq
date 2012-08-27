@@ -7,24 +7,38 @@ This document serves as a quick introduction to the objeq Query Language.
 Before diving in deep, we should define some of the terms that will be used throughout this section:
 
 ### Source Set
-An array used as the source of queried data.  As Queries may be chained, a [Result Set] may also serve as a Source Set.  The Items of a Source Set will be [Decorated] by objeq in order to allow dynamic querying of modified data.
+An array used as the source of queried data.  As Queries may be chained, a Result Set may also serve as a Source Set.  The Items of a Source Set will be Decorated by objeq in order to allow dynamic querying of modified data.
 
 ### Decorated
-Any Arrays or Objects that objeq encounters while processing dynamic [Queries] will be Decorated.  What this means is that the library will replace certain Properties and methods with wrapper functions such that changes can be observed. (see [Decoration Notes])
+Any Arrays or Objects that objeq encounters while processing dynamic Queries will be Decorated.  What this means is that the library will replace certain Properties and methods with wrapper functions such that changes can be observed. (see Decoration Notes)
 
 ### Working Set
-The Working Set is a set of Items based on the original [Source Set].  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
+The Working Set is a set of Items based on the original Source Set.  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
 
 ### Result Set
-An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic [Queries] will be overwritten if any of the Query's [Source Set] data or [Parameters] change.
+An array that is the result of queried data.  While not strictly *read-only*, a Result Set that is produced by dynamic Queries will be overwritten if any of the Query's Source Set data or Parameters change.
 
 ## Query
+A Query consists of a set of steps, separated by the keyword 'then' or a pipe character (|).  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
-A Query consists of three optional parts.  The first is a [Predicate] that is used to filter your Source Set, the second is a [Collator] for ordering the results, and the third is a [Selector] for drilling into the filtered results.  The basic grammar for a Query is as follows:
+    lastName == 'Beck' select each addresses then country == 'Germany'
+
+Which could have also been written as:
+
+    lastName == 'Beck' <: addresses | country == 'Germany'
+
+This is a Query that consists of two Query Steps.
+
+1) The first Step filters the Source Set to only those Items whose lastName property matches the String 'Beck'.  It then produces an intermediate Result Set consisting of the elements stored by the addresses property.
+
+2) The second Step processes the intermediate Result Set and filters those items by a country property, resulting in a Result Set that must match the String 'Germany'.
+
+## Query Step
+A Query Step consists of three optional parts.  The first is a Predicate that is used to filter your Source Set, the second is a Collator for ordering the results, and the third is a Selector for drilling into the filtered results.  The basic grammar for a Query is as follows:
 
     Predicate? ( Collator? Selector? | Selector? Collator? )
 
-Essentially the [Predicate] must come first, followed by an optional [Collator] and an optional [Selector].  The order of the [Collator] and [Selector] is important because it determines whether or not the sorting is executed against the [Selector] results.
+Essentially the Predicate must come first, followed by an optional Collator and an optional Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
 
 For example, the following are *entirely* different Queries:
 
@@ -45,7 +59,7 @@ The second Query selects all Objects that have a firstName Property equal to 'Wi
 These two Queries would only work if spouses always have the same last name, but we know that in the real world, this isn't the case.
 
 ### Predicate
-The Predicate is a set of richly expressed conditions used to determine which Items from the [Source Set] will be returned as part of the [Result Set].  For the most part, the syntax is the same as JavaScript's, but with some differences.
+The Predicate is a set of richly expressed conditions used to determine which Items from the Source Set will be returned as part of the Result Set.  For the most part, the syntax is the same as JavaScript's, but with some differences.
 
 #### Keywords
 The keywords `and`, `or` and `not` may be used instead of `&&`, `||` and `!` respectively, so the following Queries are equivalent.
@@ -61,7 +75,7 @@ As are these:
 #### The IN Operator
 objeq supports an operator called `IN` which will return true if the left operand exists as an element of the right operand.  Presently only the searching of Arrays is supported.  The following predicate returns all Objects with a pet Property belonging to the specified set of animals.
 
-    pet in ['dog', 'cat', 'pig', 'goat', 'donkey']
+    pet in [ 'dog', 'cat', 'pig', 'goat', 'donkey' ]
 
 #### Regular Expressions
 objeq supports Regular Expression matching using the Ruby `=~` operator, where the left operand is a regular expression and the right operand is a string to be matched.  Unlike the Ruby operator, objeq's Regular Expression matching only returns a true or false result.  The following predicate returns all unhappy Objects that have a firstName Property beginning with the letter 'W'.
@@ -69,29 +83,62 @@ objeq supports Regular Expression matching using the Ruby `=~` operator, where t
     "^W" =~ firstName && !happy
 
 ### Selector
-After a [Predicate] is processed, the [Working Set] will consist of a subset of the original [Source Set].  The Selector is used to evaluate these Items and return derived content as the [Result Set].  Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays
+After a Predicate is processed, the Working Set will consist of a subset of the original Source Set.  The Selector is used to evaluate these Items and return derived content as the Result Set.  Selectors most often will be used to return Child Properties, but can also be used to generate new Objects and Arrays
 
-The following [Query] finds all Objects with a lastName Property of 'Beck' and returns only the firstName Properties from those Objects.
+There are three types of Selectors:
+
+#### General Purpose Selector
+General purposes Selectors will evaluate *as-is*, such that there is one resulting Item for every input Item in the Working Set.  This will be the case even if the evaluation yields a `null` value.
+
+The following Query finds all Objects with a lastName Property of 'Beck' and returns only the firstName Properties from those Objects.
 
     lastName == 'Beck' select firstName
 
-This [Query] is similar, but generates new Objects as its [Result Set]:
+This Query is similar, but generates new Objects as its Result Set:
 
     lastName == 'Beck' select { fullName: firstName + ' ' + lastName }
 
-This [Query] generates new Objects as its [Result Set] using a shorthand for directly copying fields:
+This Query generates new Objects as its Result Set using a shorthand for directly copying fields:
 
     lastName == 'Beck' -> { firstName, lastName }
 
-### Collator
-A Collator is used to sort the [Working Set] based on a list of provided sort criteria.  A Collator must be placed after a [Predicate] and can appear before or after a [Selector].  The order of the [Collator] and [Selector] is important because it determines whether or not the sorting is executed against the [Selector] results.
+#### 'First' Selector
+Unlike the General Purpose Selector, the 'First' and 'Each' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
 
-This [Query] sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the [Result Set].
+The 'First' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
+
+    lastName == 'Beck' first addresses
+
+You can also use the shorthand:
+
+    lastName == 'Beck' :> addresses
+
+One might think that this is semantically the same as the following:
+
+    lastName == 'Beck' select addresses[0]
+
+But the former query will return no Items in the Result Set if there are no elements in the addresses array.  On the other hand, the latter query will return a null in the Result Set.
+
+#### 'Each' Selector
+The 'Each' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
+
+    lastName == 'Beck' each addresses
+
+You can also use the shorthand:
+
+    lastName == 'Beck' <: addresses
+
+In this case, each individual element of addresses will be added to the Result Set.
+
+### Collator
+A Collator is used to sort the Working Set based on a list of provided sort criteria.  A Collator must be placed after a Predicate and can appear before or after a Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
+
+This Query sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the Result Set.
 
     order by lastName, firstName desc -> [ lastName + ', ' + firstName ]
 
 ### Parameters
-A [Query] can be Parameterized such that any Objects passed into it are also [Decorated] and treated as 'live' parameters.  This means that the [Result Set] will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
+A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the Result Set will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
 
     var items = $objeq({name:'William'}, {name:'Stephen'});
     var param = { name: 'William' };
@@ -105,21 +152,21 @@ Defining Extension Functions for objeq is a relatively painless process.  Simply
         return "Hello " + firstName;
     });
 
-And then call the function from within your [Query]:
+And then call the function from within your Query:
 
     var result = items.query("-> hello(firstName)");
 
 ### Four Simple Rules for Extension Writers
 1. Your Extension should be side-effect free.  This is **very** important!
 2. Inside of your Extension, the `this` variable will always refer to the Object that is being evaluated
-3. The first argument passed to an Extension will always be the current [Query] Context followed by arguments passed as part of the [Query] itself
-4. Extensions can be called from the [Predicate] and [Selector], but not from the [Collator]
+3. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself
+4. Extensions can be called from the Predicate and Selector, but not from the Collator
 
 ## Decoration Notes
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array
 
 ### Objects
-What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be [Decorated] and therefore will not trigger observers for dynamic [Query] updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being [Decorated].
+What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be Decorated and therefore will not trigger observers for dynamic Query updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being Decorated.
 
 ### Arrays
 Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for dynamic queries.

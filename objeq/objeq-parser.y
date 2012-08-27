@@ -38,10 +38,11 @@ ws    [\s]
 "null"                    return 'NULL';
 "true"                    return 'TRUE';
 "false"                   return 'FALSE';
-"select"{ws}+"each"       return 'EACH';
-"select"{ws}+"first"      return 'FIRST';
 "select"                  return 'SELECT';
+"first"                   return 'FIRST';
+"each"                    return 'EACH';
 ("order"{ws}+)?"by"       return 'ORDER_BY';
+"then"                    return 'THEN';
 "asc"                     return 'ASC';
 "desc"                    return 'DESC';
 "and"                     return 'AND';
@@ -56,11 +57,12 @@ ws    [\s]
 "&&"                      return 'AND';
 "||"                      return 'OR';
 "->"                      return 'SELECT';
+":>"                      return 'FIRST';
 "<:"                      return 'EACH';
 "!"                       return 'NOT';
 "<"                       return 'LT';
 ">"                       return 'GT';
-"|"                       return '|';
+"|"                       return 'THEN';
 "("                       return '(';
 ")"                       return ')';
 "["                       return '[';
@@ -109,7 +111,7 @@ program
 
 query
   : step               { $$ = [$1]; }
-  | query '|' step     { $$ = $1; $1.push($3); yy.step += 1; }
+  | query THEN step    { $$ = $1; $1.push($3); yy.step += 1; }
   ;
 
 step

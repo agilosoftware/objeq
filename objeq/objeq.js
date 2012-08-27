@@ -84,7 +84,7 @@
       return false;
     }
 
-    for ( var i = 0, len = arr1.length; i < len; i++ ) {
+    for ( var i = 0, ilen = arr1.length; i < ilen; i++ ) {
       if ( arr1[i] !== arr2[i] ) {
         return false;
       }
@@ -540,10 +540,7 @@
     switch ( op ) {
       case 'select':
       case 'first':
-        return createEvaluator(node[1]);
-
       case 'each':
-        // TODO: This
         return createEvaluator(node[1]);
 
       case 'path':
@@ -849,6 +846,35 @@
     }
   }
 
+  function createSelector(select) {
+    var evalSelect = createEvaluator(select[1])
+      , temp = [];
+
+    switch ( select[0] ) {
+      case 'select':
+        return function _select(ctx, obj) {
+          temp[0] = evalSelect(ctx, obj);
+          return temp;
+        };
+
+      case 'first':
+        return function _first(ctx, obj) {
+          var result = evalSelect(ctx, obj);
+          if ( isArray(result) && result.length ) {
+            temp[0] = result[0];
+            return temp;
+          }
+          return EmptyArray;
+        };
+
+      case 'each':
+        return function _each(ctx, obj) {
+          var result = evalSelect(ctx, obj);
+          return isArray(result) ? result : EmptyArray;
+        };
+    }
+  }
+
   function createSorter(order) {
     var chain = [];
     for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
@@ -867,18 +893,20 @@
     };
 
     function createComparator(path, ascending) {
-      var getPath = evalLocalPath(path);
+      var getPath = evalLocalPath(path)
+        , ctx = { source: [], params: [] };
+
       if ( ascending ) {
         return function _ascendingComparator(item1, item2) {
-          var val1 = getPath(NullContext, item1)
-            , val2 = getPath(NullContext, item2);
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
           return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
         };
       }
       else {
         return function _descendingComparator(item1, item2) {
-          var val1 = getPath(NullContext, item1)
-            , val2 = getPath(NullContext, item2);
+          var val1 = getPath(ctx, item1)
+            , val2 = getPath(ctx, item2);
           return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
         };
       }
@@ -911,8 +939,7 @@
 
   var parserPool = []
     , parseCache = {}
-    , EmptyPath = yynode('path')
-    , NullContext = {};
+    , EmptySelect = yynode('select', yynode('path'));
 
   function parse(queryString) {
     var result = parseCache[queryString];
@@ -929,11 +956,12 @@
     var parsedSteps = parser.parse(queryString);
     result = parseCache[queryString] = [];
 
-    for ( var i = 0, len = parsedSteps.length; i < len; i++ ) {
+    for ( var i = 0, ilen = parsedSteps.length; i < ilen; i++ ) {
       var parsedStep = parsedSteps[i];
+
       result.push({
         evaluate: wrapEvaluator(parsedStep.expr),
-        select: wrapEvaluator(parsedStep.select || EmptyPath),
+        select: parsedStep.select && createSelector(parsedStep.select),
         order: parsedStep.order && createSorter(parsedStep.order),
         sortFirst: parsedStep.sortFirst,
         paths: paths[i]
@@ -1011,7 +1039,7 @@
     });
 
     var results = source;
-    for ( var i = 0, len = steps.length; i < len; i++ ) {
+    for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
       results = processStep(ctx, results, steps[i], dynamic);
     }
 
@@ -1025,14 +1053,14 @@
 
   function processStep(ctx, source, step, dynamic) {
     var evaluate = step.evaluate
-      , select = step.select
+      , select = step.select || createSelector(EmptySelect)
       , order = step.order
       , sortFirst = step.sortFirst
       , paths = step.paths
       , results = decorateArray([]);
 
     var evalResults;
-    if ( !order || !sortFirst || select === EmptyPath ) {
+    if ( !order || !sortFirst || !step.select ) {
       evalResults = createEvalPostSortResults();
     }
     else {
@@ -1077,18 +1105,24 @@
       queueEvent(results, getArrayContentKey(results), results.length);
     }
 
+    function spliceSelected(selected) {
+      var args = [results.length, 0].concat(selected);
+      // Don't use splice() from results, as it is the decorated version
+      args.splice.apply(results, args);
+    }
+
     function createEvalPostSortResults() {
       return function _evalPostSortResults() {
         results.length = 0;
 
         // In this case, we can filter and select in one pass
-        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
+        for ( var i = 0, ilen = source.length; i < ilen; i++ ) {
           var obj = source[i];
           if ( !evaluate(ctx, obj) ) {
             continue;
           }
 
-          results[j++] = select(ctx, obj);
+          spliceSelected(select(ctx, obj));
         }
 
         if ( order ) {
@@ -1110,8 +1144,8 @@
         }
 
         temp.sort(order);
-        for ( var i = 0, j = 0, ilen = temp.length; i < ilen; i++ ) {
-          results[j++] = select(ctx, temp[i]);
+        for ( var i = 0, ilen = temp.length; i < ilen; i++ ) {
+          spliceSelected(select(ctx, temp[i]));
         }
       };
     }
@@ -1121,7 +1155,7 @@
     var params = []
       , result = { queryString: arguments[0], params: params };
 
-    for ( var i = 1, len = arguments.length; i < len; i++ ) {
+    for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
       var item = arguments[i];
       if ( typeof item === 'function' ) {
         result.callback = item;
