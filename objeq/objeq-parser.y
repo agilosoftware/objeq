@@ -39,8 +39,9 @@ ws    [\s]
 "true"                    return 'TRUE';
 "false"                   return 'FALSE';
 "select"                  return 'SELECT';
-"first"                   return 'FIRST';
-"each"                    return 'EACH';
+"reduce"                  return 'REDUCE';
+"expand"                  return 'EXPAND';
+"aggregate"               return 'AGGREGATE';
 ("order"{ws}+)?"by"       return 'ORDER_BY';
 "then"                    return 'THEN';
 "asc"                     return 'ASC';
@@ -57,8 +58,9 @@ ws    [\s]
 "&&"                      return 'AND';
 "||"                      return 'OR';
 "->"                      return 'SELECT';
-":>"                      return 'FIRST';
-"<:"                      return 'EACH';
+":>"                      return 'REDUCE';
+"<:"                      return 'EXPAND';
+":="                      return 'AGGREGATE';
 "!"                       return 'NOT';
 "<"                       return 'LT';
 ">"                       return 'GT';
@@ -116,8 +118,12 @@ query
 
 step
   : expr               { $$ = { expr: $1 }; }
-  | filter             { $$ = $1; $1.expr = true; }
+  | aggr               { $$ = { aggregate: $1 }; }
+  | expr aggr          { $$ = { expr: $1, aggregate: $2 }; }
+  | filter             { $$ = $1; }
+  | filter aggr        { $$ = $1; $1.aggregate = $2; }
   | expr filter        { $$ = $2; $2.expr = $1; }
+  | expr filter aggr   { $$ = $2; $2.expr = $1; $2.aggregate = $3; }
   ;
 
 filter
@@ -198,8 +204,8 @@ obj_item
 
 selector
   : SELECT expr                { $$ = yy.node('select', $2); }
-  | FIRST local_path           { $$ = yy.node('first', $2); }
-  | EACH local_path            { $$ = yy.node('each', $2); }
+  | REDUCE expr                { $$ = yy.node('reduce', $2); }
+  | EXPAND expr                { $$ = yy.node('expand', $2); }
   ;
 
 order_by
@@ -215,6 +221,10 @@ order_spec
   : local_path                 { $$ = { path: $1, ascending: true }; }
   | local_path ASC             { $$ = { path: $1, ascending: true }; }
   | local_path DESC            { $$ = { path: $1 }; }
+  ;
+
+aggr
+  : AGGREGATE IDENT            { $$ = $2; }
   ;
 
 path

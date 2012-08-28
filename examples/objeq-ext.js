@@ -58,6 +58,19 @@ $objeq.registerExtension({
     return typeof value === 'number' ? value : NaN;
   },
 
+  first: function _first(ctx, value) {
+    if ( Array.isArray(value) ) return value[0];
+    return value;
+  },
+
+  last: function _last(ctx, value) {
+    if ( Array.isArray(value) ) {
+      if ( value.length ) return value[value.length-1];
+      return null;
+    }
+    return value;
+  },
+
   upper: function _upper(ctx, value) {
     return typeof value === 'string' ? value.toUpperCase() : value;
   },
@@ -81,7 +94,7 @@ $objeq.registerExtension({
     return Number(value);
   },
 
-  split: function _split(ctx, value, delim, idx) {     
+  split: function _split(ctx, value, delim, idx) {
     var val = String(value).split(delim || ' \n\r\t');
     return typeof idx !== 'undefined' ? val[idx] : val;
   }
