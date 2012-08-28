@@ -21,7 +21,7 @@ An array that is the result of queried data.  While not strictly *read-only*, a 
 ## Query
 A Query consists of a set of steps, separated by the keyword 'then' or a pipe character (|).  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
-    lastName == 'Beck' select each addresses then country == 'Germany'
+    lastName == 'Beck' expand addresses then country == 'Germany'
 
 Which could have also been written as:
 
