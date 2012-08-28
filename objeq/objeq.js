@@ -1000,7 +1000,7 @@
       var step = steps[i];
 
       result.push({
-        evaluator: wrapEvaluator(step.expr),
+        evaluator: step.expr && wrapEvaluator(step.expr),
         selector: step.select && createSelector(step.select),
         sorter: step.order && createSorter(step.order),
         sortFirst: step.sortFirst,
