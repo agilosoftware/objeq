@@ -8,7 +8,13 @@
 * Even though it's only necessary for the results of dynamic queries, everything is decorated right now.
 
 ## 0.3.0 - Eliminating Brute Force
-* First attempt at eliminating the brute force array scanning approach of the past versions.
+* First attempt at eliminating the brute force array scanning approach of the past versions.  Still much work to be done.
+
+* New Operators Added (see doc/Reference.md)
+
+  * THEN (or '|') used to pipeline Query Steps
+  * EACH (or '<:') used to emit individual Array elements
+  * FIRST (or ':>') used to emit the first element of an Array
 
 ## 0.2.0 - First Stable Release
 * The library is stable enough now for a general release.
