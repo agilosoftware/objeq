@@ -46,7 +46,7 @@
       throw new Error("Property Definitions not available!");
     }
 
-    defineProperty = function fallbackDefineProperty(obj, prop, descriptor) {
+    defineProperty = function _defineProperty(obj, prop, descriptor) {
       obj.__defineGetter__(prop, descriptor.get);
       if ( descriptor.set ) {
         obj.__defineSetter__(prop, descriptor.set);
@@ -56,7 +56,7 @@
 
   var defineProperties = Object.defineProperties;
   if ( !defineProperties ) {
-    defineProperties = function(obj, props) {
+    defineProperties = function _defineProperties(obj, props) {
       for ( var key in props ) {
         var descriptor = props[key];
         defineProperty(obj, key, descriptor);
@@ -66,7 +66,7 @@
 
   var isArray = Array.isArray;
   if ( !isArray ) {
-    isArray = function fallbackIsArray(obj) {
+    isArray = function _isArray(obj) {
       return obj != null && toString.call(obj) === '[object Array]';
     };
   }
@@ -423,7 +423,7 @@
         throw new Error("Missing Array function: " + name);
       }
 
-      arr[name] = function wrapped() {
+      arr[name] = function _wrapped() {
         var oldLen = arr.length;
         oldFunc.apply(arr, arguments);
         var newLen = arr.length;
@@ -455,6 +455,7 @@
           return item.wrapped;
         }
       }
+
       // Otherwise create the wrapper
       var wrapped = function _wrappedCallback(target, key, value, prev) {
         // TODO: Use a hash lookup instead of an Array scan
@@ -517,17 +518,17 @@
   }
 
   function evalArgPath(index, pathComponents) {
-    var evalRoot = function _arg(ctx, obj) {
+    function evalArgPathRoot(ctx, obj) {
       return ctx.params[index];
-    };
-    return evalPath(evalRoot, pathComponents);
+    }
+    return evalPath(evalArgPathRoot, pathComponents);
   }
 
   function evalLocalPath(pathComponents) {
-    var evalRoot = function _local(ctx, obj) {
+    function evalLocalPathRoot(ctx, obj) {
       return obj;
-    };
-    return evalPath(evalRoot, pathComponents);
+    }
+    return evalPath(evalLocalPathRoot, pathComponents);
   }
 
   function createEvaluator(node) {
@@ -809,7 +810,7 @@
     }
 
     function evalIN() {
-      var func = function _in(ctx, obj) {
+      function _in(ctx, obj) {
         var rval = n2Eval ? n2Eval(ctx, obj) : n2Lit;
         if ( isArray(rval) ) {
           return rval.indexOf(n1Eval ? n1Eval(ctx, obj) : n1Lit) !== -1;
@@ -818,12 +819,13 @@
           return (n1Eval ? n1Eval(ctx, obj) : n1Lit) in rval;
         }
         return false
-      };
-      return n1Eval || n2Eval ? func : func();
+      }
+
+      return n1Eval || n2Eval ? _in : _in();
     }
 
     function evalRE() {
-      var func = function _re(ctx, obj) {
+      function _re(ctx, obj) {
         var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit;
         if ( typeof lval !== 'string' ) {
           return false;
@@ -831,18 +833,20 @@
         var rval = n2Eval ? n2Eval(ctx, obj) : n2Lit
           , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
         return re.test(rval);
-      };
-      return n1Eval || n2Eval ? func : func();
+      }
+
+      return n1Eval || n2Eval ? _re : _re();
     }
 
     function evalTern() {
-      var func = function _tern(ctx, obj) {
+      function _tern(ctx, obj) {
         var cval = n1Eval ? n1Eval(ctx, obj) : n1Lit
           , tval = n2Eval ? n2Eval(ctx, obj) : n2Lit
           , fval = n3Eval ? n3Eval(ctx, obj) : n3Lit;
         return cval ? tval : fval;
-      };
-      return n1Eval || n2Eval || n3Eval ? func : func();
+      }
+
+      return n1Eval || n2Eval || n3Eval ? _tern : _tern();
     }
   }
 
