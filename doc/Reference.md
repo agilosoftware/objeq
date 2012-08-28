@@ -31,14 +31,14 @@ This is a Query that consists of two Query Steps.
 
 1) The first Step filters the Source Set to only those Items whose lastName property matches the String 'Beck'.  It then produces an intermediate Result Set consisting of the elements stored by the addresses property.
 
-2) The second Step processes the intermediate Result Set and filters those items by a country property, resulting in a Result Set that must match the String 'Germany'.
+2) The second Step processes the intermediate Result Set and filters those Items by a country property, resulting in a Result Set that must match the String 'Germany'.
 
 ## Query Step
-A Query Step consists of three optional parts.  The first is a Predicate that is used to filter your Source Set, the second is a Collator for ordering the results, and the third is a Selector for drilling into the filtered results.  The basic grammar for a Query is as follows:
+A Query Step consists of four optional parts.  The first is a Predicate that is used to filter your Source Set, the second is a Collator for ordering the results, the third is a Selector for drilling into the filtered results, and the fourth is an Aggregator for processing the Working Set into a single result.  The basic grammar for a Query is as follows:
 
-    Predicate? ( Collator? Selector? | Selector? Collator? )
+    Predicate? ( Collator? Selector? | Selector? Collator? ) Aggregator?
 
-Essentially the Predicate must come first, followed by an optional Collator and an optional Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
+Essentially the Predicate must come first, followed by an optional Collator, an optional Selector and an optional Aggregator.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
 
 For example, the following are *entirely* different Queries:
 
@@ -56,7 +56,7 @@ The first Query selects all Objects that have a firstName Property equal to 'Wil
 
 The second Query selects all Objects that have a firstName Property equal to 'William', returns the spouse Property for each of those Objects, sorting them by the spouse's lastName Property.
 
-These two Queries would only work if spouses always have the same last name, but we know that in the real world, this isn't the case.
+These two Queries would only work identically if spouses have the same last name, but we know that in the real world this isn't always the case.
 
 ### Predicate
 The Predicate is a set of richly expressed conditions used to determine which Items from the Source Set will be returned as part of the Result Set.  For the most part, the syntax is the same as JavaScript's, but with some differences.
@@ -102,12 +102,12 @@ This Query generates new Objects as its Result Set using a shorthand for directl
 
     lastName == 'Beck' -> { firstName, lastName }
 
-#### 'First' Selector
-Unlike the General Purpose Selector, the 'First' and 'Each' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
+#### 'Reduce' Selector
+Unlike the General Purpose Selector, the 'Reduce' and 'Expand' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
 
-The 'First' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
+The 'Reduce' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
 
-    lastName == 'Beck' first addresses
+    lastName == 'Beck' reduce addresses
 
 You can also use the shorthand:
 
@@ -119,10 +119,10 @@ One might think that this is semantically the same as the following:
 
 But the former query will return no Items in the Result Set if there are no elements in the addresses array.  On the other hand, the latter query will return a null in the Result Set.
 
-#### 'Each' Selector
-The 'Each' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
+#### 'Expand' Selector
+The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
 
-    lastName == 'Beck' each addresses
+    lastName == 'Beck' expand addresses
 
 You can also use the shorthand:
 
@@ -136,6 +136,22 @@ A Collator is used to sort the Working Set based on a list of provided sort crit
 This Query sorts the results by the lastName Property in Ascending Order followed by the firstName property in Descending Order, returning a generated set of Arrays as the Result Set.
 
     order by lastName, firstName desc -> [ lastName + ', ' + firstName ]
+
+### Aggregator
+In theory, an Aggregator yields a single Item Result Set based on the Items in the Working Set.  We say 'in theory' because there is no strict requirement that the result be a single Item.  The Aggregator used is the name of a function that is registered as an objeq Extension.
+
+As an example, this will register an Extension called 'avg' for calculating average values:
+
+    $objeq.registerExtension('avg', function _avg(ctx, value) {
+      if ( Array.isArray(value) ) {
+        if ( value.length === 0 ) return 0;
+        for ( var i = 0, r = 0, l = value.length; i < l; r += value[i++] );
+        return r / l;
+      }
+      return typeof value === 'number' ? value : NaN;
+    });
+
+By default, there are no Aggregator Extensions registered, but you can find several examples in examples/objeq-ext.js.
 
 ### Parameters
 A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the Result Set will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
@@ -169,7 +185,7 @@ JavaScript is limited in what it allows you to do with its metaprogramming facil
 What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be Decorated and therefore will not trigger observers for dynamic Query updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being Decorated.
 
 ### Arrays
-Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that items set in this way won't generate an observable change for dynamic queries.
+Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's mutator methods can be wrapped, there is no way to wrap indexed gets and sets, which means that Items set in this way won't generate an observable change for dynamic queries.
 
 To work around this problem, objeq has to introduce a method to each Array that it decorates.  This is the `item()` method, and can be utilized as follows:
 

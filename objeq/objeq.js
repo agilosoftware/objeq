@@ -947,8 +947,15 @@
 
     var temp = [];
     return function _aggregate(ctx, obj) {
-      temp[0] = func(ctx, obj);
-      return temp;
+      var result = func(ctx, obj);
+      if ( isArray(result) ) {
+        return result;
+      }
+      else if ( result != null ) {
+        temp[0] = result;
+        return temp;
+      }
+      return EmptyArray;
     }
   }
 
@@ -1057,28 +1064,7 @@
 
   function processQuery(source, queryString, params, callback, dynamic) {
     var steps = parse(queryString)
-      , results = source;
-
-    for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
-      results = processStep(results, steps[i], params, dynamic);
-    }
-
-    if ( callback ) {
-      addListener(results, getArrayContentKey(results), callback);
-      queueEvent(results, getArrayContentKey(results), results.length);
-    }
-
-    return results;
-  }
-
-  function processStep(source, step, params, dynamic) {
-    var evaluator = step.evaluator
-      , selector = step.selector
-      , sorter = step.sorter
-      , sortFirst = step.sortFirst
-      , aggregator = step.aggregator
-      , paths = step.paths
-      , results = decorateArray([])
+      , results = source
       , ctx = {};
 
     defineProperties(ctx, {
@@ -1089,6 +1075,27 @@
         get: function () { return params; }
       }
     });
+
+    for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
+      results = processStep(ctx, results, steps[i], params, dynamic);
+    }
+
+    if ( callback ) {
+      addListener(results, getArrayContentKey(results), callback);
+      queueEvent(results, getArrayContentKey(results), results.length);
+    }
+
+    return results;
+  }
+
+  function processStep(ctx, source, step, params, dynamic) {
+    var evaluator = step.evaluator
+      , selector = step.selector
+      , sorter = step.sorter
+      , sortFirst = step.sortFirst
+      , aggregator = step.aggregator
+      , paths = step.paths
+      , results = decorateArray([]);
 
     var refreshSet, refreshItem;
     if ( dynamic ) {
