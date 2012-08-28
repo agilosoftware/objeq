@@ -8,7 +8,7 @@
 * Even though it's only necessary for the results of dynamic queries, everything is decorated right now.
 
 ## 0.3.1 - Introducing Aggregation
-* Renamed the EACH and FIRST Selectors.  They are now called EXPAND and REDUCE respectively.  Their behavior also slightly differs.  If the target property is not an Array, it will be copied to the Result Set as-is.
+* Renamed the EACH and FIRST Selectors.  They are now called EXPAND and REDUCE respectively.  Their behavior also slightly differs.  If the target property is not an Array and is not null, it will be copied to the Result Set as-is.
 
 * Added an Aggregation Step to the Query Steps.  It can be used to take the Working Set and pass it to an Extension function, where the result of that function will be used as the Result Set content. (see doc/Reference.md)
 
