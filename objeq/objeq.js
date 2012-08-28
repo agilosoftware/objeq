@@ -845,7 +845,7 @@
     }
   }
 
-  function wrapEvaluator(node) {
+  function wrapExpression(node) {
     var result = createEvaluator(node);
     if ( typeof result !== 'function' ) {
       return function _evalWrapper() {
@@ -856,11 +856,10 @@
   }
 
   function createSelector(select) {
-    var evalSelect = wrapEvaluator(select[1])
+    var evalSelect = wrapExpression(select[1])
       , temp = [];
 
     switch ( select[0] ) {
-      case 'aggregate':
       case 'select':
         return function _select(ctx, obj) {
           temp[0] = evalSelect(ctx, obj);
@@ -1000,7 +999,7 @@
       var step = steps[i];
 
       result.push({
-        evaluator: step.expr && wrapEvaluator(step.expr),
+        evaluator: step.expr && wrapExpression(step.expr),
         selector: step.select && createSelector(step.select),
         sorter: step.order && createSorter(step.order),
         sortFirst: step.sortFirst,
