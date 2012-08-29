@@ -1127,11 +1127,11 @@
 
     // Result Refresh Functions ***********************************************
 
-    // TODO: Migrate this to a generated result evaluator
     function evalResults() {
       var evaluated, selected, aggregated;
-
       results.length = 0;
+
+      // Evaluation Step
       if ( evaluator ) {
         // In this case, we need to sort between filtering and selecting
         evaluated = [];
@@ -1147,8 +1147,10 @@
         evaluated = source.slice(0);
       }
 
+      // Pre-Select Sorting Step
       if ( sorter && sortFirst ) sorter(evaluated);
 
+      // Select Step
       if ( selector ) {
         var selected = [];
         for ( var i = 0, ilen = evaluated.length; i < ilen; i++ ) {
@@ -1159,14 +1161,13 @@
         selected = evaluated;
       }
 
+      // Post-Select Sorting Step
       if ( sorter && !sortFirst ) sorter(selected);
 
-      if ( aggregator ) {
-        aggregated = aggregator(ctx, selected);
-      }
-      else {
-        aggregated = selected;
-      }
+      // Aggregation Step
+      aggregated = aggregator ? aggregator(ctx, selected) : selected;
+
+      // Splice Results
       spliceArrayItems(results, aggregated);
     }
 

@@ -38,6 +38,7 @@ ws    [\s]
 "null"                    return 'NULL';
 "true"                    return 'TRUE';
 "false"                   return 'FALSE';
+"when"                    return 'WHEN';
 "select"                  return 'SELECT';
 "contract"                return 'CONTRACT';
 "expand"                  return 'EXPAND';
@@ -118,13 +119,18 @@ query
   ;
 
 step
-  : expr               { $$ = { expr: $1 }; }
+  : when               { $$ = $1; }
   | aggr               { $$ = { aggregate: $1 }; }
-  | expr aggr          { $$ = { expr: $1, aggregate: $2 }; }
+  | when aggr          { $$ = { expr: $1, aggregate: $2 }; }
   | filter             { $$ = $1; }
   | filter aggr        { $$ = $1; $1.aggregate = $2; }
-  | expr filter        { $$ = $2; $2.expr = $1; }
-  | expr filter aggr   { $$ = $2; $2.expr = $1; $2.aggregate = $3; }
+  | when filter        { $$ = $2; $2.expr = $1; }
+  | when filter aggr   { $$ = $2; $2.expr = $1; $2.aggregate = $3; }
+  ;
+
+when
+  : expr               { $$ = { expr: $1 }; }
+  | WHEN expr          { $$ = { expr: $2 }; }
   ;
 
 filter
