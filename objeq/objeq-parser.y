@@ -225,7 +225,12 @@ order_spec
   ;
 
 aggr
-  : AGGREGATE IDENT            { $$ = $2; }
+  : AGGREGATE aggr_list        { $$ = $2; }
+  ;
+
+aggr_list
+  : IDENT                      { $$ = [$1]; }
+  | aggr_list ',' IDENT        { $$ = $1; $1.push($3); }
   ;
 
 path

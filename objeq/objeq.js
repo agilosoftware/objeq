@@ -150,6 +150,14 @@
     }
   }
 
+  function getExtension(name) {
+    var func = ext[name.toLowerCase()];
+    if ( !func || typeof func !== 'function' ) {
+      throw new Error("Extension '" + name + "' does not exist!");
+    }
+    return func;
+  }
+
   // Listener Implementation **************************************************
 
   var MAX_NOTIFY = 128           // to avoid locking up the browser in loops
@@ -518,17 +526,19 @@
   }
 
   function evalArgPath(index, pathComponents) {
+    return evalPath(evalArgPathRoot, pathComponents);
+
     function evalArgPathRoot(ctx, obj) {
       return ctx.params[index];
     }
-    return evalPath(evalArgPathRoot, pathComponents);
   }
 
   function evalLocalPath(pathComponents) {
+    return evalPath(evalLocalPathRoot, pathComponents);
+
     function evalLocalPathRoot(ctx, obj) {
       return obj;
     }
-    return evalPath(evalLocalPathRoot, pathComponents);
   }
 
   function createEvaluator(node) {
@@ -553,10 +563,7 @@
         return evalArr(arrayEvalTemplate(node[1]));
 
       case 'func':
-        var name = node[1], func = ext[name.toLowerCase()];
-        if ( !func || typeof func !== 'function' ) {
-          throw new Error("Extension '" + name + "' does not exist!");
-        }
+        var func = getExtension(node[1]);
         return evalFunc(func, arrayEvalTemplate(node[2]));
     }
 
@@ -943,14 +950,18 @@
   }
 
   function createAggregator(aggregate) {
-    var func = ext[aggregate.toLowerCase()];
-    if ( !func || typeof func !== 'function' ) {
-      throw new Error("Extension '" + aggregate + "' does not exist!");
+    var chain = [];
+    for ( var i = 0, ilen = aggregate.length; i < ilen; i++ ) {
+      var aggregateStep = aggregate[i];
+      chain.push(getExtension(aggregateStep));
     }
 
     var temp = [];
-    return function _aggregate(ctx, obj) {
-      var result = func(ctx, obj);
+    return function _aggregator(ctx, obj) {
+      var result = obj;
+      for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
+        result = chain[i](ctx, result);
+      }
       if ( isArray(result) ) {
         return result;
       }
@@ -959,7 +970,7 @@
         return temp;
       }
       return EmptyArray;
-    }
+    };
   }
 
   // Parsing Functions ********************************************************
