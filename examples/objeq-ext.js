@@ -12,7 +12,7 @@ $objeq.registerExtension({
   acos:  function _acos(ctx, number)   { return Math.acos(number); },
   asin:  function _asin(ctx, number)   { return Math.asin(number); },
   atan:  function _atan(ctx, number)   { return Math.atan(number); },
-  atan2: function _atan2(ctx, number)  { return Math.atan2(number); },
+  atan2: function _atan2(ctx, x, y)    { return Math.atan2(x, y); },
   ceil:  function _ceil(ctx, number)   { return Math.ceil(number); },
   cos:   function _cos(ctx, number)    { return Math.cos(number); },
   exp:   function _exp(ctx, number)    { return Math.exp(number); },
