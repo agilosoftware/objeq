@@ -3,10 +3,6 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
-* Synthesized results (those using the array and object literal syntax) are presently not consistent between refreshes of a dynamic query and will become stale or orphaned if the source data is modified.  This will be addressed when optimizations for dynamic queries are introduced.
-
-* Even though it's only necessary for the results of dynamic queries, everything is decorated right now.
-
 ## 0.3.1 - Introducing Aggregation
 * Renamed the EACH and FIRST Selectors.  They are now called EXPAND and REDUCE respectively.  Their behavior also slightly differs.  If the target property is not an Array and is not null, it will be copied to the Result Set as-is.
 

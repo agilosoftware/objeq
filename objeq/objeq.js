@@ -813,6 +813,9 @@
         else if ( typeof rval === 'object' ) {
           return (n1Eval ? n1Eval(ctx, obj) : n1Lit) in rval;
         }
+        else if ( rval != null ) {
+          return (n1Eval ? n1Eval(ctx, obj) : n1Lit) == rval;
+        }
         return false
       }
 
