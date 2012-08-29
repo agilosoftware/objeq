@@ -102,9 +102,20 @@ This Query generates new Objects as its Result Set using a shorthand for directl
 
     lastName == 'Beck' -> { firstName, lastName }
 
-#### 'Contract' Selector
+#### 'Expand' Selector
 Unlike the General Purpose Selector, the 'Contract' and 'Expand' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
 
+The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
+
+    lastName == 'Beck' expand addresses
+
+You can also use the shorthand:
+
+    lastName == 'Beck' <: addresses
+
+In this case, each individual element of addresses will be added to the Result Set.  If addresses is not an Array, it will be returned *as-is*, but only if it's not null.
+
+#### 'Contract' Selector
 The 'Contract' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
 
     lastName == 'Beck' contract addresses
@@ -117,18 +128,7 @@ One might think that this is semantically the same as the following:
 
     lastName == 'Beck' select addresses[0]
 
-But the former query will return no Items in the Result Set if there are no elements in the addresses array.  On the other hand, the latter query will return a null in the Result Set.
-
-#### 'Expand' Selector
-The 'Expand' Selector is used to drill into an Array and return all of its elements, if there are any, contributing them individually to the final Result Set:
-
-    lastName == 'Beck' expand addresses
-
-You can also use the shorthand:
-
-    lastName == 'Beck' <: addresses
-
-In this case, each individual element of addresses will be added to the Result Set.
+But the former query will return no Items in the Result Set if there are no elements in the addresses array.  On the other hand, the latter query will return a null in the Result Set.  If addresses is not an Array, it will be returned *as-is*, but only if it's not null.
 
 ### Collator
 A Collator is used to sort the Working Set based on a list of provided sort criteria.  A Collator must be placed after a Predicate and can appear before or after a Selector.  The order of the Collator and Selector is important because it determines whether or not the sorting is executed against the Selector results.
