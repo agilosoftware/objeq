@@ -102,12 +102,12 @@ This Query generates new Objects as its Result Set using a shorthand for directl
 
     lastName == 'Beck' -> { firstName, lastName }
 
-#### 'Reduce' Selector
-Unlike the General Purpose Selector, the 'Reduce' and 'Expand' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
+#### 'Contract' Selector
+Unlike the General Purpose Selector, the 'Contract' and 'Expand' Selectors may not yield a one-to-one mapping between the Working Set and Result Set.
 
-The 'Reduce' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
+The 'Contract' Selector is used to drill into an Array, either returning its first element, if there is one, or contributing nothing to the Result Set:
 
-    lastName == 'Beck' reduce addresses
+    lastName == 'Beck' contract addresses
 
 You can also use the shorthand:
 
@@ -150,6 +150,14 @@ As an example, this will register an Extension called 'avg' for calculating aver
       }
       return typeof value === 'number' ? value : NaN;
     });
+
+This can then be use in the following way:
+
+    age > 20 select age aggregate avg
+
+Which filters by all Items with an age property over 20, selects the age property into the Working Set and then returns the average of all the values in the Working Set.  This could have also been written:
+
+    age > 20 -> age := avg
 
 By default, there are no Aggregator Extensions registered, but you can find several examples in examples/objeq-ext.js.
 

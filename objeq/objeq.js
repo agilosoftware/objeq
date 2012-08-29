@@ -866,8 +866,8 @@
           return temp;
         };
 
-      case 'reduce':
-        return function _reduce(ctx, obj) {
+      case 'contract':
+        return function _contract(ctx, obj) {
           var result = evalSelect(ctx, obj);
           if ( isArray(result) ) {
             if ( result.length ) {

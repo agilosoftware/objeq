@@ -12,6 +12,10 @@
 
 * Added an Aggregation Step to the Query Steps.  It can be used to take the Working Set and pass it to an Extension function, where the result of that function will be used as the Result Set content. (see doc/Reference.md)
 
+* Added a 'this' keyword to local paths.  Normally the currently processed Item is implicit, but if you're in a Query Step that has already been reduced to non-Objects, then the 'this' keyword is useful for returning the currently processed Item.  For example:
+
+    gender == 'male' -> age | this == 40 -> this - 3
+
 ## 0.3.0 - Eliminating Brute Force
 * First attempt at eliminating the brute force array scanning approach of the past versions.  Still much work to be done.
 

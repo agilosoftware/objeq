@@ -39,11 +39,12 @@ ws    [\s]
 "true"                    return 'TRUE';
 "false"                   return 'FALSE';
 "select"                  return 'SELECT';
-"reduce"                  return 'REDUCE';
+"contract"                return 'CONTRACT';
 "expand"                  return 'EXPAND';
 "aggregate"               return 'AGGREGATE';
 ("order"{ws}+)?"by"       return 'ORDER_BY';
 "then"                    return 'THEN';
+"this"                    return 'THIS';
 "asc"                     return 'ASC';
 "desc"                    return 'DESC';
 "and"                     return 'AND';
@@ -58,7 +59,7 @@ ws    [\s]
 "&&"                      return 'AND';
 "||"                      return 'OR';
 "->"                      return 'SELECT';
-":>"                      return 'REDUCE';
+":>"                      return 'CONTRACT';
 "<:"                      return 'EXPAND';
 ":="                      return 'AGGREGATE';
 "!"                       return 'NOT';
@@ -204,7 +205,7 @@ obj_item
 
 selector
   : SELECT expr                { $$ = yy.node('select', $2); }
-  | REDUCE expr                { $$ = yy.node('reduce', $2); }
+  | CONTRACT expr              { $$ = yy.node('contract', $2); }
   | EXPAND expr                { $$ = yy.node('expand', $2); }
   ;
 
@@ -239,7 +240,8 @@ arg_path
   ;
 
 local_path
-  : IDENT                     { $$ = yy.path($1); }
+  : THIS                      { $$ = yy.path(); }
+  | IDENT                     { $$ = yy.path($1); }
   | local_path '.' IDENT      { $$ = $1; $1.push($3); }
   | local_path '[' expr ']'   { $$ = $1; $1.push($3); }
   ;
