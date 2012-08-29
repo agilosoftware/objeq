@@ -27,11 +27,15 @@ exports.aggregates = nodeunit.testCase({
   },
 
   "Single Aggregations Work": function (test) {
+    test.equal(this.data.query("-> age := avg")[0], 44.785714285714285,
+      "Average Age is correct");
 
     test.done();
   },
 
   "Chained Aggregations Work": function (test) {
+    test.equal(this.data.query("-> age := avg, round")[0], 45,
+      "Rounded Average Age is correct");
 
     test.done();
   }
