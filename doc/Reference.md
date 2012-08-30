@@ -167,7 +167,7 @@ What if the ages average out to a really long fractional part?  You can chain th
 
 This will calculate the average and then round it.
 
-By default, there are no Aggregator Extensions registered, but you can find several examples in examples/objeq-ext.js.
+By default, there are no Aggregator Extensions registered, but you can find several examples in examples/extensions.js.
 
 ### Parameters
 A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the Result Set will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
