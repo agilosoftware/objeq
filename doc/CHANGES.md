@@ -3,6 +3,13 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
+## 0.3.2 - Aggregation Chaining
+* Aggregation can now be chained by defining the Aggregation Extensions as a comma-separated list. (see doc/Reference.md)
+
+* The REDUCE keyword has been renamed to CONTRACT to avoid confusion with what people have come to understand as a Reduce step.
+
+* A completely optional 'WHEN' keyword has been added to the beginning of Predicates.
+
 ## 0.3.1 - Introducing Aggregation
 * Renamed the EACH and FIRST Selectors.  They are now called EXPAND and REDUCE respectively.  Their behavior also slightly differs.  If the target property is not an Array and is not null, it will be copied to the Result Set as-is.
 

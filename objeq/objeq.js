@@ -10,7 +10,7 @@
 (function (self) {
   "use strict";
 
-  var CURRENT_VERSION = "0.3.0";
+  var CURRENT_VERSION = "0.3.2";
 
   // Feature Checking *********************************************************
 
