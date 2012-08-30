@@ -2,7 +2,7 @@ var nodeunit = require('nodeunit');
 var objeq = require('..');
 
 // Load the Example Extensions
-require('../examples/objeq-ext');
+require('../examples/extensions');
 
 exports.aggregates = nodeunit.testCase({
   setUp: function (callback) {

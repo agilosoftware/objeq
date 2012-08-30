@@ -2,7 +2,7 @@
 // These are also *not* tested, so use them at your own risk
 
 if ( typeof require === 'function' ) {
-  var $objeq = require('../objeq/objeq');
+  var $objeq = require('../objeq');
 }
 
 $objeq.registerExtension({
