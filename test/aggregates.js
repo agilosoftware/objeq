@@ -30,6 +30,9 @@ exports.aggregates = nodeunit.testCase({
     test.equal(this.data.query("-> age := avg")[0], 44.785714285714285,
       "Average Age is correct");
 
+    test.equal(this.data.query("-> age := sum")[0], 627,
+      "Sum of Ages is correct");
+
     test.done();
   },
 
