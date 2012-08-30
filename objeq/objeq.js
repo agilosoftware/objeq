@@ -957,10 +957,10 @@
     }
 
     var temp = [];
-    return function _aggregator(ctx, obj) {
-      var result = obj;
+    return function _aggregator(ctx, arr) {
+      var result = arr, args = [ctx, result];
       for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
-        result = chain[i](ctx, result);
+        args[1] = result = chain[i].apply(arr, args);
       }
       if ( isArray(result) ) {
         return result;

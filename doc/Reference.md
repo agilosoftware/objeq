@@ -188,11 +188,14 @@ And then call the function from within your Query:
 
     var result = items.query("-> hello(firstName)");
 
-### Four Simple Rules for Extension Writers
-1. Your Extension should be side-effect free.  This is **very** important!
-2. Inside of your Extension, the `this` variable will always refer to the Object that is being evaluated
-3. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself
-4. Extensions can be called from the Predicate and Selector, but not from the Collator
+### Five Simple Rules for Extension Writers
+1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
+2. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself
+3. Extensions can be called from the Predicate, Selector and Aggregator, but not from the Collator
+4. Inside of your Extension, the `this` variable will differ depending on context:
+  * If used in the Predicate or Selector, it will refer to the current Item being processed
+  * If used as an Aggregator, it will refer to the Working Set that was passed into the Aggregator chain
+5. The first Extension in an Aggregator chain is passed a reference to the current Working Set, its result is passed to the next Extension, and so on
 
 ## Decoration Notes
 JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array
