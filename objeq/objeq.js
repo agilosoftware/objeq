@@ -317,7 +317,7 @@
     { name: 'pop', additive: false },
     { name: 'reverse', additive: false },
     { name: 'shift', additive: false },
-    { name: 'order', additive: false }
+    { name: 'sort', additive: false }
   ];
 
   var DecoratedArrayMixin = {
