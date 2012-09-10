@@ -120,12 +120,12 @@ query
 
 step
   : when               { $$ = $1; }
-  | aggr               { $$ = { aggregate: $1 }; }
-  | when aggr          { $$ = { expr: $1, aggregate: $2 }; }
+  | when filter        { $$ = $2; $2.expr = $1.expr; }
+  | when aggr          { $$ = $1; $1.aggregate = $2; }
+  | when filter aggr   { $$ = $2; $2.expr = $1.expr; $2.aggregate = $3; }
   | filter             { $$ = $1; }
   | filter aggr        { $$ = $1; $1.aggregate = $2; }
-  | when filter        { $$ = $2; $2.expr = $1; }
-  | when filter aggr   { $$ = $2; $2.expr = $1; $2.aggregate = $3; }
+  | aggr               { $$ = { aggregate: $1 }; }
   ;
 
 when

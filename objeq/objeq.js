@@ -1152,7 +1152,7 @@
 
       // Select Step
       if ( selector ) {
-        var selected = [];
+        selected = [];
         for ( var i = 0, ilen = evaluated.length; i < ilen; i++ ) {
           spliceArrayItems(selected, selector(ctx, evaluated[i]));
         }
