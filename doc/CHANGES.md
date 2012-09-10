@@ -3,6 +3,9 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
+## 0.3.3 - Bug-Fix Release
+* A bad refactoring broke dynamic query decoration.  That has been corrected in this release
+
 ## 0.3.2 - Aggregation Chaining
 * Aggregation can now be chained by defining the Aggregation Extensions as a comma-separated list. (see doc/Reference.md)
 
