@@ -3,6 +3,11 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
+## 0.4.0 - Grammar Freeze
+* The objeq grammar is now officially frozen for the eventual 1.0 release
+* The optional 'WHEN' keyword is now known as 'WHERE'
+* Added a set of tests to make sure dynamic queries update properly
+
 ## 0.3.3 - Bug-Fix Release
 * A bad refactoring broke dynamic query decoration.  That has been corrected in this release
 

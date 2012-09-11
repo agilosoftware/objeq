@@ -21,7 +21,7 @@ An array that is the result of queried data.  While not strictly *read-only*, a 
 ## Query
 A Query consists of a set of steps, separated by the keyword 'then' or a pipe character (|).  Each step of a Query will yield an intermediate Result Set that will become the Source Set for the next Query Step.  In this way, you can expand or refine the results of your query as necessary.  For example:
 
-    when lastName == 'Beck' expand addresses then when country == 'Germany'
+    where lastName == 'Beck' expand addresses then where country == 'Germany'
 
 Which could have also been written as:
 
@@ -42,9 +42,9 @@ Essentially the Predicate must come first, followed by an optional Collator, an 
 
 For example, the following are *entirely* different Queries:
 
-    when firstName == 'William' order by lastName select spouse
+    where firstName == 'William' order by lastName select spouse
 
-    when firstName == 'William' select spouse order by lastName
+    where firstName == 'William' select spouse order by lastName
 
 For brevity and to visually isolate the filter conditions, these two Queries could have also been written:
 
@@ -59,25 +59,25 @@ The second Query selects all Objects that have a firstName Property equal to 'Wi
 These two Queries would only work identically if spouses have the same last name, but we know that in the real world this isn't always the case.
 
 ### Predicate
-The Predicate starts with the keyword `when`, but this is purely optional and is meant solely for readability and to avoid ambiguity.  The `when` keyword is followed by a set of richly expressed conditions used to determine which Items from the Source Set will be returned as part of the Result Set
+The Predicate starts with the keyword `where`, but this is purely optional and is meant solely for readability and to avoid ambiguity.  The `where` keyword is followed by a set of richly expressed conditions used to determine which Items from the Source Set will be returned as part of the Result Set
 
 For the most part, the syntax for these conditions is the same as JavaScript's, expression syntax, but with some differences both in grammar and behavior.
 
 #### Keywords
 The keywords `and`, `or` and `not` may be used instead of `&&`, `||` and `!` respectively, so the following Queries are equivalent.
 
-    when firstName == 'William' and lastName == 'Beck'
+    where firstName == 'William' and lastName == 'Beck'
     firstName == 'William' && lastName == 'Beck'
 
 As are these:
 
-    when firstName == 'William' and not happy
+    where firstName == 'William' and not happy
     firstName == 'William' && !happy
 
 #### The IN Operator
 objeq supports an operator called `IN` which will return true if the left operand exists as an element of the right operand.  Presently only the searching of Arrays is supported.  The following predicate returns all Objects with a pet Property belonging to the specified set of animals.
 
-    when pet in [ 'dog', 'cat', 'pig', 'goat', 'donkey' ]
+    where pet in [ 'dog', 'cat', 'pig', 'goat', 'donkey' ]
 
 #### Regular Expressions
 objeq supports Regular Expression matching using the Ruby `=~` operator, where the left operand is a regular expression and the right operand is a string to be matched.  Unlike the Ruby operator, objeq's Regular Expression matching only returns a true or false result.  The following predicate returns all unhappy Objects that have a firstName Property beginning with the letter 'W'.
@@ -94,7 +94,7 @@ General purposes Selectors will evaluate *as-is*, such that there is one resulti
 
 The following Query finds all Objects with a lastName Property of 'Beck' and returns only the firstName Properties from those Objects.
 
-    when lastName == 'Beck' select firstName
+    where lastName == 'Beck' select firstName
 
 This Query is similar, but generates new Objects as its Result Set:
 
