@@ -926,7 +926,7 @@
         }
       }
       return 0;
-    };
+    }
 
     function createComparator(path, ascending) {
       var getPath = evalLocalPath(path)
@@ -1091,7 +1091,7 @@
     });
 
     for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
-      results = processStep(ctx, results, steps[i], params, dynamic);
+      results = processStep(ctx, results, steps[i], dynamic);
     }
 
     if ( callback ) {
@@ -1102,7 +1102,7 @@
     return results;
   }
 
-  function processStep(ctx, source, step, params, dynamic) {
+  function processStep(ctx, source, step, dynamic) {
     var evaluator = step.evaluator
       , selector = step.selector
       , sorter = step.sorter
