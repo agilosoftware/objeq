@@ -5,7 +5,9 @@
 
 ## 0.4.0 - Grammar Freeze
 * The objeq grammar is now officially frozen for the eventual 1.0 release
+
 * The optional 'WHEN' keyword is now known as 'WHERE'
+
 * Added a set of tests to make sure dynamic queries update properly
 
 ## 0.3.3 - Bug-Fix Release

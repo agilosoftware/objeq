@@ -1282,12 +1282,17 @@
       , results = null;
 
     while ( args.length ) {
-      var arg = args.shift();
-      if ( typeof arg === 'string' ) {
+      if ( typeof args[0] === 'string' ) {
         // short circuit if it's a query
-        return processQuery(source, arg, args, true);
+        var result = processArguments.apply(this, args)
+          , queryString = result.queryString
+          , params = result.params
+          , callback = result.callback;
+
+        return processQuery(source, queryString, params, callback, false);
       }
       else {
+        var arg = args.shift();
         results = results || ( source = results = decorateArray([]) );
         results.push.apply(results, isArray(arg) ? arg : [arg]);
       }
