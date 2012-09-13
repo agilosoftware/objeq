@@ -1284,12 +1284,7 @@
     while ( args.length ) {
       if ( typeof args[0] === 'string' ) {
         // short circuit if it's a query
-        var result = processArguments.apply(this, args)
-          , queryString = result.queryString
-          , params = result.params
-          , callback = result.callback;
-
-        return processQuery(source, queryString, params, callback, false);
+        return query.apply(source, args);
       }
       else {
         var arg = args.shift();
