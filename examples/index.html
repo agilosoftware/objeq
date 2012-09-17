@@ -5,29 +5,40 @@
   <script type="text/javascript" src="../objeq/objeq-parser.js"></script>
   <!--<script type="text/javascript" src="../objeq.min.js"></script>-->
   <script type="text/javascript" src="extensions.js"></script>
+  <script type="text/javascript" src="beautify.js"></script>
   <script type="text/javascript">
+    function beautifySource() {
+      source.value = js_beautify(source.value, {
+        indent_size: 2,
+        preserve_newlines: true
+      });
+    }
+
     function performQuery() {
       try {
         var input = $objeq(JSON.parse(source.value));
+        inputItems.innerHTML = "(" + input.length + " items)";
 
         // The actual query
         var start = new Date().getTime();
         var output = input.query(query.value);
         var elapsed = new Date().getTime() - start;
-        stats.innerHTML = "(" + output.length + " items in " + elapsed + "ms)";
+        outputItems.innerHTML = "(" + output.length + " items in " + elapsed + "ms)";
 
-        result.value = JSON.stringify(output, function(key, value) {
-          return key == '__objeq_id__' ? undefined : value;
+        result.value = js_beautify(JSON.stringify(output), {
+            indent_size: 2,
+            preserve_newlines: true
         });
       }
       catch ( err ) {
-        stats.innerHTML = "(Error!)";
+        outputItems.innerHTML = "(Error!)";
         result.value = err;
       }
     }
 
     function chooseQuery() {
-      query.value = queries.value;
+      var queryString = queries.options[queries.selectedIndex].innerText;
+      query.value = queryString.replace(/^\s+|\s+$/g, "");
       performQuery();
     }
   </script>
@@ -41,7 +52,7 @@
     }
     .query {
       position: absolute;
-      left: 0; top: 0; right: 0; height: 100px;
+      left: 0; top: 0; right: 0; height: 125px;
       margin: 0;
       border-bottom: 1px solid gray;
     }
@@ -58,7 +69,7 @@
     #run {
       position: absolute;
       right: 10px; width: 70px;
-      top: 10px;
+      bottom: 10px;
     }
     label {
       font-family: Arial, Helvetica, sans-serif;
@@ -68,7 +79,7 @@
     }
     .source {
       position: absolute;
-      left: 0; top: 100px; right: 50%; bottom: 30px;
+      left: 0; top: 125px; right: 50%; bottom: 30px;
       margin: 0;
     }
     .sourceHolder {
@@ -77,7 +88,7 @@
     }
     .result {
       position: absolute;
-      left: 50%; top: 100px; right: 0; bottom: 30px;
+      left: 50%; top: 125px; right: 0; bottom: 30px;
       margin: 0;
     }
     .resultHolder {
@@ -97,7 +108,7 @@
     }
   </style>
 </head>
-<body onload="chooseQuery();">
+<body onload="beautifySource(); chooseQuery();">
   <div class="query">
     <label for="query">Query</label>
     <div class="queryHolder"><textarea id="query"></textarea></div>
@@ -105,40 +116,231 @@
     <label for="queries"></label>
     <div class="queriesHolder">
     <select id ="queries" onchange="chooseQuery();">
-      <option selected>age > 20 order by firstName</option>
-      <option>firstName == 'Bill' and age > 20</option>
-      <option>order by lastName, firstName, age</option>
-      <option>order by age, firstName select lastName</option>
-      <option>order by lastName select { fullName: firstName + ' ' + lastName }</option>
-      <option>"^J" =~ firstName</option>
-      <option>"^J" =~ firstName order by lastName select { fullName: lastName + ', ' + firstName, age: age-1 }</option>
-      <option>by lastName -> { fullName: lastName + ', ' + firstName, age: age / 2 }</option>
+
+<option disabled="true">
+  Verbose Syntax Queries
+</option>
+
+<option selected>
+WHERE age > 7
+ORDER BY firstName
+</option>
+
+<option>
+WHERE firstName == 'Ted' AND age > 70
+</option>
+
+<option>
+ORDER BY age, firstName
+SELECT lastName
+</option>
+
+<option>
+WHERE lastName == 'Bradford'
+ORDER BY lastName
+SELECT { fullName: lastName + ', ' + firstName }
+</option>
+
+<option>
+WHERE lastName IN ['Bradford', 'Rago', 'Mains']
+ORDER BY lastName, firstName
+</option>
+
+<option>
+SELECT [age, age*age, age/2]
+</option>
+
+<option disabled="true"></option>
+<option disabled="true">
+  Terse Syntax Queries
+</option>
+
+<option selected>
+age > 7
+BY firstName
+</option>
+
+<option>
+firstName == 'Ted' AND age > 70
+</option>
+
+<option>
+BY age, firstName -> lastName
+</option>
+
+<option>
+lastName == 'Bradford'
+BY lastName
+-> { fullName: lastName + ', ' + firstName }
+</option>
+
+<option>
+lastName IN ['Bradford', 'Rago', 'Mains']
+BY lastName, firstName
+</option>
+
+<option>
+-> [age, age*age, age/2]
+</option>
+
+<option disabled="true"></option>
+<option disabled="true">
+  Regular Expression Queries
+</option>
+
+<option>
+"^J" =~ firstName
+</option>
+
+<option>
+"^J" =~ firstName
+BY lastName
+-> { firstName, lastName, age: age-1 }
+</option>
+
+<option disabled="true"></option>
+<option disabled="true">
+  Aggregation Queries
+</option>
+
+<option>
+WHERE age > 70
+SELECT age
+AGGREGATE avg, round
+</option>
+
+<option>
+age > 50 -> age := sum
+</option>
     </select>
     </div>
   </div>
   <div class="source">
-    <label for="source">Source</label>
-    <div class="sourceHolder"><textarea id="source">
-[
-  { "firstName": "Bill", "lastName": "Bradley", "age": 30 },
-  { "firstName": "Thom", "lastName": "Bradford", "age": 40 },
-  { "firstName": "Stefano", "lastName": "Rago", "age": 29 },
-  { "firstName": "Fred", "lastName": "Wilkinson", "age": 50 },
-  { "firstName": "Ted", "lastName": "Williams", "age": 20 },
-  { "firstName": "Jed", "lastName": "Clampet", "age": 70 },
-  { "firstName": "Will", "lastName": "Robinson", "age": 45 },
-  { "firstName": "John", "lastName": "Jacob", "age": 54 },
-  { "firstName": "Thom", "lastName": "Smith", "age": 15 },
-  { "firstName": "Bill", "lastName": "Blake", "age": 90 },
-  { "firstName": "Hank", "lastName": "Williams", "age": 70 },
-  { "firstName": "John", "lastName": "Cash", "age": 45 },
-  { "firstName": "Joe", "lastName": "Strummer", "age": 54 },
-  { "firstName": "Ted", "lastName": "Turner", "age": 15 }
-]
-    </textarea></div>
+    <label for="source">Source <span id="inputItems"></span></label>
+    <div class="sourceHolder"><textarea id="source">[{"firstName":"Jamie", "lastName":"Vey", "age": 11},
+{"firstName":"Julianne", "lastName":"Whelchel", "age": 23},
+{"firstName":"Nelson", "lastName":"Sawin", "age": 43},
+{"firstName":"Lilia", "lastName":"Easler", "age": 46},
+{"firstName":"Tania", "lastName":"Pettey", "age": 12},
+{"firstName":"Penelope", "lastName":"Creasman", "age": 55},
+{"firstName":"Rae", "lastName":"Moffit", "age": 45},
+{"firstName":"Julio", "lastName":"Stanwood", "age": 87},
+{"firstName":"Dona", "lastName":"Hambleton", "age": 23},
+{"firstName":"Mathew", "lastName":"Milliron", "age": 32},
+{"firstName":"Clinton", "lastName":"Easterwood", "age": 43},
+{"firstName":"Kurt", "lastName":"Alfrey", "age": 74},
+{"firstName":"Christian", "lastName":"Polhemus", "age": 73},
+{"firstName":"Odessa", "lastName":"Hauk", "age": 44},
+{"firstName":"Rae", "lastName":"Carrick", "age": 15},
+{"firstName":"Alana", "lastName":"Gildea", "age": 65},
+{"firstName":"Jessie", "lastName":"Otani", "age": 23},
+{"firstName":"Ted", "lastName":"Ayars", "age": 64},
+{"firstName":"Karina", "lastName":"Munez", "age": 59},
+{"firstName":"Erik", "lastName":"Fill", "age": 36},
+{"firstName":"Rae", "lastName":"Giancola", "age": 42},
+{"firstName":"Tanisha", "lastName":"Philipps", "age": 92},
+{"firstName":"Selph", "lastName":"Effacing", "age": 43},
+{"firstName":"Tyrone", "lastName":"Ahumada", "age": 66},
+{"firstName":"Liza", "lastName":"Mains", "age": 94},
+{"firstName":"Shao", "lastName":"Mains", "age": 76},
+{"firstName":"Hillary", "lastName":"Max", "age": 56},
+{"firstName":"Guy", "lastName":"Plata", "age": 54},
+{"firstName":"Lilia", "lastName":"Slaven", "age": 67},
+{"firstName":"Clayton", "lastName":"Goldsby", "age": 34},
+{"firstName":"Julianne", "lastName":"Dunstan", "age": 53},
+{"firstName":"Lilia", "lastName":"Luedke", "age": 102},
+{"firstName":"Erik", "lastName":"Hazley", "age": 12},
+{"firstName":"Lance", "lastName":"Essman", "age": 53},
+{"firstName":"Elinor", "lastName":"Delatte", "age": 65},
+{"firstName":"Sofia", "lastName":"Stager", "age": 34},
+{"firstName":"Lilia", "lastName":"Hogge", "age": 19},
+{"firstName":"Karina", "lastName":"Haverstock", "age": 43},
+{"firstName":"Rae", "lastName":"Roosa", "age": 54},
+{"firstName":"Neil", "lastName":"Goodfellow", "age": 77},
+{"firstName":"Pearlie", "lastName":"Mani", "age": 65},
+{"firstName":"Mallory", "lastName":"Leddy", "age": 23},
+{"firstName":"Roslyn", "lastName":"Schissler", "age": 44},
+{"firstName":"Darren", "lastName":"Bartleson", "age": 76},
+{"firstName":"Ted", "lastName":"Garron", "age": 78},
+{"firstName":"Rosalinda", "lastName":"Crose", "age": 99},
+{"firstName":"Kenya", "lastName":"Peppler", "age": 21},
+{"firstName":"Nelson", "lastName":"Witherow", "age": 27},
+{"firstName":"Mathew", "lastName":"Pooser", "age": 64},
+{"firstName":"Thomas", "lastName":"Emberton", "age": 43},
+{"firstName":"Sofia", "lastName":"Pesola", "age": 76},
+{"firstName":"Louisa", "lastName":"Caughey", "age": 45},
+{"firstName":"Julio", "lastName":"Warman", "age": 55},
+{"firstName":"Marylou", "lastName":"Bushard", "age": 43},
+{"firstName":"Erik", "lastName":"Lambright", "age": 87},
+{"firstName":"Bartholow", "lastName":"Chops", "age": 67},
+{"firstName":"Amie", "lastName":"Voegele", "age": 23},
+{"firstName":"Allan", "lastName":"Hardt", "age": 65},
+{"firstName":"Benita", "lastName":"Tatham", "age": 77},
+{"firstName":"Jamie", "lastName":"Ackerley", "age": 74},
+{"firstName":"Hugh", "lastName":"Dragon", "age": 16},
+{"firstName":"Christopher", "lastName":"Bradford", "age": 37},
+{"firstName":"Earlene", "lastName":"Booze", "age": 86},
+{"firstName":"Chandra", "lastName":"Sullenger", "age": 53},
+{"firstName":"Mathew", "lastName":"Olaughlin", "age": 37},
+{"firstName":"Fernando", "lastName":"Bargas", "age": 94},
+{"firstName":"Julianne", "lastName":"Muszynski", "age": 15},
+{"firstName":"Mathew", "lastName":"Robillard", "age": 44},
+{"firstName":"Amie", "lastName":"Osterhout", "age": 75},
+{"firstName":"Raven", "lastName":"So", "age": 37},
+{"firstName":"Clinton", "lastName":"Rentschler", "age": 16},
+{"firstName":"Benita", "lastName":"Heslin", "age": 74},
+{"firstName":"Mathew", "lastName":"Brazile", "age": 17},
+{"firstName":"Loraine", "lastName":"Wischmeier", "age": 74},
+{"firstName":"Stefano", "lastName":"Rago", "age": 30},
+{"firstName":"Serena", "lastName":"Proffit", "age": 53},
+{"firstName":"Thomas", "lastName":"Mcnerney", "age": 17},
+{"firstName":"Fernando", "lastName":"Tarnowski", "age": 53},
+{"firstName":"Hugh", "lastName":"Panek", "age": 44},
+{"firstName":"Darryl", "lastName":"Empey", "age": 22},
+{"firstName":"Guy", "lastName":"Fausett", "age": 86},
+{"firstName":"Guy", "lastName":"Delker", "age": 109},
+{"firstName":"Carlene", "lastName":"Ohl", "age": 54},
+{"firstName":"Cody", "lastName":"Alling", "age": 55},
+{"firstName":"Kurt", "lastName":"Remsen", "age": 72},
+{"firstName":"Selena", "lastName":"Bradford", "age": 86},
+{"firstName":"Tabatha", "lastName":"Muldowney", "age": 67},
+{"firstName":"Clare", "lastName":"Mass", "age": 26},
+{"firstName":"Tyrone", "lastName":"Eves", "age": 90},
+{"firstName":"Dave", "lastName":"Chappelle", "nickName":"Voltron"},
+{"firstName":"Julio", "lastName":"Vandeventer"},
+{"firstName":"Ashlee", "lastName":"Daub", "age": 43},
+{"firstName":"Kurt", "lastName":"Lederman", "age": 57},
+{"firstName":"Clayton", "lastName":"Newbury"},
+{"firstName":"Jessie", "lastName":"Warman", "age": 43},
+{"firstName":"Elinor", "lastName":"Sandrock", "age": 56},
+{"firstName":"Clinton", "lastName":"Delucca", "age": 99},
+{"firstName":"Milagros", "lastName":"Bednar", "age": 23},
+{"firstName":"Max", "lastName":"Benevides", "age": 64},
+{"firstName":"Karina", "lastName":"Fregoe", "age": 37},
+{"firstName":"Javier", "lastName":"Manross", "age": 58},
+{"firstName":"Clinton", "lastName":"Elamin", "age": 85},
+{"firstName":"Kurt", "lastName":"Tugwell", "age": 34},
+{"firstName":"Margery", "lastName":"Dray", "age": 64},
+{"firstName":"Roxie", "lastName":"Giuliani", "age": 12},
+{"firstName":"Neil", "lastName":"Baldree", "age": 46},
+{"firstName":"Wiren", "lastName":"Haughty", "age": 43},
+{"firstName":"Jessie", "lastName":"Parada", "age": 47},
+{"firstName":"Kathrine", "lastName":"Gean", "age": 43},
+{"firstName":"Darren", "lastName":"Missildine", "age": 35},
+{"firstName":"Thomas", "lastName":"Bradford", "nickName":"Thom", "age": 40},
+{"firstName":"Jessie", "lastName":"Deroche", "age": 12},
+{"firstName":"Neil", "lastName":"Bundrick", "age": 43},
+{"firstName":"Mallory", "lastName":"Gillmore", "age": 78},
+{"firstName":"Hugh", "lastName":"Tinkler", "age": 76},
+{"firstName":"Jerri", "lastName":"Izzi", "age": 29},
+{"firstName":"Malinda", "lastName":"He", "age": 57},
+{"firstName":"Harriett", "lastName":"Lamarca", "age": 73},
+{"firstName":"Chandra", "lastName":"Agostini", "age": 87},
+{"firstName":"Jamie", "lastName":"Tallarico", "age": 64},
+{"firstName":"Cody", "lastName":"Prophet", "age": 67}]</textarea></div>
   </div>
   <div class="result">
-    <label for="result">Result <span id="stats"></span></label>
+    <label for="result">Result <span id="outputItems"></span></label>
     <div class="resultHolder">
       <textarea id="result" readonly="readonly"></textarea>
     </div>
