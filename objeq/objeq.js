@@ -10,7 +10,7 @@
 (function (self) {
   "use strict";
 
-  var CURRENT_VERSION = "0.4.1";
+  var CURRENT_VERSION = "0.4.2";
 
   // Feature Checking *********************************************************
 
@@ -71,12 +71,27 @@
     };
   }
 
+  var filter = Array.prototype.filter;
+  if ( !filter ) {
+    filter = function _filter(callback, self) {
+      var result = [];
+      for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
+        var obj = this[i];
+        if ( callback.call(self, obj, i, this) ) {
+          result.push(obj);
+        }
+      }
+      return result;
+    };
+  }
+
   var toString = Object.prototype.toString;
+  var slice = Array.prototype.slice;
 
   // Utility Functions ********************************************************
 
   function makeArray(arr) {
-    return Array.prototype.slice.call(arr, 0);
+    return slice.call(arr, 0);
   }
 
   function arraysAreEqual(arr1, arr2) {
@@ -91,16 +106,6 @@
     }
 
     return true;
-  }
-
-  // we control usage, so we don't need to check for hasOwnProperty
-  function mixin(obj) {
-    for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
-      var hash = arguments[i];
-      for ( var key in hash ) {
-        obj[key] = hash[key];
-      }
-    }
   }
 
   function isMonitored(value) {
@@ -320,38 +325,15 @@
     { name: 'sort', additive: false }
   ];
 
-  var DecoratedArrayMixin = {
-    dynamic: dynamic, // for dynamic sub-queries
-    query: query,     // for snapshot queries
-
-    item: function _item(index, value) {
-      if ( typeof value !== 'undefined' ) {
-        this[index] = value;
-      }
-      return this[index];
-    },
-
-    attr: function _attr(key, value) {
-      if ( typeof value !== 'undefined' ) {
-        for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
-          var item = this[i];
-          if ( typeof item !== 'object' ) {
-            continue;
-          }
-          item[key] = value;
-        }
-      }
-
-      var first = this[0];
-      return typeof first === 'object' ? first[key] : null;
-    }
-  };
-
   function decorateArray(arr) {
-    var callbackMapping = [];
+    var oldPrototype = arr.__proto__ || arr.constructor.prototype
+      , newPrototype = { __proto__: oldPrototype }
+      , callbackMapping = []
+      , containsCache = null;
 
-    mixin(arr, DecoratedArrayMixin);
-    addEventMethods();
+    arr.__proto__ = newPrototype;
+
+    addDecoratorMethods();
 
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
@@ -366,11 +348,40 @@
 
     // Array Event Methods ****************************************************
 
-    function addEventMethods() {
-      arr.on = function _on(events, callback) {
+    function addDecoratorMethods() {
+      newPrototype.dynamic =  dynamic; // for dynamic sub-queries
+      newPrototype.query = query;     // for snapshot queries
+
+      newPrototype.contains = function _contains(value) {
+        return arr.indexOf(value) !== -1;
+      };
+
+      newPrototype.item = function _item(index, value) {
+        if ( typeof value !== 'undefined' ) {
+          arr[index] = value;
+        }
+        return arr[index];
+      };
+
+      newPrototype.attr = function _attr(key, value) {
+        if ( typeof value !== 'undefined' ) {
+          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+            var item = arr[i];
+            if ( typeof item !== 'object' ) {
+              continue;
+            }
+            item[key] = value;
+          }
+        }
+
+        var first = arr[0];
+        return typeof first === 'object' ? first[key] : null;
+      };
+
+      newPrototype.on = function _on(events, callback) {
         // If the Array isn't already monitored, then we need to
         if ( !isMonitored(arr) ) {
-          monitorArray();
+          addMonitoredMethods();
         }
 
         var evt = events.split(/\s/);
@@ -384,7 +395,7 @@
         return arr;
       };
 
-      arr.off = function _off(events, callback) {
+      newPrototype.off = function _off(events, callback) {
         var evt = events.split(/\s/);
         for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
           var info = getArrayListenerInfo(evt[i]);
@@ -397,7 +408,9 @@
       };
     }
 
-    function monitorArray() {
+    // Array Event Methods ****************************************************
+
+    function addMonitoredMethods() {
       for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
         arr[i] = decorate(arr[i]);
       }
@@ -407,11 +420,27 @@
         monitorArrayFunc(arrayFunc.name, arrayFunc.additive);
       }
 
-      arr.item =  function _monitoredItem(index, value) {
+      newPrototype.contains = function _monitoredContains(obj) {
+        if ( !containsCache ) {
+          containsCache = {};
+          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+            containsCache[getObjectId(arr[i])] = true;
+          }
+        }
+        return containsCache[getObjectId(obj)];
+      };
+
+      newPrototype.contains.reset = function _reset() {
+        containsCache = null;
+      };
+
+      newPrototype.item =  function _monitoredItem(index, value) {
         if ( typeof value !== 'undefined' ) {
           var oldLen = arr.length;
           arr[index] = decorate(value);
           var newLen = arr.length;
+          containsCache = null;
+
           queueEvent(arr, arrayContentKey, newLen);
           if ( newLen != oldLen ) {
             queueEvent(arr, arrayLengthKey, newLen, oldLen);
@@ -426,24 +455,25 @@
     }
 
     function monitorArrayFunc(name, additive) {
-      var oldFunc = arr[name];
-      if ( !oldFunc ) {
-        throw new Error("Missing Array function: " + name);
-      }
+      newPrototype[name] = function _wrapped() {
+        var oldLen = arr.length
+          , oldFunction = oldPrototype[name]
+          , result = oldFunction.apply(arr, arguments)
+          , newLen = arr.length;
 
-      arr[name] = function _wrapped() {
-        var oldLen = arr.length;
-        oldFunc.apply(arr, arguments);
-        var newLen = arr.length;
         if ( additive ) {
-          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+          for ( var i = 0; i < newLen; i++ ) {
             arr[i] = decorate(arr[i]);
           }
+          containsCache = null;
         }
+
         queueEvent(arr, arrayContentKey, newLen);
         if ( newLen != oldLen ) {
           queueEvent(arr, arrayLengthKey, newLen, oldLen);
         }
+
+        return result;
       };
     }
 
@@ -466,8 +496,7 @@
 
       // Otherwise create the wrapper
       var wrapped = function _wrappedCallback(target, key, value, prev) {
-        // TODO: Use a hash lookup instead of an Array scan
-        arr.indexOf(target) !== -1 && callback(target, key, value, prev);
+        arr.contains(target) && callback(target, key, value, prev);
       };
       callbackMapping.push({ callback: callback, wrapped: wrapped });
       return wrapped;
@@ -1127,6 +1156,9 @@
 
     // Result Refresh Functions ***********************************************
 
+    // NOTE: This is completely *unoptimized* - The initial goal was
+    // functionality rather than performance
+
     function evalResults() {
       var evaluated, selected, aggregated;
       results.length = 0;
@@ -1134,16 +1166,10 @@
       // Evaluation Step
       if ( evaluator ) {
         // In this case, we need to sort between filtering and selecting
-        evaluated = [];
-        for ( var i = 0, j = 0, ilen = source.length; i < ilen; i++ ) {
-          var obj = source[i];
-          if ( evaluator(ctx, obj) ) {
-            evaluated[j++] = obj;
-          }
-        }
+        evaluated = filter.call(source, evalObject);
       }
       else {
-        // Take a snapshot of the source
+        // Otherwise take a snapshot of the source
         evaluated = source.slice(0);
       }
 
@@ -1169,6 +1195,14 @@
 
       // Splice Results
       spliceArrayItems(results, aggregated);
+
+      if ( results.contains && results.contains.reset ) {
+        results.contains.reset();
+      }
+    }
+
+    function evalObject(obj) {
+      return evaluator(ctx, obj);
     }
 
     function spliceArrayItems(arr, items) {
