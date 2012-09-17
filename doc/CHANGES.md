@@ -3,6 +3,9 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
+## 0.4.2 - Starting to Optimize
+* Starting to perform query optimization
+
 ## 0.4.1 - Bug-Fix Release
 * Calling $objeq(array, string) was failing to process arguments correctly
 

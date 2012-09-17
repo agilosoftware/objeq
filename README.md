@@ -4,7 +4,7 @@ objeq (Object Querying) - is a **simple** library that allows POJSO's (Plain-Old
 
 ## Current Status
 
-Still under active development and still quite a bit to do. Unless you *really* know what you're doing, you probably shouldn't even try to use this library.  If you *do* use it, know that things *will* considerably change in future versions.
+The grammar is now frozen but the query engine is still under active development  Performance will continue to improve.
 
 ## Installation
 
