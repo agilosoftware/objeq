@@ -131,8 +131,8 @@
   // Extension Functions ******************************************************
 
   var ext = {
-    // We only have one Extension by default, and that is sub-select support
-    select: function _select(ctx) {
+    // We only have one Extension by default, and that is sub-query support
+    query: function _query(ctx) {
       var source = ctx.source;
       return source.query.apply(source, makeArray(arguments).slice(1));
     }
@@ -424,10 +424,11 @@
         if ( !containsCache ) {
           containsCache = {};
           for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
-            containsCache[getObjectId(arr[i])] = true;
+            var item = arr[i], id = getObjectId(item) || item;
+            containsCache[id] = true;
           }
         }
-        return containsCache[getObjectId(obj)];
+        return containsCache[getObjectId(obj) || obj];
       };
 
       newPrototype.contains.reset = function _reset() {
