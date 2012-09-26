@@ -47,9 +47,15 @@
     }
 
     defineProperty = function _defineProperty(obj, prop, descriptor) {
-      obj.__defineGetter__(prop, descriptor.get);
       if ( descriptor.set ) {
         obj.__defineSetter__(prop, descriptor.set);
+      }
+      if ( descriptor.get ) {
+        obj.__defineGetter__(prop, descriptor.get);
+      }
+      else if ( descriptor.value ) {
+        var value = descriptor.value;
+        obj.__defineGetter__(prop, function _getter() { return value; });
       }
     };
   }
@@ -87,6 +93,7 @@
 
   var toString = Object.prototype.toString;
   var slice = Array.prototype.slice;
+  var push = Array.prototype.push;
 
   // Utility Functions ********************************************************
 
@@ -172,9 +179,9 @@
     , inNotifyListeners = false; // to avoid recursion with notifyListeners
 
   function hasListeners(target, key) {
-    return listeners['*@*']
-        || listeners[key + '@*']
-        || listeners[key + '@' + getObjectId(target)];
+    return listeners['*@*'] ||
+           listeners[key + '@*'] ||
+           listeners[key + '@' + getObjectId(target)];
   }
 
   function addListener(target, key, callback) {
@@ -224,9 +231,11 @@
   }
 
   function notifyListeners() {
+    var count = 0;
+
     inNotifyListeners = true;
     try {
-      for ( var count = 0; queue.length && count < MAX_NOTIFY; count++ ) {
+      for ( ; queue.length && count < MAX_NOTIFY; count++ ) {
         var currentQueue = queue;
         queue = [];
 
@@ -290,8 +299,7 @@
     defineProperty(obj, key, {
       get: getter,
       set: setter,
-      enumerable: true,
-      configurable: true
+      enumerable: true
     });
   }
 
@@ -307,7 +315,7 @@
     // Read-only Property
     var objectId = 'o' + (nextObjectId++);
     defineProperty(obj, '__objeq_id__', {
-      get: function () { return objectId; }
+      value: objectId
     });
 
     return obj;
@@ -326,9 +334,7 @@
   ];
 
   function decorateArray(arr) {
-    var oldPrototype = arr.__proto__ || arr.constructor.prototype
-      , newPrototype = arr.__proto__ = { __proto__: oldPrototype }
-      , callbackMapping = []
+    var callbackMapping = []
       , containsCache = null;
 
     addDecoratorMethods();
@@ -336,7 +342,7 @@
     // Read-only Properties
     var objectId = 'a' + (nextObjectId++);
     defineProperty(arr, '__objeq_id__', {
-      get: function () { return objectId; }
+      value: objectId
     });
 
     var arrayContentKey = getArrayContentKey(arr);
@@ -347,63 +353,72 @@
     // Array Event Methods ****************************************************
 
     function addDecoratorMethods() {
-      newPrototype.dynamic =  dynamic; // for dynamic sub-queries
-      newPrototype.query = query;     // for snapshot queries
-
-      newPrototype.contains = function _contains(value) {
-        return arr.indexOf(value) !== -1;
-      };
-
-      newPrototype.item = function _item(index, value) {
-        if ( typeof value !== 'undefined' ) {
-          arr[index] = value;
-        }
-        return arr[index];
-      };
-
-      newPrototype.attr = function _attr(key, value) {
-        if ( typeof value !== 'undefined' ) {
-          for ( var i = arr.length; i--; ) {
-            var item = arr[i];
-            if ( typeof item !== 'object' ) {
-              continue;
+      defineProperties(arr, {
+        dynamic: { value: dynamic }, // for dynamic sub-queries
+        query: { value: query },     // for snapshot queries
+        contains: {
+          configurable: true,
+          value: function _contains(value) {
+            return arr.indexOf(value) !== -1;
+          }
+        },
+        item: {
+          configurable: true,
+          value: function _item(index, value) {
+            if ( typeof value !== 'undefined' ) {
+              arr[index] = value;
             }
-            item[key] = value;
+            return arr[index];
+          }
+        },
+        attr: {
+          value: function _attr(key, value) {
+            if ( typeof value !== 'undefined' ) {
+              for ( var i = arr.length; i--; ) {
+                var item = arr[i];
+                if ( typeof item !== 'object' ) {
+                  continue;
+                }
+                item[key] = value;
+              }
+            }
+
+            var first = arr[0];
+            return typeof first === 'object' ? first[key] : null;
+          }
+        },
+        on: {
+          value: function _on(events, callback) {
+            // If the Array isn't already monitored, then we need to
+            if ( !isMonitored(arr) ) {
+              addMonitoredMethods();
+            }
+
+            var evt = events.split(/\s/);
+            for ( var i = evt.length; i--; ) {
+              var info = getArrayListenerInfo(evt[i]);
+              if ( !info.target ) {
+                callback = wrapCallback(callback);
+              }
+              addListener(info.target, info.key, callback);
+            }
+            return arr;
+          }
+        },
+        off: {
+          value: function _off(events, callback) {
+            var evt = events.split(/\s/);
+            for ( var i = evt.length; i--; ) {
+              var info = getArrayListenerInfo(evt[i]);
+              if ( !info.target ) {
+                callback = wrapCallback(callback);
+              }
+              removeListener(info.target, info.key, callback);
+            }
+            return arr;
           }
         }
-
-        var first = arr[0];
-        return typeof first === 'object' ? first[key] : null;
-      };
-
-      newPrototype.on = function _on(events, callback) {
-        // If the Array isn't already monitored, then we need to
-        if ( !isMonitored(arr) ) {
-          addMonitoredMethods();
-        }
-
-        var evt = events.split(/\s/);
-        for ( var i = evt.length; i--; ) {
-          var info = getArrayListenerInfo(evt[i]);
-          if ( !info.target ) {
-            callback = wrapCallback(callback);
-          }
-          addListener(info.target, info.key, callback);
-        }
-        return arr;
-      };
-
-      newPrototype.off = function _off(events, callback) {
-        var evt = events.split(/\s/);
-        for ( var i = evt.length; i--; ) {
-          var info = getArrayListenerInfo(evt[i]);
-          if ( !info.target ) {
-            callback = wrapCallback(callback);
-          }
-          removeListener(info.target, info.key, callback);
-        }
-        return arr;
-      };
+      });
     }
 
     // Array Event Methods ****************************************************
@@ -418,62 +433,71 @@
         monitorArrayFunc(arrayFunc.name, arrayFunc.additive);
       }
 
-      newPrototype.contains = function _monitoredContains(obj) {
-        if ( !containsCache ) {
-          containsCache = {};
-          for ( var i = arr.length; i--; ) {
-            var item = arr[i], id = getObjectId(item) || item;
-            containsCache[id] = true;
+      defineProperties(arr, {
+        contains: {
+          value: function _monitoredContains(obj) {
+            if ( !containsCache ) {
+              containsCache = {};
+              for ( var i = arr.length; i--; ) {
+                var item = arr[i], id = getObjectId(item) || item;
+                containsCache[id] = true;
+              }
+            }
+            return containsCache[getObjectId(obj) || obj];
           }
+        },
+        containsReset: {
+          value: function _reset() {
+            containsCache = null;
+          }
+        },
+        item: {
+          value: function _monitoredItem(index, value) {
+            if ( typeof value !== 'undefined' ) {
+              var oldLen = arr.length;
+              arr[index] = decorate(value);
+              var newLen = arr.length;
+              containsCache = null;
+
+              queueEvent(arr, arrayContentKey, newLen);
+              if ( newLen != oldLen ) {
+                queueEvent(arr, arrayLengthKey, newLen, oldLen);
+              }
+            }
+            return arr[index];
+          }
+        },
+        __objeq_mon__: {
+          value: true
         }
-        return containsCache[getObjectId(obj) || obj];
-      };
+      });
 
-      newPrototype.contains.reset = function _reset() {
-        containsCache = null;
-      };
+    }
 
-      newPrototype.item =  function _monitoredItem(index, value) {
-        if ( typeof value !== 'undefined' ) {
-          var oldLen = arr.length;
-          arr[index] = decorate(value);
-          var newLen = arr.length;
-          containsCache = null;
+    function monitorArrayFunc(name, additive) {
+      var oldFunction = arr[name];
+
+      defineProperty(arr, name, {
+        value: function _wrapped() {
+          var oldLen = arr.length
+            , result = oldFunction.apply(arr, arguments)
+            , newLen = arr.length;
+
+          if ( additive ) {
+            for ( var i = 0; i < newLen; i++ ) {
+              arr[i] = decorate(arr[i]);
+            }
+            containsCache = null;
+          }
 
           queueEvent(arr, arrayContentKey, newLen);
           if ( newLen != oldLen ) {
             queueEvent(arr, arrayLengthKey, newLen, oldLen);
           }
-        }
-        return arr[index];
-      };
 
-      defineProperty(arr, '__objeq_mon__', {
-        get: function() { return true; }
+          return result;
+        }
       });
-    }
-
-    function monitorArrayFunc(name, additive) {
-      newPrototype[name] = function _wrapped() {
-        var oldLen = arr.length
-          , oldFunction = oldPrototype[name]
-          , result = oldFunction.apply(arr, arguments)
-          , newLen = arr.length;
-
-        if ( additive ) {
-          for ( var i = 0; i < newLen; i++ ) {
-            arr[i] = decorate(arr[i]);
-          }
-          containsCache = null;
-        }
-
-        queueEvent(arr, arrayContentKey, newLen);
-        if ( newLen != oldLen ) {
-          queueEvent(arr, arrayLengthKey, newLen, oldLen);
-        }
-
-        return result;
-      };
     }
 
     function getArrayListenerInfo(name) {
@@ -677,7 +701,7 @@
           funcArgs.push(typeof item === 'function' ? item(ctx, obj) : item);
         }
         return func.apply(obj, [ctx].concat(funcArgs));
-      }
+      };
     }
 
     function evalNOT() {
@@ -851,7 +875,7 @@
         else if ( rval != null ) {
           return (n1Eval ? n1Eval(ctx, obj) : n1Lit) == rval;
         }
-        return false
+        return false;
       }
 
       return n1Eval || n2Eval ? _in : _in();
@@ -1197,8 +1221,8 @@
       // Splice Results
       spliceArrayItems(results, aggregated);
 
-      if ( results.contains && results.contains.reset ) {
-        results.contains.reset();
+      if ( results.contains && results.containsReset ) {
+        results.containsReset();
       }
     }
 
@@ -1300,8 +1324,6 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    var self = this || EmptyArray;
-
     // Fast Path for decorating an existing Array
     if ( arguments.length === 1 && isArray(arguments[0]) ) {
       return decorate(arguments[0]);
@@ -1313,8 +1335,7 @@
     }
 
     var args = makeArray(arguments)
-      , source = isDecorated(self) ? self : decorateArray([])
-      , results = null;
+      , source = decorateArray([]);
 
     while ( args.length ) {
       if ( typeof args[0] === 'string' ) {
@@ -1323,11 +1344,10 @@
       }
       else {
         var arg = args.shift();
-        results = results || ( source = results = decorateArray([]) );
-        results.push.apply(results, isArray(arg) ? arg : [arg]);
+        source.push.apply(source, isArray(arg) ? arg : [arg]);
       }
     }
-    return results;
+    return source;
   }
 
   defineProperty(objeq, 'VERSION', {
