@@ -7,7 +7,7 @@
  * @author Stefano Rago (github/sterago)
  */
 
-(function (self) {
+(function (self, require, module) {
   "use strict";
 
   var CURRENT_VERSION = "0.4.2";
@@ -27,7 +27,7 @@
     }
     else {
       // Otherwise, perhaps we're using node.js?
-      if ( typeof require === 'function' ) {
+      if ( require ) {
         ObjeqParser = require('./objeq-parser').Parser;
       }
       else {
@@ -1358,11 +1358,8 @@
   objeq.debug = debug;
 
   // Node.js and CommonJS Exporting
-  if ( typeof exports !== 'undefined' ) {
-    if ( typeof module !== 'undefined' && module.exports ) {
-      exports = module.exports = objeq;
-    }
-    exports.objeq = objeq;
+  if ( module && module.exports ) {
+    module.exports = objeq.objeq = objeq;
   }
   else {
     // Global Exporting
@@ -1372,4 +1369,6 @@
     }
     self.$objeq = objeq;
   }
-})(this);
+})(this,
+   typeof require !== 'undefined' ? require : null,
+   typeof module !== 'undefined' ? module : null);
