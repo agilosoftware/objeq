@@ -99,7 +99,7 @@
       return false;
     }
 
-    for ( var i = 0, ilen = arr1.length; i < ilen; i++ ) {
+    for ( var i = arr1.length; i--; ) {
       if ( arr1[i] !== arr2[i] ) {
         return false;
       }
@@ -157,10 +157,10 @@
 
   function getExtension(name) {
     var func = ext[name.toLowerCase()];
-    if ( !func || typeof func !== 'function' ) {
-      throw new Error("Extension '" + name + "' does not exist!");
+    if ( typeof func === 'function' ) {
+      return func;
     }
-    return func;
+    throw new Error("Extension '" + name + "' does not exist!");
   }
 
   // Listener Implementation **************************************************
@@ -327,11 +327,9 @@
 
   function decorateArray(arr) {
     var oldPrototype = arr.__proto__ || arr.constructor.prototype
-      , newPrototype = { __proto__: oldPrototype }
+      , newPrototype = arr.__proto__ = { __proto__: oldPrototype }
       , callbackMapping = []
       , containsCache = null;
-
-    arr.__proto__ = newPrototype;
 
     addDecoratorMethods();
 
@@ -365,7 +363,7 @@
 
       newPrototype.attr = function _attr(key, value) {
         if ( typeof value !== 'undefined' ) {
-          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+          for ( var i = arr.length; i--; ) {
             var item = arr[i];
             if ( typeof item !== 'object' ) {
               continue;
@@ -385,7 +383,7 @@
         }
 
         var evt = events.split(/\s/);
-        for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        for ( var i = evt.length; i--; ) {
           var info = getArrayListenerInfo(evt[i]);
           if ( !info.target ) {
             callback = wrapCallback(callback);
@@ -397,7 +395,7 @@
 
       newPrototype.off = function _off(events, callback) {
         var evt = events.split(/\s/);
-        for ( var i = 0, ilen = evt.length; i < ilen; i++ ) {
+        for ( var i = evt.length; i--; ) {
           var info = getArrayListenerInfo(evt[i]);
           if ( !info.target ) {
             callback = wrapCallback(callback);
@@ -411,11 +409,11 @@
     // Array Event Methods ****************************************************
 
     function addMonitoredMethods() {
-      for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+      for ( var i = arr.length; i--; ) {
         arr[i] = decorate(arr[i]);
       }
 
-      for ( i = 0, ilen = ArrayFuncs.length; i < ilen; i++ ) {
+      for ( i = ArrayFuncs.length; i--; ) {
         var arrayFunc = ArrayFuncs[i];
         monitorArrayFunc(arrayFunc.name, arrayFunc.additive);
       }
@@ -423,7 +421,7 @@
       newPrototype.contains = function _monitoredContains(obj) {
         if ( !containsCache ) {
           containsCache = {};
-          for ( var i = 0, ilen = arr.length; i < ilen; i++ ) {
+          for ( var i = arr.length; i--; ) {
             var item = arr[i], id = getObjectId(item) || item;
             containsCache[id] = true;
           }
@@ -488,7 +486,7 @@
 
     function wrapCallback(callback) {
       // If it's already wrapped, return the wrapper
-      for ( var i = 0, ilen = callbackMapping.length; i < ilen; i++ ) {
+      for ( var i = callbackMapping.length; i--; ) {
         var item = callbackMapping[i];
         if ( item.callback === callback ) {
           return item.wrapped;
@@ -527,7 +525,7 @@
     var template = [];
     for ( var i = 0, ilen = items.length; i < ilen; i++ ) {
       var item = items[i], isNode = isArray(item) && item.isNode;
-      template[i] = isNode ? createEvaluator(item) : item;
+      template.push(isNode ? createEvaluator(item) : item);
     }
     return template;
   }
@@ -538,7 +536,7 @@
       var value = evalRoot(ctx, obj);
       for ( var i = 0, ilen = path.length; i < ilen; i++ ) {
         // If we're drilling in, resolve the first Item
-        if ( isArray(value) && isDecorated(value) ) {
+        if ( isArray(value) ) {
           if ( value.length === 0 ) {
             return null;
           }
@@ -558,7 +556,7 @@
   function evalArgPath(index, pathComponents) {
     return evalPath(evalArgPathRoot, pathComponents);
 
-    function evalArgPathRoot(ctx, obj) {
+    function evalArgPathRoot(ctx /* , obj */) {
       return ctx.params[index];
     }
   }
@@ -580,8 +578,8 @@
     var op = node[0];
     switch ( op ) {
       case 'path':
-        var index = node[1], isNumber = typeof index === 'number';
-        if ( !isNumber ) {
+        var index = node[1];
+        if ( typeof index !== 'number' ) {
           return evalLocalPath(node.slice(1));
         }
         return evalArgPath(index, node.slice(2));
@@ -665,7 +663,7 @@
         var result = [];
         for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
           var item = template[i];
-          result[i] = typeof item === 'function' ? item(ctx, obj) : item;
+          result.push(typeof item === 'function' ? item(ctx, obj) : item);
         }
         return result;
       };
@@ -676,7 +674,7 @@
         var funcArgs = [];
         for ( var i = 0, ilen = template.length; i < ilen; i++ ) {
           var item = template[i];
-          funcArgs[i] = typeof item === 'function' ? item(ctx, obj) : item;
+          funcArgs.push(typeof item === 'function' ? item(ctx, obj) : item);
         }
         return func.apply(obj, [ctx].concat(funcArgs));
       }
@@ -934,6 +932,9 @@
           }
           return EmptyArray;
         };
+
+      default:
+        throw new Error("Invalid selector node: " + select[0]);
     }
   }
 
@@ -982,8 +983,7 @@
   function createAggregator(aggregate) {
     var chain = [];
     for ( var i = 0, ilen = aggregate.length; i < ilen; i++ ) {
-      var aggregateStep = aggregate[i];
-      chain.push(getExtension(aggregateStep));
+      chain.push(getExtension(aggregate[i]));
     }
 
     var temp = [];
@@ -1088,7 +1088,7 @@
   }
 
   function addQueryListeners(ctx, paths, invalidateQuery, invalidateResults) {
-    for ( var i = 0, ilen = paths.length; i < ilen; i++ ) {
+    for ( var i = paths.length; i--; ) {
       var node = paths[i]
         , index = node[1]
         , target, start, callback;
@@ -1212,11 +1212,11 @@
       args.splice.apply(arr, args);
     }
 
-    function setListener(target, key, value, prev) {
+    function setListener(/* target, key, value, prev */) {
       invalidateQuery(results, refreshSet);
     }
 
-    function itemListener(target, key, value, prev) {
+    function itemListener(/* target, key, value, prev */) {
       invalidateQuery(results, refreshItem);
     }
 
@@ -1259,7 +1259,7 @@
       , callback = result.callback;
 
     // Decorate the Items, but no need to decorate the Array
-    for ( var i = 0, ilen = params.length; i < ilen; i++ ) {
+    for ( var i = params.length; i--; ) {
       params[i] = decorate(params[i]);
     }
 
