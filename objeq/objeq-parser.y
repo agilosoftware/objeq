@@ -3,7 +3,7 @@
  * Licensed under the MIT License
  * see doc/LICENSE.md
  *
- * @author Thom Bradford (github/bradford653)
+ * @author Thom Bradford (github/kode4food)
  * @author Stefano Rago (github/sterago)
  */
 

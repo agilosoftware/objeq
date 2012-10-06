@@ -3,7 +3,7 @@
  * Licensed under the MIT License
  * see doc/LICENSE.md
  *
- * @author Thom Bradford (github/bradford653)
+ * @author Thom Bradford (github/kode4food)
  * @author Stefano Rago (github/sterago)
  */
 
@@ -1136,12 +1136,8 @@
       , ctx = {};
 
     defineProperties(ctx, {
-      source: {
-        get: function () { return source; }
-      },
-      params: {
-        get: function () { return params; }
-      }
+      source: { value: source },
+      params: { value: params }
     });
 
     for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
@@ -1350,9 +1346,7 @@
     return source;
   }
 
-  defineProperty(objeq, 'VERSION', {
-    get: function () { return CURRENT_VERSION; }
-  });
+  defineProperty(objeq, 'VERSION', { value: CURRENT_VERSION });
 
   objeq.registerExtension = registerExtension;
   objeq.debug = debug;
