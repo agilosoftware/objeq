@@ -963,45 +963,48 @@
   }
 
   function createSorter(order) {
-    var chain = [];
+    var getPaths = [];
     for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
       var item = order[i];
-      chain.push(createComparator(item.path.slice(1), item.ascending));
+      getPaths.push(evalLocalPath(item.path.slice(1)));
     }
 
-    return function _sorter(arr) {
-      arr.sort(sortFunction);
-    };
+    return function _sorter(ctx, arr) {
+      var chain = [];
+      for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
+        var item = order[i];
+        chain.push(createComparator(getPaths[i], item.ascending));
+      }
 
-    function sortFunction(item1, item2) {
-      for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
-        var result = chain[i](item1, item2);
-        if ( result !== 0 ) {
-          return result;
+      arr.sort(sortFunction);
+
+      function sortFunction(item1, item2) {
+        for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
+          var result = chain[i](item1, item2);
+          if ( result !== 0 ) {
+            return result;
+          }
+        }
+        return 0;
+      }
+
+      function createComparator(getPath, ascending) {
+        if ( ascending ) {
+          return function _ascendingComparator(item1, item2) {
+            var val1 = getPath(ctx, item1)
+              , val2 = getPath(ctx, item2);
+            return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
+          };
+        }
+        else {
+          return function _descendingComparator(item1, item2) {
+            var val1 = getPath(ctx, item1)
+              , val2 = getPath(ctx, item2);
+            return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
+          };
         }
       }
-      return 0;
-    }
-
-    function createComparator(path, ascending) {
-      var getPath = evalLocalPath(path)
-        , ctx = { source: [], params: [] };
-
-      if ( ascending ) {
-        return function _ascendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
-          return val1 == val2 ? 0 : val1 > val2 ? 1 : -1;
-        };
-      }
-      else {
-        return function _descendingComparator(item1, item2) {
-          var val1 = getPath(ctx, item1)
-            , val2 = getPath(ctx, item2);
-          return val1 == val2 ? 0 : val1 < val2 ? 1 : -1;
-        };
-      }
-    }
+    };
   }
 
   function createAggregator(aggregate) {
@@ -1195,7 +1198,7 @@
       }
 
       // Pre-Select Sorting Step
-      if ( sorter && sortFirst ) sorter(evaluated);
+      if ( sorter && sortFirst ) sorter(ctx, evaluated);
 
       // Select Step
       if ( selector ) {
@@ -1209,7 +1212,7 @@
       }
 
       // Post-Select Sorting Step
-      if ( sorter && !sortFirst ) sorter(selected);
+      if ( sorter && !sortFirst ) sorter(ctx, selected);
 
       // Aggregation Step
       aggregated = aggregator ? aggregator(ctx, selected) : selected;
