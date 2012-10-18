@@ -970,17 +970,17 @@
     }
 
     return function _sorter(ctx, arr) {
-      var chain = [];
+      var comparators = [];
       for ( var i = 0, ilen = order.length; i < ilen; i++ ) {
         var item = order[i];
-        chain.push(createComparator(getPaths[i], item.ascending));
+        comparators.push(createComparator(getPaths[i], item.ascending));
       }
 
       arr.sort(sortFunction);
 
       function sortFunction(item1, item2) {
-        for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
-          var result = chain[i](item1, item2);
+        for ( var i = 0, ilen = comparators.length; i < ilen; i++ ) {
+          var result = comparators[i](item1, item2);
           if ( result !== 0 ) {
             return result;
           }
@@ -1008,16 +1008,16 @@
   }
 
   function createAggregator(aggregate) {
-    var chain = [];
+    var extensions = [];
     for ( var i = 0, ilen = aggregate.length; i < ilen; i++ ) {
-      chain.push(getExtension(aggregate[i]));
+      extensions.push(getExtension(aggregate[i]));
     }
 
     var temp = [];
     return function _aggregator(ctx, arr) {
       var result = arr, args = [ctx, result];
-      for ( var i = 0, ilen = chain.length; i < ilen; i++ ) {
-        args[1] = result = chain[i].apply(arr, args);
+      for ( var i = 0, ilen = extensions.length; i < ilen; i++ ) {
+        args[1] = result = extensions[i].apply(arr, args);
       }
       if ( isArray(result) ) {
         return result;
