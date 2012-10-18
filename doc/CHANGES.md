@@ -3,8 +3,11 @@
 ## Known Bugs
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
-## 0.4.2 - Starting to Optimize
-* Starting to perform query optimization
+## 0.4.2 - Parameterized Sorting
+* The grammar supported ORDER BYs that referenced query parameters, but the implementation would not resolve those parameters.  This has been corrected.  For example, this code will maintain a Dynamic Result Set sorted by the property identified in 'orderBy'
+
+    var config = { orderBy: 'lastName' }
+      , results = data.dynamic("BY this[%1.orderBy]", config);
 
 ## 0.4.1 - Bug-Fix Release
 * Calling $objeq(array, string) was failing to process arguments correctly
