@@ -1,7 +1,8 @@
 // Some Sample Extensions that are *not* imported by default
 // These are also *not* tested, so use them at your own risk
 
-if ( typeof require === 'function' ) {
+if ( typeof require === 'function' && typeof window === 'undefined' ) {
+  // Then we're most likely running in Node.js
   var $objeq = require('../objeq');
 }
 
