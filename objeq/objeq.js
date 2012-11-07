@@ -539,7 +539,7 @@
   }
 
   function decorate(value) {
-    if ( value == null || isDecorated(value) ) {
+    if ( value === null || value === undefined || isDecorated(value) ) {
       return value;
     }
 
@@ -578,7 +578,7 @@
           }
           value = value[0];
         }
-        if ( value == null ) {
+        if ( value === null || value === undefined ) {
           return value;
         }
 
