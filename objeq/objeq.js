@@ -1335,28 +1335,6 @@
     return processQuery(result.source, steps, result.params, result.callback);
   }
 
-  // Debug and Testing Interface **********************************************
-
-  function debug() {
-    return {
-      self: self,
-      ObjeqParser: ObjeqParser,
-      queue: queue,
-      listeners: listeners,
-      targets: targets,
-      nextObjectId: nextObjectId,
-      invalidated: invalidated,
-      pendingRefresh: pendingRefresh,
-      regexCache: regexCache,
-      parserPool: parserPool,
-      parse: parse,
-      processArguments: processArguments,
-      compile: compile,
-      dynamic: dynamic,
-      query: query
-    };
-  }
-
   // Exported Function ********************************************************
 
   function objeq() {
@@ -1382,10 +1360,10 @@
     return source;
   }
 
-  defineProperty(objeq, 'VERSION', { value: CURRENT_VERSION });
-
-  objeq.registerExtension = registerExtension;
-  objeq.debug = debug;
+  defineProperties(objeq, {
+    VERSION: { value: CURRENT_VERSION },
+    registerExtension: { value: registerExtension }
+  });
 
   // Node.js and CommonJS Exporting
   if ( module && module.exports ) {
