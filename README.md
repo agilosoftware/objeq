@@ -20,7 +20,7 @@ This will also install any development dependencies and run the nodeunit test su
 
 There are really only three steps in using the objeq Query Language, and the third is optional.  First, you need to Decorate your data by passing it to the `$objeq()` function which returns a Decorated Array that we'll call the 'Source Set':
 
-    var data = $objeq({name:'Ronald'}, {name:'Robert'}, {name:'Thomas'});
+    var data = $objeq([{name:'Ronald'}, {name:'Robert'}, {name:'Thomas'}]);
 
 Next, you query it.  You can do this in one of two ways, both involve calling a method of the Decorated Array that `$objeq()` returns.  The first method is called `query()` and creates an immediate (or snapshot) Result Set.  The second method is called `dynamic()` and produces a Result Set whose contents are *live* in that the Array will constantly reflect Items from the Source Setthat match the original Query criteria.
 
@@ -53,12 +53,12 @@ Objects and Arrays need to be 'Decorated' in order to yield dynamic queries.  Th
 
 The resulting decorated array is what exposes the query functions, so you can do the following:
 
-    var items = $objeq({name:'William'}, {name:'Stephen'});
+    var items = $objeq([{name:'William'}, {name:'Stephen'}]);
     var will = items.query("name == 'William'")[0];
 
 Queries can also be Parameterized where any Objects passed in are also Decorated and treated as *live* Parameters.  This means that the Result Set will be updated every time the Parameter's Properties change:
 
-    var items = $objeq({name:'William'}, {name:'Stephen'});
+    var items = $objeq([{name:'William'}, {name:'Stephen'}]);
     var param = { name: 'William' };
     var result = items.dynamic("name == %1.name", param); // 0 -> William
     param.name = 'Stephen';                               // 0 -> Stephen

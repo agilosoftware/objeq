@@ -172,7 +172,7 @@ By default, there are no Aggregator Extensions registered, but you can find seve
 ### Parameters
 A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the Result Set will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
 
-    var items = $objeq({name:'William'}, {name:'Stephen'});
+    var items = $objeq([{name:'William'}, {name:'Stephen'}]);
     var param = { name: 'William' };
     var result = items.dynamic("name == %1.name", param); // 0 -> William
     param.name = 'Stephen';                               // 0 -> Stephen

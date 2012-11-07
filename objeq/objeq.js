@@ -10,7 +10,7 @@
 (function (self, require, module) {
   "use strict";
 
-  var CURRENT_VERSION = "0.4.2";
+  var CURRENT_VERSION = "0.5.0";
 
   // Feature Checking *********************************************************
 
@@ -93,12 +93,20 @@
 
   var toString = Object.prototype.toString;
   var slice = Array.prototype.slice;
+  var splice = Array.prototype.splice;
   var push = Array.prototype.push;
 
   // Utility Functions ********************************************************
 
   function makeArray(arr) {
     return slice.call(arr, 0);
+  }
+
+  function mergeArrays(arr1, arr2) {
+    var spliceArgs = [0, arr2.length].concat(arr2)
+      , result = slice.call(arr1, 0);
+    splice.apply(result, spliceArgs);
+    return result;
   }
 
   function arraysAreEqual(arr1, arr2) {
@@ -1043,8 +1051,7 @@
   }
 
   function yypath() {
-    var args = makeArray(arguments)
-      , result = ['path'].concat(args);
+    var result = ['path'].concat(makeArray(arguments));
 
     result.isNode = true;
     var paths = this.paths[this.step];
@@ -1055,23 +1062,17 @@
     return result;
   }
 
-  var parserPool = []
-    , parseCache = {};
+  var parserPool = [];
 
   function parse(queryString) {
-    var result = parseCache[queryString];
-    if ( result ) {
-      return result;
-    }
-
     // Get a Parser from the pool, if possible
     var parser = parserPool.pop() || createParser();
     var paths = [];
     parser.yy = { node: yynode, path: yypath, paths: paths, step: 0 };
 
     // Parse the Query, include paths and evaluators in the result
-    var steps = parser.parse(queryString);
-    result = parseCache[queryString] = [];
+    var steps = parser.parse(queryString)
+      , result = [];
 
     for ( var i = 0, ilen = steps.length; i < ilen; i++ ) {
       var step = steps[i];
@@ -1133,9 +1134,8 @@
     }
   }
 
-  function processQuery(source, queryString, params, callback, dynamic) {
-    var steps = parse(queryString)
-      , results = source
+  function processQuery(source, steps, params, callback, dynamic) {
+    var results = source
       , ctx = {};
 
     defineProperties(ctx, {
@@ -1194,7 +1194,7 @@
       }
       else {
         // Otherwise take a snapshot of the source
-        evaluated = source.slice(0);
+        evaluated = slice.call(source, 0);
       }
 
       // Pre-Select Sorting Step
@@ -1230,9 +1230,9 @@
     }
 
     function spliceArrayItems(arr, items) {
-      var args = [arr.length, 0].concat(items);
+      var spliceArgs = [arr.length, 0].concat(items);
       // Don't use splice() from arr, as it may be a decorated version
-      args.splice.apply(arr, args);
+      splice.apply(arr, spliceArgs);
     }
 
     function setListener(/* target, key, value, prev */) {
@@ -1244,7 +1244,7 @@
     }
 
     function refreshDynamicSet() {
-      var oldResults = results.slice(0);
+      var oldResults = slice.call(results, 0);
       evalResults();
       if ( arraysAreEqual(oldResults, results) ) {
         return;
@@ -1258,45 +1258,75 @@
     }
   }
 
-  function processArguments() {
-    var params = []
-      , result = { queryString: arguments[0], params: params };
+  function processArguments(args, compiled) {
+    var i = 0, ilen = args.length, result = { params: [] }
+      , isFirstItemArray = isArray(args[0]);
 
-    for ( var i = 1, ilen = arguments.length; i < ilen; i++ ) {
-      var item = arguments[i];
+    if ( isFirstItemArray ) {
+      result.source = decorate(args[i++]);
+    }
+    else if ( compiled ) {
+      throw new Error("No source Array passed to query");
+    }
+
+    if ( !compiled && typeof args[i] === 'string' ) {
+      result.queryString = args[i++];
+    }
+
+    while ( i < ilen ) {
+      var item = args[i++];
       if ( typeof item === 'function' ) {
         result.callback = item;
         return result;
       }
-      params.push(item);
+      result.params.push(item);
     }
 
     return result;
   }
 
+  function compile(processed) {
+    var queryString = processed.queryString
+      , steps = parse(queryString);
+
+    function compiledSnapshotQuery() {
+      var result = processArguments(makeArray(arguments), true)
+        , params = mergeArrays(processed.params, result.params)
+        , callback = result.callback ||  processed.callback;
+      return processQuery(result.source, steps,  params, callback, false);
+    }
+
+    function compiledDynamicQuery() {
+      var result = processArguments(makeArray(arguments), true)
+        , params = mergeArrays(processed.params, result.params)
+        , callback = result.callback ||  processed.callback;
+      return processQuery(result.source, steps,  params, callback, true);
+    }
+
+    compiledSnapshotQuery.dynamic = compiledDynamicQuery;
+    return compiledSnapshotQuery;
+  }
+
   function dynamic() {
-    // Process a "dynamic" query whose results update with data changes
-    var result = processArguments.apply(this, arguments)
-      , queryString = result.queryString
-      , params = result.params
-      , callback = result.callback;
+    var args = [this].concat(makeArray(arguments))
+      , processed = processArguments(args)
+      , params = processed.params
+      , compiled = compile(processed);
 
     // Decorate the Items, but no need to decorate the Array
     for ( var i = params.length; i--; ) {
       params[i] = decorate(params[i]);
     }
 
-    return processQuery(this, queryString, params, callback, true);
+    return compiled.dynamic(this);
   }
 
   function query() {
-    // Process a "snapshot" query with static results
-    var result = processArguments.apply(this, arguments)
-      , queryString = result.queryString
-      , params = result.params
-      , callback = result.callback;
+    var args = [this].concat(makeArray(arguments))
+      , processed = processArguments(args)
+      , compiled = compile(processed);
 
-    return processQuery(this, queryString, params, callback, false);
+    return compiled(this);
   }
 
   // Debug and Testing Interface **********************************************
@@ -1315,6 +1345,8 @@
       parserPool: parserPool,
       parseCache: parseCache,
       parse: parse,
+      processArguments: processArguments,
+      compile: compile,
       dynamic: dynamic,
       query: query
     };
@@ -1323,29 +1355,25 @@
   // Exported Function ********************************************************
 
   function objeq() {
-    // Fast Path for decorating an existing Array
-    if ( arguments.length === 1 && isArray(arguments[0]) ) {
-      return decorate(arguments[0]);
-    }
-
     // Fast Path for creating a new Array
-    if ( arguments.length === 0 ) {
+    if ( !arguments.length ) {
       return decorateArray([]);
     }
 
-    var args = makeArray(arguments)
-      , source = decorateArray([]);
-
-    while ( args.length ) {
-      if ( typeof args[0] === 'string' ) {
-        // short circuit if it's a query
-        return query.apply(source, args);
-      }
-      else {
-        var arg = args.shift();
-        source.push.apply(source, isArray(arg) ? arg : [arg]);
-      }
+    // Fast Path for decorating an existing Array or Object
+    if ( arguments.length === 1 && typeof arguments[0] === 'object' ) {
+      var arg0 = arguments[0];
+      return isArray(arg0) ? decorate(arg0) : decorateArray([arg0]);
     }
+
+    var processed = processArguments(makeArray(arguments))
+      , source = processed.source;
+
+    if ( processed.queryString ) {
+      var compiled = compile(processed);
+      return source ? compiled(source) : compiled;
+    }
+
     return source;
   }
 
