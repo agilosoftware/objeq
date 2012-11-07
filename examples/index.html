@@ -1,12 +1,16 @@
 <html>
 <head>
   <title>objeq Query Tester</title>
-  <script type="text/javascript" src="../objeq/objeq.js"></script>
-  <script type="text/javascript" src="../objeq/objeq-parser.js"></script>
-  <!--<script type="text/javascript" src="../objeq.min.js"></script>-->
+  <!-- script type="text/javascript" src="../objeq/objeq.js"></script -->
+  <!-- script type="text/javascript" src="../objeq/objeq-parser.js"></script -->
+  <script type="text/javascript" src="../objeq.min.js"></script>
   <script type="text/javascript" src="extensions.js"></script>
   <script type="text/javascript" src="beautify.js"></script>
+  <script type="text/javascript" src="jquery.min.js"></script>
   <script type="text/javascript">
+    var queryDirty = true, sourceDirty = true
+      , compiledQuery, sourceJSON;
+
     function beautifySource() {
       source.value = js_beautify(source.value, {
         indent_size: 2,
@@ -16,12 +20,20 @@
 
     function performQuery() {
       try {
-        var input = $objeq(JSON.parse(source.value));
-        inputItems.innerHTML = "(" + input.length + " items)";
+        if ( queryDirty ) {
+          compiledQuery = $objeq(query.value);
+          queryDirty = false;
+        }
+
+        if ( sourceDirty ) {
+          sourceJSON = JSON.parse(source.value);
+          inputItems.innerHTML = "(" + sourceJSON.length + " items)";
+          sourceDirty = false;
+        }
 
         // The actual query
         var start = new Date().getTime();
-        var output = input.query(query.value);
+        var output = compiledQuery(sourceJSON);
         var elapsed = new Date().getTime() - start;
         outputItems.innerHTML = "(" + output.length + " items in " + elapsed + "ms)";
 
@@ -39,8 +51,22 @@
     function chooseQuery() {
       var queryString = queries.options[queries.selectedIndex].innerText;
       query.value = queryString.replace(/^\s+|\s+$/g, "");
+      queryDirty = true;
       performQuery();
     }
+
+    $(window).ready(function() {
+      beautifySource();
+      chooseQuery();
+
+      $("#run").click(performQuery);
+      $("#query").change(function() {
+          queryDirty = true;
+      });
+      $("#source").change(function() {
+          sourceDirty = true;
+      });
+    });
   </script>
   <style type="text/css">
     textarea {
@@ -108,11 +134,11 @@
     }
   </style>
 </head>
-<body onload="beautifySource(); chooseQuery();">
+<body>
   <div class="query">
     <label for="query">Query</label>
     <div class="queryHolder"><textarea id="query"></textarea></div>
-    <button id="run" onclick="performQuery();">Query</button>
+    <button id="run">Query</button>
     <label for="queries"></label>
     <div class="queriesHolder">
     <select id ="queries" onchange="chooseQuery();">

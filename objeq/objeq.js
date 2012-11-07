@@ -22,12 +22,12 @@
     }
 
     if ( self.$objeq && self.$objeq.parser ) {
-      // This will be the case when running in the Browser
+      // will be the case when running in the Browser
       ObjeqParser = self.$objeq.parser.Parser;
     }
     else {
       // Otherwise, perhaps we're using node.js?
-      if ( require ) {
+      if ( require && module && typeof window === 'undefined' ) {
         ObjeqParser = require('./objeq-parser').Parser;
       }
       else {
@@ -73,13 +73,14 @@
   var isArray = Array.isArray;
   if ( !isArray ) {
     isArray = function _isArray(obj) {
-      return obj != null && toString.call(obj) === '[object Array]';
+      return obj && obj.length && toString.call(obj) === '[object Array]';
     };
   }
 
   var filter = Array.prototype.filter;
   if ( !filter ) {
     filter = function _filter(callback, self) {
+      // 'this' is the Array being filtered
       var result = [];
       for ( var i = 0, ilen = this.length; i < ilen; i++ ) {
         var obj = this[i];
@@ -341,6 +342,13 @@
     { name: 'sort', additive: false }
   ];
 
+  function decorateArrayItems(arr) {
+    for ( var i = arr.length; i--; ) {
+      arr[i] = decorate(arr[i]);
+    }
+    return arr;
+  }
+
   function decorateArray(arr) {
     var callbackMapping = []
       , containsCache = null;
@@ -363,7 +371,7 @@
     function addDecoratorMethods() {
       defineProperties(arr, {
         dynamic: { value: dynamic }, // for dynamic sub-queries
-        query: { value: query },     // for snapshot queries
+        query: { value: query },     // for snapshot sub-queries
         contains: {
           configurable: true,
           value: function _contains(value) {
@@ -432,11 +440,9 @@
     // Array Event Methods ****************************************************
 
     function addMonitoredMethods() {
-      for ( var i = arr.length; i--; ) {
-        arr[i] = decorate(arr[i]);
-      }
+      decorateArrayItems(arr);
 
-      for ( i = ArrayFuncs.length; i--; ) {
+        for ( var i = ArrayFuncs.length; i--; ) {
         var arrayFunc = ArrayFuncs[i];
         monitorArrayFunc(arrayFunc.name, arrayFunc.additive);
       }
@@ -468,7 +474,7 @@
               containsCache = null;
 
               queueEvent(arr, arrayContentKey, newLen);
-              if ( newLen != oldLen ) {
+              if ( newLen !== oldLen ) {
                 queueEvent(arr, arrayLengthKey, newLen, oldLen);
               }
             }
@@ -492,14 +498,12 @@
             , newLen = arr.length;
 
           if ( additive ) {
-            for ( var i = 0; i < newLen; i++ ) {
-              arr[i] = decorate(arr[i]);
-            }
+            decorateArrayItems(arr);
             containsCache = null;
           }
 
           queueEvent(arr, arrayContentKey, newLen);
-          if ( newLen != oldLen ) {
+          if ( newLen !== oldLen ) {
             queueEvent(arr, arrayLengthKey, newLen, oldLen);
           }
 
@@ -665,7 +669,7 @@
       return evalTern();
     }
 
-    // This should hopefully never happen
+    // Should hopefully never happen
     throw new Error("Invalid parser node: " + op);
 
     // Evaluator Generation ***************************************************
@@ -880,7 +884,7 @@
         else if ( typeof rval === 'object' ) {
           return (n1Eval ? n1Eval(ctx, obj) : n1Lit) in rval;
         }
-        else if ( rval != null ) {
+        else if ( rval !== null && rval !== undefined ) {
           return (n1Eval ? n1Eval(ctx, obj) : n1Lit) == rval;
         }
         return false;
@@ -945,7 +949,7 @@
               return temp;
             }
           }
-          else if ( result != null ) {
+          else if ( result !== null && result !== undefined ) {
             temp[0] = result;
             return temp;
           }
@@ -958,7 +962,7 @@
           if ( isArray(result) ) {
             return result;
           }
-          else if ( result != null ) {
+          else if ( result !== null && result !== undefined ) {
             temp[0] = result;
             return temp;
           }
@@ -1030,7 +1034,7 @@
       if ( isArray(result) ) {
         return result;
       }
-      else if ( result != null ) {
+      else if ( result !== null && result !== undefined ) {
         temp[0] = result;
         return temp;
       }
@@ -1047,10 +1051,12 @@
   }
 
   function yystep(index) {
+    // 'this' is the Parser's YY object
     this.step = index;
   }
 
   function yypath() {
+    // 'this' is the Parser's YY object
     var result = ['path'].concat(makeArray(arguments));
 
     result.isNode = true;
@@ -1293,6 +1299,7 @@
       var result = processArguments(makeArray(arguments), true)
         , params = mergeArrays(processed.params, result.params)
         , callback = result.callback ||  processed.callback;
+      decorateArrayItems(params);
       return processQuery(result.source, steps,  params, callback, false);
     }
 
@@ -1303,30 +1310,29 @@
       return processQuery(result.source, steps,  params, callback, true);
     }
 
-    compiledSnapshotQuery.dynamic = compiledDynamicQuery;
+    defineProperties(compiledSnapshotQuery, {
+      dynamic: { value: compiledDynamicQuery }, // for dynamic queries
+      query: { value: compiledSnapshotQuery }   // for snapshot queries
+    });
+
     return compiledSnapshotQuery;
   }
 
   function dynamic() {
+    // 'this' will be the Decorated Array that called us
     var args = [this].concat(makeArray(arguments))
-      , processed = processArguments(args)
-      , params = processed.params
-      , compiled = compile(processed);
-
-    // Decorate the Items, but no need to decorate the Array
-    for ( var i = params.length; i--; ) {
-      params[i] = decorate(params[i]);
-    }
-
-    return compiled.dynamic(this);
+      , result = processArguments(args)
+      , steps = parse(result.queryString)
+      , params = decorateArrayItems(result.params);
+    return processQuery(result.source, steps, params, result.callback, true);
   }
 
   function query() {
+    // 'this' will be the Decorated Array that called us
     var args = [this].concat(makeArray(arguments))
-      , processed = processArguments(args)
-      , compiled = compile(processed);
-
-    return compiled(this);
+      , result = processArguments(args)
+      , steps = parse(result.queryString);
+    return processQuery(result.source, steps, result.params, result.callback);
   }
 
   // Debug and Testing Interface **********************************************
@@ -1343,7 +1349,6 @@
       pendingRefresh: pendingRefresh,
       regexCache: regexCache,
       parserPool: parserPool,
-      parseCache: parseCache,
       parse: parse,
       processArguments: processArguments,
       compile: compile,
@@ -1395,5 +1400,5 @@
     self.$objeq = objeq;
   }
 })(this,
-   typeof require !== 'undefined' ? require : null,
-   typeof module !== 'undefined' ? module : null);
+   typeof require === 'function' ? require : null,
+   typeof module === 'object' ? module : null);
