@@ -1,9 +1,7 @@
 # objeq Reference Manual
-
 This document serves as a quick introduction to the objeq Query Language.
 
 ## Glossary
-
 Before diving in deep, we should define some of the terms that will be used throughout this section:
 
 ### Source Set

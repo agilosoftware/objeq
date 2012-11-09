@@ -68,10 +68,10 @@ So far, you've seen Snapshot Queries that evaluate the data only once, returning
     data.push({ name: 'Thomas', age: 88, gender: 'male' });
     // --> res now contains ['Ronald', 'Thomas']
 
-The results of a Dynamic Query will constantly reflect the state of the evaluated data.  This is a very powerful feature, but comes with a cost.  That cost is Array and Object Decoration and slightly reduced performance when accessing those Arrays and Objects.
+The results of a Dynamic Query will constantly reflect the state of the evaluated data.  This is a very powerful feature, but comes with a cost.  The cost is that Arrays and Objects will be decorated, resulting in slightly reduced performance when accessing those Arrays and Objects.
 
 ### Dynamic Parameters
-A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the results will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
+A Query can be Parameterized such that any Objects passed into it are also decorated and treated as 'live' parameters.  This means that the results will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
 
     var query = $objeq("name == %1.name")
       , param = { name: 'Ronald' };
@@ -79,7 +79,7 @@ A Query can be Parameterized such that any Objects passed into it are also Decor
     param.name = 'Jessica';               // res[0] = Jessica
 
 ## Decorating Arrays and Objects
-Arrays and Objects will be Decorated automatically by the objeq Query Language whenever it sees that they are participating in a Dynamic Query, but they can also be decorated explicitly by passing them to the `$objeq()` function without an associated query.  This is particularly useful for Arrays.
+Arrays and Objects will be decorated automatically by the objeq Query Language whenever it sees that they are participating in a Dynamic Query, but they can also be decorated explicitly by passing them to the `$objeq()` function without an associated query.  This is particularly useful for Arrays.
 
 ### Array Decoration
 This will decorate the `data` Array.  *Note* that for Arrays, the decoration happens in-place and so the function will return the same Array that was passed to it.

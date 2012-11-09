@@ -1,12 +1,12 @@
 # Change History
 
 ## Known Bugs
-* There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
+* There is still some functionality missing, specifically the results of dynamic queries probably need a `destroy()` method, otherwise their registered listeners will keep them from being garbage collected.
 
 ## 0.5.0 - Compiled Queries
 * Overhauled the README.md file
 
-* Added the ability to compile queries into a closure.  When you call $objeq() with a query and optional parameters, a new closure will be returned.  The closure can be used to generate immediate or dynamic results.  For example:
+* Added the ability to compile queries into a closure.  When you call `$objeq()` with a query and optional parameters, a new closure will be returned.  The closure can be used to generate immediate or dynamic results.  For example:
 
     var ageForGender = $objeq("gender == %1 -> age", 'male')
       , maleAges = ageForGender(someData);
@@ -19,7 +19,7 @@
     // If you want the results to be dynamic, you can do:
     var dynamicWomen = ageForGender.dynamic(someData, 'female');
 
-* To avoid ambiguity, the variable arguments method of creating/querying Decorated Arrays was removed.  Now a single Array or Object must be passed to $objeq().  For example:
+* To avoid ambiguity, the variable arguments method of creating/querying Decorated Arrays was removed.  Now a single Array or Object must be passed to `$objeq()`.  For example:
 
     // This convention no longer works
     var myData = $objeq({ name: 'Thom' }, { name: 'Stefano'});
