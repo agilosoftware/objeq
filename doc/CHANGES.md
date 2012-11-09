@@ -4,6 +4,8 @@
 * There is still some functionality missing, specifically the results of dynamic queries probably need a 'destroy' method, otherwise their registered listeners will keep them from being garbage collected.
 
 ## 0.5.0 - Compiled Queries
+* Overhauled the README.md file
+
 * Added the ability to compile queries into a closure.  When you call $objeq() with a query and optional parameters, a new closure will be returned.  The closure can be used to generate immediate or dynamic results.  For example:
 
     var ageForGender = $objeq("gender == %1 -> age", 'male')
