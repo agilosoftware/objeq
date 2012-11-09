@@ -3,11 +3,9 @@
 objeq (Object Querying) - is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.  As it relies on JavaScript property setters, it will only work in more recent browsers and JavaScript environments.
 
 ## Current Status
-
 The grammar is now frozen but the query engine is still under active development  Performance will continue to improve.
 
 ## Installation
-
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
 
 A pre-built version of the parser and minified code are already included, but if you'd like to build them yourself and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
@@ -73,7 +71,7 @@ So far, you've seen Snapshot Queries that evaluate the data only once, returning
 The results of a Dynamic Query will constantly reflect the state of the evaluated data.  This is a very powerful feature, but comes with a cost.  That cost is Array and Object Decoration and slightly reduced performance when accessing those Arrays and Objects.
 
 ### Dynamic Parameters
-A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the Result Set will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
+A Query can be Parameterized such that any Objects passed into it are also Decorated and treated as 'live' parameters.  This means that the results will be updated every time any of the Parameter's referenced Properties change.  Parameters are referred to by number, so to drill into the first passed Parameter, you would prefix a path with %1, and so on:
 
     var query = $objeq("name == %1.name")
       , param = { name: 'Ronald' };
@@ -86,29 +84,27 @@ Arrays and Objects will be Decorated automatically by the objeq Query Language w
 ### Array Decoration
 This will decorate the `data` Array.  Note that for Arrays, the decoration happens in-place and so the function will return the same Array that was passed to it.
 
-    $objeq(data);
+    $objeq(data); // --> result is data
 
 The decoration of an Array results in several changes to the Array instance.  Specifically, many of the Array accessor methods (slice, splice, push, etc) are wrapped so that the objeq Library can perform event notification when a change occurs to the Array's content.
 
 Beyond the standard method wrapping.  The objeq Library also adds several convenience methods to the Array instance.
 
 #### Querying
-`query(query, [params])` - Performs a Snapshot Query against the Array
-`dynamic(query, [params])` - Performs a Dynamic Query against the Array
+`query(query, [params])`
+Performs a Snapshot Query against the Array
+
+`dynamic(query, [params])`
+Performs a Dynamic Query against the Array
 
 #### Notifications
-`on(events, callback)` - Registers a Change Notification Callback
-`off(events, callback)` - Deregisters a Change Notification Callback
+`on(properties, callback)`
+Registers a Change Notification Callback
 
-You can monitor the Result Set for membership changes.  Notice that the first parameter to the `on()` method is '.content'.  All Observable keys that start with a '.' are considered to be special properties of the Result Set itself.
+`off(properties, callback)`
+Deregisters a Change Notification Callback
 
-    data.on('.content', function (target) {
-        // target is the Array itself
-        console.log("The Query Results have changed!");
-    });
-    data.push({ name: 'Thomas', age: 88, gender: 'male' });
-
-You can also monitor the Result Set for Property changes.  Here we just specify the property name as is (or names, separated by spaces).
+You can monitor Arrays for Property changes.  Here we just specify the property name as-is (or property names, separated by spaces).
 
     data.on('name', function (target, key, newValue, oldValue) {
         // target is the Object that changed
@@ -116,9 +112,20 @@ You can also monitor the Result Set for Property changes.  Here we just specify 
     });
     items[1].name = 'William';
 
+You can also monitor Arrays for membership changes.  Notice that the first parameter to the `on()` method is now '.content'.  All property keys that start with a '.' are considered to be special properties of the Array itself.  Objeq presently only supports the '.content' and '.length' special properties.
+
+    data.on('.content', function (target) {
+        // target is the Array itself
+        console.log("The Query Results have changed!");
+    });
+    data.push({ name: 'Thomas', age: 88, gender: 'male' });
+
 #### Convenience
-`contains(item)` - Returns `true` if the Array contains the item
+`contains(item)`
+Returns `true` if the Array contains the item
+
 `attr(name, [value])`
+Sets and returns attributes from the Array items
 
 Because the objeq Library will track Array membership in order to more optimally refresh results, the `contains()` may be faster than using the standard Array method `indexOf(item) !== -1` in most cases.  The only difference is that it returns a Boolean result rather than an Array index.
 
@@ -133,6 +140,7 @@ Because the objeq Library will track Array membership in order to more optimally
 
 #### Kludgery
 `item(index, [value])`
+Sets and returns items from the Array
 
 Arrays in JavaScript can't be subclassed properly, particularly problematic is that indexed get and sets `myArray[0] = 'blah'` can't be intercepted.  So although all of an Array's standard methods can be wrapped, there is no way to wrap indexed gets and sets, which means that Items set in this way won't generate an observable change for Dynamic Queries.
 
@@ -147,9 +155,14 @@ To work around this problem, objeq has to introduce a method to each Array that 
 ### Object Decoration
 The objeq Library will decorate Objects only when it is necessary to do so because Object decoration is expensive and generally only useful in the context of Dynamic Queries.  As such, you should never need to decorate an Object explicitly, but it's useful to know what happens to an Object when it is decorated.
 
-JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array
+JavaScript is limited in what it allows you to do with its metaprogramming facilities (if you can even call them that), so something of a brute force approach has to be taken.  In order to avoid excessive analysis, decoration is only performed once per Object or Array and only when the library deems necessary, such as in the case of Dynamic Queries.
 
-What this means for Objects is that the first time objeq encounters an Object, it decorates its Properties, but thereafter, any newly introduced Properties will *not* be Decorated and therefore will not trigger observers for dynamic Query updates.  Because of this, it is recommended that all Properties be defined (even with a null value) before being Decorated.
+What this means for Objects is that the first time objeq encounters an Object, it replaces its properties with JavaScript Setters and Getters that generate notifications.  Thereafter, any newly introduced Properties will *not* be decorated and therefore will not trigger notifications for dynamic updates.  *Because of this, it is recommended that all Properties be defined (even with a null value) before being decorated.*
+
+One Note: If you decorate an Object explicitly with the `$objeq()` function, the result will be a single-element decorated Array:
+
+    var myObject = { name: 'Ronald', age: 62 };
+    $objeq(myObject); // --> result is [myObject]
 
 ## Extensions
 Defining Extension Functions for objeq is a relatively painless process.  Simply register the function with the `registerExtension()` method that is exposed by the `$objeq()` function instance:
@@ -168,15 +181,13 @@ And then call the function from within your Query:
 3. Extensions can be called from the Predicate, Selector and Aggregator, but not from the Collator
 4. Inside of your Extension, the `this` variable will differ depending on context:
   * If used in the Predicate or Selector, it will refer to the current Item being processed
-  * If used as an Aggregator, it will refer to the Working Set that was passed into the Aggregator chain
-5. The first Extension in an Aggregator chain is passed a reference to the current Working Set, its result is passed to the next Extension, and so on
+  * If used as an Aggregator, it will refer to the Intermediate Result (an Array) that was passed into the Aggregator chain
+5. The first Extension in an Aggregator chain is passed a reference to the current query's Intermediate Results, its result is passed to the next Extension, and so on
 
 ## More Information
-
 See doc/Reference.md for more information on the objeq Query Language.
 
 ## License (MIT License)
-
 Copyright (c) 2012 Agilo Software GmbH
 
 Permission is hereby granted, free of charge, to any person
