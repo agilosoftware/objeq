@@ -7,10 +7,7 @@ This document serves as a quick introduction to the objeq Query Language.
 Before diving in deep, we should define some of the terms that will be used throughout this section:
 
 ### Source Set
-An array used as the source of queried data.  As Queries may be chained, a Result Set may also serve as a Source Set.  The Items of a Source Set will be Decorated by objeq in order to allow dynamic querying of modified data.
-
-### Decorated
-Any Arrays or Objects that objeq encounters while processing dynamic Queries will be Decorated.  What this means is that the library will replace certain Properties and methods with wrapper functions such that changes can be observed. (see Decoration Notes)
+An array used as the source of queried data.  As Queries may be chained, a Result Set may also serve as a Source Set.
 
 ### Working Set
 The Working Set is a set of Items based on the original Source Set.  It is a temporary container, and at any point in time may be in various states of sorting or refinement.
