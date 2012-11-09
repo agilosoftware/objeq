@@ -82,7 +82,7 @@ A Query can be Parameterized such that any Objects passed into it are also Decor
 Arrays and Objects will be Decorated automatically by the objeq Query Language whenever it sees that they are participating in a Dynamic Query, but they can also be decorated explicitly by passing them to the `$objeq()` function without an associated query.  This is particularly useful for Arrays.
 
 ### Array Decoration
-This will decorate the `data` Array.  Note that for Arrays, the decoration happens in-place and so the function will return the same Array that was passed to it.
+This will decorate the `data` Array.  *Note* that for Arrays, the decoration happens in-place and so the function will return the same Array that was passed to it.
 
     $objeq(data); // --> result is data
 
@@ -159,7 +159,7 @@ JavaScript is limited in what it allows you to do with its metaprogramming facil
 
 What this means for Objects is that the first time objeq encounters an Object, it replaces its properties with JavaScript Setters and Getters that generate notifications.  Thereafter, any newly introduced Properties will *not* be decorated and therefore will not trigger notifications for dynamic updates.  *Because of this, it is recommended that all Properties be defined (even with a null value) before being decorated.*
 
-One Note: If you decorate an Object explicitly with the `$objeq()` function, the result will be a single-element decorated Array:
+*Note* that if you decorate an Object explicitly with the `$objeq()` function, the result will be a single-element decorated Array:
 
     var myObject = { name: 'Ronald', age: 62 };
     $objeq(myObject); // --> result is [myObject]
