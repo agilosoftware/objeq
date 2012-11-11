@@ -135,7 +135,7 @@ This Query sorts the results by the lastName Property in Ascending Order followe
     order by lastName, firstName desc -> [ lastName + ', ' + firstName ]
 
 ### Aggregator
-In theory, an Aggregator yields a single Item Result Set based on the Items in the Working Set.  We say 'in theory' because there is no strict requirement that the result be a single Item.  The Aggregator consists of a set of functions that are registered as objeq Extensions.
+In theory, an Aggregator yields a single Item Result Set based on the Items in the Working Set.  We say 'in theory' because there is no strict requirement that the result be a single Item.  The Aggregator consists of a set of functions that are registered as objeq Library Extensions.
 
 As an example, this will register an Extension called 'avg' for calculating average values:
 

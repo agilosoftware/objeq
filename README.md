@@ -4,7 +4,7 @@
 objeq (Object Querying) - is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.
 
 ### What Does it Do?
-It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.  It also optionally allows you generate live results, such that if anything in the original Array changes, the query result will immediately reflect those changes.
+It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.  It also optionally allows you to generate dynamic results, such that if anything in the original Array changes, the query result will immediately reflect those changes.
 
 ### What Doesn't it Do?
 Everything else.
@@ -75,9 +75,9 @@ Assuming you have Node.js installed, you can fire up the REPL and type the follo
 If you don't have Node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html](examples/index.html)
 
 ## More Information
-For more information about how to interact with the objeq Library and its single API function, see the API Reference at [doc/APIReference.md](doc/APIReference.md)
+For more information about how to interact with the objeq Library and its single API function, see the API Reference at [doc/API-Reference.md](doc/API-Reference.md)
 
-For more information about the objeq Query Language itself, including its syntax and grammar, see the Language Reference at [doc/LanguageReference.md](doc/LanguageReference.md)
+For more information about the objeq Query Language itself, including its syntax and grammar, see the Language Reference at [doc/Language-Reference.md](doc/Language-Reference.md)
 
 ## Credits and Acknowledgements
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
