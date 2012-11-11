@@ -12,7 +12,6 @@ For all of these examples, let's assume that we're working with this Array of Ja
       { name: 'Jessica', age: 48, gender: 'female' }
     ];
     ```
-
 ## Querying Data
 The primary function of the objeq Library, as you might have guessed, is the ability to query data.  This is done by providing an Array or Object as the first argument to the `$objeq()` function, followed by a Query String and a set of optional Parameters:
 
@@ -20,21 +19,18 @@ The primary function of the objeq Library, as you might have guessed, is the abi
     var res = $objeq(data, "age > 40 && gender == 'female' -> name");
     // --> Returns ['Jessica']
     ```
-
 This could have also been parameterized and written as:
 
     ```javascript
     var res = $objeq(data, "age > %1 && gender == %2", 40, 'female');
     // --> res now contains ['Jessica']
     ```
-
 A simpler query might only process a single Object:
 
     ```javascript
     var res = $objeq({ name: 'Ronald', age: 62 }, "-> age * 2");
     // --> res now contains [124]
     ```
-
 ## Compiling Queries
 If the first argument to the `$objeq()` function is a Query String rather than an Array or Object to be queried, then the library will assume you are trying to compile a Query.  The rules are essentially the same except that a JavaScript closure is returned that can then be used to process data repeatedly:
 
@@ -44,7 +40,6 @@ If the first argument to the `$objeq()` function is a Query String rather than a
     var res = ageAndGender(data);
     // --> res now contains ['Jessica']
     ```
-
 In this way, the parameters that are encountered by the `$objeq()` function are treated as defaults for the compiled query, but can be overridden when calling the closure:
 
     ```javascript
@@ -54,7 +49,6 @@ In this way, the parameters that are encountered by the `$objeq()` function are 
     var res = ageAndGender(data, 60, 'male');
     // --> res now contains ['Ronald']
     ```
-
 ## Dynamic Queries
 So far, you've seen Snapshot Queries that evaluate the data only once, returning a static result.  You can also create a Dynamic result set by calling the `dynamic()` function that is nested under the compiled closure:
 
@@ -65,7 +59,6 @@ So far, you've seen Snapshot Queries that evaluate the data only once, returning
     data.push({ name: 'Thomas', age: 88, gender: 'male' });
     // --> res now contains ['Ronald', 'Thomas']
     ```
-
 The results of a Dynamic Query will constantly reflect the state of the evaluated data.  This is a very powerful feature, but comes with a cost.  The cost is that Arrays and Objects will be decorated, resulting in slightly reduced performance when accessing those Arrays and Objects.
 
 ### Dynamic Parameters
@@ -77,7 +70,6 @@ A Query can be Parameterized such that any Objects passed into it are also decor
     var res = query.dynamic(data, param); // res[0] = Ronald
     param.name = 'Jessica';               // res[0] = Jessica
     ```
-
 # Decorating Arrays and Objects
 Arrays and Objects will be decorated automatically by the objeq Query Language whenever it sees that they are participating in a Dynamic Query, but they can also be decorated explicitly by passing them to the `$objeq()` function without an associated query.  This is particularly useful for Arrays.
 
@@ -87,7 +79,6 @@ This will decorate the `data` Array.  *Note* that for Arrays, the decoration hap
     ```javascript
     $objeq(data); // --> result is data
     ```
-
 The decoration of an Array results in several changes to the Array instance.  Specifically, many of the Array accessor methods (slice, splice, push, etc) are wrapped so that the objeq Library can perform event notification when a change occurs to the Array's content.
 
 Beyond the standard method wrapping.  The objeq Library also adds several convenience methods to the Array instance.
@@ -115,7 +106,6 @@ You can monitor Arrays for Property changes.  Here we just specify the property 
     });
     items[1].name = 'William';
     ```
-
 You can also monitor Arrays for membership changes.  Notice that the first parameter to the `on()` method is now '.content'.  All property keys that start with a '.' are considered to be special properties of the Array itself.  Objeq presently only supports the '.content' and '.length' special properties.
 
     ```javascript
@@ -125,7 +115,6 @@ You can also monitor Arrays for membership changes.  Notice that the first param
     });
     data.push({ name: 'Thomas', age: 88, gender: 'male' });
     ```
-
 ### Convenience
 > `contains(item)`
 > Returns `true` if the Array contains the item
@@ -145,7 +134,6 @@ Because the objeq Library will track Array membership in order to more optimally
     // Sets the 'age' attribute of every Object in the Array
     data.attr('age', 25); // everyone is now 25 years old
     ```
-
 ### Kludgery
 > `item(index, [value])`
 > Sets and returns items from the Array
@@ -161,7 +149,6 @@ To work around this problem, objeq has to introduce a method to each Array that 
     // Get a Value
     var blah = myArray.item(0);  // var blah = myArray[0];
     ```
-
 ## Object Decoration
 The objeq Library will decorate Objects only when it is necessary to do so because Object decoration is expensive and generally only useful in the context of Dynamic Queries.  As such, you should never need to decorate an Object explicitly, but it's useful to know what happens to an Object when it is decorated.
 
@@ -175,7 +162,6 @@ What this means for Objects is that the first time objeq encounters an Object, i
     var myObject = { name: 'Ronald', age: 62 };
     $objeq(myObject); // --> result is [myObject]
     ```
-
 # Extensions
 Defining Extension Functions for objeq is a relatively painless process.  Simply register the function with the `registerExtension()` method that is exposed by the `$objeq()` function instance:
 
@@ -184,13 +170,11 @@ Defining Extension Functions for objeq is a relatively painless process.  Simply
         return "Hello " + firstName;
     });
     ```
-
 And then call the function from within your Query:
 
     ```javascript
     var res = $objeq(data, "-> hello(firstName)");
     ```
-
 ## Five Simple Rules for Extension Writers
 1. Your Extensions should be side-effect free and deterministic.  This is **very** important!
 2. The first argument passed to an Extension will always be the current Query Context followed by arguments passed as part of the Query itself

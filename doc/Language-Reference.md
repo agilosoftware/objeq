@@ -149,7 +149,6 @@ As an example, this will register an Extension called 'avg' for calculating aver
       return typeof value === 'number' ? value : NaN;
     });
     ```
-
 This can then be use in the following way:
 
     age > 20 select age aggregate avg

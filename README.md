@@ -1,7 +1,7 @@
 # objeq (JavaScript Object Querying)
 
 ## Introduction
-objeq (Object Querying) - is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.
+objeq is a **simple** library that allows POJSO's (Plain-Old JavaScript Objects) to be queried in real-time.
 
 ### What Does it Do?
 It lets you take a JavaScript Array and query it.  Querying includes one or more steps of filtering, drill-down, synthesis, sorting and/or aggregation.  It also optionally allows you to generate dynamic results, such that if anything in the original Array changes, the query result will immediately reflect those changes.
@@ -29,7 +29,6 @@ You can include the objeq Library on your web page with the following HTML:
     ```html
     <script src="objeq.min.js" type="text/javascript"></script>
     ```
-
 You can also include the unminified parser and processor with the following:
 
     ```html
@@ -37,14 +36,13 @@ You can also include the unminified parser and processor with the following:
     <script src="objeq/objeq.js" type="text/javascript"></script>
     ```
 ### Inclusion in Node.js
-You can include the objeq Library in your Node.js module with the following:
+You can include the objeq Library in your node.js module with the following:
 
     ```javascript
     var $objeq = require('objeq');
     ```
-
 ### Performing a First Query
-Assuming you have Node.js installed, you can fire up the REPL and type the following:
+Assuming you have node.js installed, you can fire up the REPL and type the following:
 
     ```javascript
     // Import the objeq Library
@@ -71,8 +69,7 @@ Assuming you have Node.js installed, you can fire up the REPL and type the follo
     //  [ 'Ronald is 62 years old',
     //    'Robert is 54 years old' ]
     ```
-
-If you don't have Node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html](examples/index.html)
+If you don't have node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html](examples/index.html)
 
 ## More Information
 For more information about how to interact with the objeq Library and its single API function, see the API Reference at [doc/API-Reference.md](doc/API-Reference.md)
