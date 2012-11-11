@@ -1,4 +1,4 @@
-# objeq Reference Manual
+# objeq Language Reference Manual
 This document serves as a quick introduction to the objeq Query Language.
 
 ## Glossary
@@ -139,6 +139,7 @@ In theory, an Aggregator yields a single Item Result Set based on the Items in t
 
 As an example, this will register an Extension called 'avg' for calculating average values:
 
+    ```javascript
     $objeq.registerExtension('avg', function _avg(ctx, value) {
       if ( Array.isArray(value) ) {
         if ( value.length === 0 ) return 0;
@@ -147,6 +148,7 @@ As an example, this will register an Extension called 'avg' for calculating aver
       }
       return typeof value === 'number' ? value : NaN;
     });
+    ```
 
 This can then be use in the following way:
 
