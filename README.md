@@ -18,61 +18,51 @@ Getting started is so frickin' easy!
 ### Installation
 A pre-built version of the parser and minified code are already included, but if you'd like to build them yourself and you have node.js, then you can do so by issuing the following command from the package's top-level directory:
 
-```bash
-> npm install; npm run-script build
-```
+    > npm install; npm run-script build
 
 This will also install any development dependencies and run the nodeunit test suite.
 
 ### Inclusion in a Web Page
 You can include the objeq Library on your web page with the following HTML:
 
-```html
-<script src="objeq.min.js" type="text/javascript"></script>
-```
+    <script src="objeq.min.js" type="text/javascript"></script>
 
 You can also include the unminified parser and processor with the following:
 
-```html
-<script src="objeq/objeq-parser.js" type="text/javascript"></script>
-<script src="objeq/objeq.js" type="text/javascript"></script>
-```
+    <script src="objeq/objeq-parser.js" type="text/javascript"></script>
+    <script src="objeq/objeq.js" type="text/javascript"></script>
 
 ### Inclusion in Node.js
 You can include the objeq Library in your node.js module with the following:
 
-```javascript
-var $objeq = require('objeq');
-```
+    var $objeq = require('objeq');
 
 ### Performing a First Query
 Assuming you have node.js installed, you can fire up the REPL and type the following:
 
-```javascript
-// Import the objeq Library
-var $objeq = require('objeq');
+    // Import the objeq Library
+    var $objeq = require('objeq');
 
-// Create a data Array to be queried later
-var data = [
-  { name: 'Barbara', age: 25, gender: 'female' },
-  { name: 'Ronald', age: 62, gender: 'male' },
-  { name: 'Robert', age: 54, gender: 'male' },
-  { name: 'Jessica', age: 48, gender: 'female' }
-];
+    // Create a data Array to be queried later
+    var data = [
+      { name: 'Barbara', age: 25, gender: 'female' },
+      { name: 'Ronald', age: 62, gender: 'male' },
+      { name: 'Robert', age: 54, gender: 'male' },
+      { name: 'Jessica', age: 48, gender: 'female' }
+    ];
 
-// This will compile an objeq query that filters only those
-// Objects having a name property starting with 'Ro' and then
-// returns a string that combines name and age properties
-var query = $objeq("'^Ro' =~ name -> name + ' is ' + age");
+    // This will compile an objeq query that filters only those
+    // Objects having a name property starting with 'Ro' and then
+    // returns a string that combines name and age properties
+    var query = $objeq("'^Ro' =~ name -> name + ' is ' + age");
 
-// This performs the query against the 'data' Array and
-// returns the result in 'res'
-var res = query(data);
+    // This performs the query against the 'data' Array and
+    // returns the result in 'res'
+    var res = query(data);
 
-// --> res now contains:
-//  [ 'Ronald is 62 years old',
-//    'Robert is 54 years old' ]
-```
+    // --> res now contains:
+    //  [ 'Ronald is 62 years old',
+    //    'Robert is 54 years old' ]
 
 If you don't have node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html](examples/index.html)
 
