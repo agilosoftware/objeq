@@ -98,6 +98,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-[tester]: ./examples/index.html
-[api]: ./doc/API-Reference.md
-[language]: ./doc/Language-Reference.md
+[tester]: http://www.kode4food.it/js/objeq/index.html
+[api]: https://github.com/agilosoftware/objeq/wiki/API-Reference
+[language]: https://github.com/agilosoftware/objeq/wiki/Language-Reference
