@@ -64,12 +64,12 @@ Assuming you have node.js installed, you can fire up the REPL and type the follo
     //  [ 'Ronald is 62 years old',
     //    'Robert is 54 years old' ]
 
-If you don't have node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html]
+If you don't have node.js installed, you can instead open the Query Tester in your browser.  It is located in the Examples directory at [examples/index.html][tester]
 
 ## More Information
-For more information about how to interact with the objeq Library and its single API function, see the API Reference at [doc/API-Reference.md]
+For more information about how to interact with the objeq Library and its single API function, see the API Reference at [doc/API-Reference.md][api]
 
-For more information about the objeq Query Language itself, including its syntax and grammar, see the Language Reference at [doc/Language-Reference.md]
+For more information about the objeq Query Language itself, including its syntax and grammar, see the Language Reference at [doc/Language-Reference.md][language]
 
 ## Credits and Acknowledgements
 This module defines both a Lexer and Grammar that use the Jison Parser Generator (http://zaach.github.com/jison/)
@@ -97,3 +97,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
+
+[tester]: ./examples/index.html
+[api]: ./doc/API-Reference.md
+[language]: ./doc/Language-Reference.md
