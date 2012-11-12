@@ -33,12 +33,12 @@ You can also include the unminified parser and processor with the following:
     <script src="objeq/objeq.js" type="text/javascript"></script>
 
 ### Inclusion in Node.js
-You can include the objeq Library in your node.js module with the following:
+Assuming you have installed the objeq Library into your project with npm, you can include it in a node.js module with the following:
 
     var $objeq = require('objeq');
 
 ### Performing a First Query
-Assuming you have node.js installed, you can fire up the REPL and type the following:
+Assuming you have node.js installed, you can fire up the REPL and type the following into the console (minus comments):
 
     // Import the objeq Library
     var $objeq = require('objeq');
