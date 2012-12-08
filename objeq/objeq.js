@@ -450,6 +450,11 @@
       defineProperties(arr, {
         contains: {
           value: function _monitoredContains(obj) {
+            if ( !arguments.length ) {
+              containsCache = null;
+              return false;
+            }
+
             if ( !containsCache ) {
               containsCache = {};
               for ( var i = arr.length; i--; ) {
@@ -457,12 +462,8 @@
                 containsCache[id] = true;
               }
             }
+            
             return containsCache[getObjectId(obj) || obj];
-          }
-        },
-        containsReset: {
-          value: function _reset() {
-            containsCache = null;
           }
         },
         item: {
@@ -1226,8 +1227,9 @@
       // Splice Results
       spliceArrayItems(results, aggregated);
 
-      if ( results.contains && results.containsReset ) {
-        results.containsReset();
+      if ( results.contains ) {
+        // Calling with no arguments clears its cache
+        results.contains();
       }
     }
 

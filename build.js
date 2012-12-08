@@ -2,12 +2,11 @@
 // pollute the global namespace. It should be capable of
 // being used both from the browser and from node.js
 
-var fs = require("fs");
-var jison = require("jison");
-var IO = require("jison/lib/jison/util/io");
-var bnf = require("jison/lib/jison/bnf");
-var jsp = require("uglify-js").parser;
-var pro = require("uglify-js").uglify;
+var fs = require("fs")
+  , jison = require("jison")
+  , IO = require("jison/lib/jison/util/io")
+  , bnf = require("jison/lib/jison/bnf")
+  , uglify = require("uglify-js");
 
 var TermCodes = {
   "error_prefix": "\u001B[31m",
@@ -18,10 +17,10 @@ var TermCodes = {
   "bold_suffix": "\u001B[22m"
 };
 
-var grammarFilename = "./objeq/objeq-parser.y";
-var parserFilename = "./objeq/objeq-parser.js";
-var objeqFilename = "./objeq/objeq.js";
-var minifiedFilename = "./objeq.min.js";
+var grammarFilename = "./objeq/objeq-parser.y"
+  , parserFilename = "./objeq/objeq-parser.js"
+  , objeqFilename = "./objeq/objeq.js"
+  , minifiedFilename = "./objeq.min.js";
 
 function fmt(type, value) {
   if ( !process.stdout.isTTY ) return value;
@@ -81,13 +80,15 @@ var endCode = "\n" +
 
 var out = parserCode.replace(replaceString, startCode);
 
-fs.writeFile(parserFilename, out + endCode, function(err) {
-  if ( !err ) return;
+try {
+  fs.writeFileSync(parserFilename, out + endCode);
+}
+catch ( err ) {
   console.log(fmt("error", 'Oops! Error writing Parser'));
   console.log('Reason: '+err);
   console.log();
   process.exit(4);
-});
+}
 console.log("✔ Wrote " + parserFilename);
 
 // Now use Uglify to compress the JavaScript
@@ -100,21 +101,21 @@ catch ( err ) {
   console.log();
   process.exit(5);
 }
+
+var origCode = objeqCode + "\n" + parserCode.replace(replaceString, minCode)
+  , result = uglify.minify(origCode, { fromString: true })
+  , finalCode = result.code;
 console.log("✔ Minified Parser and Processor");
 
-var origCode = objeqCode + "\n" + parserCode.replace(replaceString, minCode);
-var ast = jsp.parse(origCode);
-ast = pro.ast_mangle(ast);
-ast = pro.ast_squeeze(ast);
-var finalCode = pro.gen_code(ast);
-
-fs.writeFile(minifiedFilename, finalCode, function(err) {
-  if ( !err ) return;
+try {
+  fs.writeFileSync(minifiedFilename, finalCode);
+}
+catch ( err ) {
   console.log(fmt("error", 'Oops! Error writing Minified Code'));
   console.log('Reason: '+err);
   console.log();
   process.exit(6);
-});
+}
 console.log("✔ Wrote " + minifiedFilename);
 
 console.log(fmt("ok", "Finished!"));
