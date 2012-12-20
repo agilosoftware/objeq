@@ -896,12 +896,20 @@
 
     function evalRE() {
       function _re(ctx, obj) {
-        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit;
-        if ( typeof lval !== 'string' ) {
+        var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
+          , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit
+          , re, key;
+        
+        if ( typeof lval !== 'string' && !isArray(lval) ) {
           return false;
         }
-        var rval = n2Eval ? n2Eval(ctx, obj) : n2Lit
-          , re = regexCache[lval] || (regexCache[lval] = new RegExp(lval));
+        
+        if ( typeof lval === 'string' ) {
+          lval = [lval];
+        }
+
+        key = lval.join('/');
+        re = regexCache[key] || (regexCache[key] = RegExp.apply(null, lval));
         return re.test(rval);
       }
 
