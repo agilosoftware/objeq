@@ -27,6 +27,10 @@
     // Instead, you must wrap them in an Array
     var myData = $objeq([{ name: 'Thom' }, { name: 'Stefano'}]);
 
+* Regular Expressions can now be performed using an Array, such that the Array elements act as the arguments passed to the JavaScript RegExp constructor.  For example, this will perform a case-insensitive search against a lastName property:
+
+    ["rago", "i"] =~ lastName
+
 ## 0.4.2 - Parameterized Sorting
 * The grammar supported ORDER BYs that referenced query parameters, but the implementation would not resolve those parameters.  This has been corrected.  For example, this code will maintain a Dynamic Result Set sorted by the property identified in 'orderBy'
 
