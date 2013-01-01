@@ -11,11 +11,13 @@
     var queryDirty = true, sourceDirty = true
       , compiledQuery, sourceJSON;
 
+    var $query, $queries, $source, $result, $run, $inputItems, $outputItems;
+
     function beautifySource() {
-      source.value = js_beautify(source.value, {
+      $source.val(js_beautify($source.val(), {
         indent_size: 2,
         preserve_newlines: true
-      });
+      }));
     }
 
     function performQuery() {
@@ -26,8 +28,8 @@
         }
 
         if ( sourceDirty ) {
-          sourceJSON = JSON.parse(source.value);
-          inputItems.innerHTML = "(" + sourceJSON.length + " items)";
+          sourceJSON = JSON.parse($source.val());
+          $inputItems.html("(" + sourceJSON.length + " items)");
           sourceDirty = false;
         }
 
@@ -35,36 +37,44 @@
         var start = new Date().getTime();
         var output = compiledQuery(sourceJSON);
         var elapsed = new Date().getTime() - start;
-        outputItems.innerHTML = "(" + output.length + " items in " + elapsed + "ms)";
+        $outputItems.html("(" + output.length + " items in " + elapsed + "ms)");
 
-        result.value = js_beautify(JSON.stringify(output), {
+        $result.val(js_beautify(JSON.stringify(output), {
             indent_size: 2,
             preserve_newlines: true
-        });
+        }));
       }
       catch ( err ) {
-        outputItems.innerHTML = "(Error!)";
-        result.value = err;
+        $outputItems.html("(Error!)");
+        $result.val(err);
       }
     }
 
     function chooseQuery() {
-      var queryString = queries.options[queries.selectedIndex].innerText;
-      query.value = queryString.replace(/^\s+|\s+$/g, "");
+      var queryString = $queries.find('option:selected').text();
+      $query.val(queryString.replace(/^\s+|\s+$/g, ""));
       queryDirty = true;
       performQuery();
     }
 
     $(window).ready(function() {
+      $query = $('#query');
+      $queries = $('#queries');
+      $run = $('#run');
+      $source = $('#source');
+      $result = $('#result');
+      $inputItems = $('#inputItems');
+      $outputItems = $('#outputItems');
+
       beautifySource();
       chooseQuery();
 
-      $("#run").click(performQuery);
-      $("#query").change(function() {
-          queryDirty = true;
+      $run.click(performQuery);
+      $query.change(function() {
+        queryDirty = true;
       });
-      $("#source").change(function() {
-          sourceDirty = true;
+      $source.change(function() {
+        sourceDirty = true;
       });
     });
   </script>
@@ -95,7 +105,7 @@
     #run {
       position: absolute;
       right: 10px; width: 70px;
-      bottom: 10px;
+      bottom: 5px;
     }
     label {
       font-family: Arial, Helvetica, sans-serif;
@@ -128,7 +138,11 @@
       font-family: Arial, Helvetica, sans-serif;
       font-size: 16px;
     }
-    #query, #queries, #source, #result {
+    #queries {
+      position: absolute;
+      width: 100%; height: auto;      
+    }
+    #query, #source, #result {
       position: absolute;
       width: 100%; height: 100%;
     }
