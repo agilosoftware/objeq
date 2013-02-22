@@ -10,7 +10,7 @@
 (function (self, require, module) {
   "use strict";
 
-  var CURRENT_VERSION = "0.5.0";
+  var CURRENT_VERSION = "0.6.0";
 
   // Feature Checking *********************************************************
 
@@ -40,12 +40,10 @@
 
   // we control usage, so these shims don't have to be proper
 
-  var defineProperty = Object.defineProperty;
-  if ( !defineProperty ) {
-    if ( !Object.prototype.__defineSetter__) {
-      throw new Error("Property Definitions not available!");
-    }
+  var defineProperty = Object.defineProperty
+    , isDynamicSupported = true;
 
+  if ( !defineProperty && Object.prototype.__defineSetter__) {
     defineProperty = function _defineProperty(obj, prop, descriptor) {
       if ( descriptor.set ) {
         obj.__defineSetter__(prop, descriptor.set);
@@ -56,6 +54,21 @@
       else if ( descriptor.value ) {
         var value = descriptor.value;
         obj.__defineGetter__(prop, function _getter() { return value; });
+      }
+    };
+  }
+
+  if ( !defineProperty ) {
+    isDynamicSupported = false;
+    console.log("Warning! Dynamic queries are not supported on this platform");
+
+    // A limited stub, so at least value setting is supported
+    defineProperty = function _defineProperty(obj, prop, descriptor) {
+      if ( descriptor.set || descriptor.get ) {
+        throw new Error("Property set/get not supported by your browser!");
+      }
+      else if ( descriptor.value ) {
+        obj[prop] = descriptor.value;
       }
     };
   }
@@ -227,6 +240,25 @@
     var targetEntry = targets[tkey];
     targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
+  
+  function removeCallbacks(callbacksToRemove) {
+    var removeKeys = [];
+    for ( var key in listeners ) {
+      var callbacks = listeners[key];
+      for ( var i = callbacks.length; i--; ) {
+        var callback = callbacks[i];
+        if ( callbacksToRemove.indexOf(callback) != -1 ) {
+          callbacks.splice(i, 1);
+        }
+      }
+      if ( !callbacks.length ) {
+        removeKeys.push(key);
+      }
+    }
+    for ( var i = removeKeys.length; i--; ) {
+      delete listeners[removeKeys[i]];
+    }
+  }
 
   var EmptyArray = [];
 
@@ -349,7 +381,7 @@
     return arr;
   }
 
-  function decorateArray(arr) {
+  function decorateArray(arr, queryCallbacks) {
     var callbackMapping = []
       , containsCache = null;
 
@@ -370,8 +402,14 @@
 
     function addDecoratorMethods() {
       defineProperties(arr, {
-        dynamic: { value: dynamic }, // for dynamic sub-queries
-        query: { value: query },     // for snapshot sub-queries
+        query: { value: query },  // for snapshot sub-queries
+        detach: { 
+          value: function _detach() {
+            if ( queryCallbacks ) {
+              removeCallbacks(queryCallbacks);
+            }
+          }
+        },
         contains: {
           configurable: true,
           value: function _contains(value) {
@@ -435,6 +473,10 @@
           }
         }
       });
+
+      if ( isDynamicSupported ) {
+        defineProperty(arr, "dynamic", { value: dynamic });
+      }
     }
 
     // Array Event Methods ****************************************************
@@ -547,7 +589,7 @@
     if ( isArray(value) ) {
       return decorateArray(value);
     }
-    else if ( typeof value === 'object' ) {
+    else if ( typeof value === 'object' && isDynamicSupported ) {
       return decorateObject(value);
     }
 
@@ -555,8 +597,6 @@
   }
 
   // 'Compilation' Functions **************************************************
-
-  var regexCache = {};
 
   function arrayEvalTemplate(items) {
     var template = [];
@@ -895,6 +935,8 @@
     }
 
     function evalRE() {
+      var regexCache = {};
+      
       function _re(ctx, obj) {
         var lval = n1Eval ? n1Eval(ctx, obj) : n1Lit
           , rval = n2Eval ? n2Eval(ctx, obj) : n2Lit
@@ -1131,6 +1173,7 @@
   }
 
   function addQueryListeners(ctx, paths, invalidateQuery, invalidateResults) {
+    var result = [];
     for ( var i = paths.length; i--; ) {
       var node = paths[i]
         , index = node[1]
@@ -1163,8 +1206,9 @@
     }
 
     if ( callback ) {
-      addListener(results, getArrayContentKey(results), callback);
-      queueEvent(results, getArrayContentKey(results), results.length);
+      var arrayContentKey = getArrayContentKey(results);
+      addListener(results, arrayContentKey, callback);
+      queueEvent(results, arrayContentKey, results.length);
     }
 
     return results;
@@ -1177,7 +1221,8 @@
       , sortFirst = step.sortFirst
       , aggregator = step.aggregator
       , paths = step.paths
-      , results = decorateArray([]);
+      , cleanupInfo = [setListener, itemListener]
+      , results = decorateArray([], cleanupInfo);
 
     var refreshSet, refreshItem;
     if ( dynamic ) {
@@ -1305,7 +1350,14 @@
     var queryString = processed.queryString
       , steps = parse(queryString);
 
-    function compiledSnapshotQuery() {
+    defineProperty(compiledQuery, "query", { value: compiledQuery });
+    if ( isDynamicSupported ) {
+      defineProperty(compiledQuery, "dynamic", { value: compiledDynamicQuery });
+    }
+
+    return compiledQuery;
+
+    function compiledQuery() {
       var result = processArguments(makeArray(arguments), true)
         , params = mergeArrays(processed.params, result.params)
         , callback = result.callback ||  processed.callback;
@@ -1319,13 +1371,6 @@
         , callback = result.callback ||  processed.callback;
       return processQuery(result.source, steps,  params, callback, true);
     }
-
-    defineProperties(compiledSnapshotQuery, {
-      dynamic: { value: compiledDynamicQuery }, // for dynamic queries
-      query: { value: compiledSnapshotQuery }   // for snapshot queries
-    });
-
-    return compiledSnapshotQuery;
   }
 
   function dynamic() {
