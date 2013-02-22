@@ -137,10 +137,6 @@
     return true;
   }
 
-  function isMonitored(value) {
-    return value.__objeq_mon__;
-  }
-
   function isDecorated(value) {
     return value.__objeq_id__ ? true : false;
   }
@@ -207,8 +203,8 @@
   }
 
   function addListener(target, key, callback) {
-    var tkey = getObjectId(target) || '*'
-      , entryKey = key + '@' + tkey
+    var targetKey = getObjectId(target) || '*'
+      , entryKey = key + '@' + targetKey
       , callbacks = listeners[entryKey] || ( listeners[entryKey] = [] );
 
     if ( callbacks.indexOf(callback) !== -1 ) {
@@ -217,13 +213,13 @@
 
     // Add it to the callbacks and the target reverse lookup
     callbacks.push(callback);
-    var targetEntry = targets[tkey] || ( targets[tkey] = [] );
+    var targetEntry = targets[targetKey] || ( targets[targetKey] = [] );
     targetEntry.push(entryKey);
   }
 
   function removeListener(target, key, callback) {
-    var tkey = getObjectId(target) || '*'
-      , entryKey = key + '@' + tkey
+    var targetKey = getObjectId(target) || '*'
+      , entryKey = key + '@' + targetKey
       , callbacks = listeners[entryKey];
 
     if ( !callbacks ) {
@@ -237,15 +233,15 @@
 
     // Remove it from the callbacks and the target reverse lookup
     callbacks.splice(idx, 1);
-    var targetEntry = targets[tkey];
+    var targetEntry = targets[targetKey];
     targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
   
   function removeCallbacks(callbacksToRemove) {
-    var removeKeys = [];
+    var i, removeKeys = [];
     for ( var key in listeners ) {
       var callbacks = listeners[key];
-      for ( var i = callbacks.length; i--; ) {
+      for ( i = callbacks.length; i--; ) {
         var callback = callbacks[i];
         if ( callbacksToRemove.indexOf(callback) != -1 ) {
           callbacks.splice(i, 1);
@@ -255,7 +251,7 @@
         removeKeys.push(key);
       }
     }
-    for ( var i = removeKeys.length; i--; ) {
+    for ( i = removeKeys.length; i--; ) {
       delete listeners[removeKeys[i]];
     }
   }
@@ -263,8 +259,8 @@
   var EmptyArray = [];
 
   function getCallbacks(target, key) {
-    var tkey = getObjectId(target)
-      , callbacks = listeners[key + '@' + tkey] || EmptyArray
+    var targetKey = getObjectId(target)
+      , callbacks = listeners[key + '@' + targetKey] || EmptyArray
       , pCallbacks = listeners[key + '@*'] || EmptyArray
       , aCallbacks = listeners['*@*'] || EmptyArray;
 
@@ -383,7 +379,8 @@
 
   function decorateArray(arr, queryCallbacks) {
     var callbackMapping = []
-      , containsCache = null;
+      , containsCache = null
+      , isMonitored = false;
 
     addDecoratorMethods();
 
@@ -444,7 +441,7 @@
         on: {
           value: function _on(events, callback) {
             // If the Array isn't already monitored, then we need to
-            if ( !isMonitored(arr) ) {
+            if ( !isMonitored ) {
               addMonitoredMethods();
             }
 
@@ -482,6 +479,7 @@
     // Array Event Methods ****************************************************
 
     function addMonitoredMethods() {
+      isMonitored = true;
       decorateArrayItems(arr);
 
         for ( var i = ArrayFuncs.length; i--; ) {
@@ -523,9 +521,6 @@
             }
             return arr[index];
           }
-        },
-        __objeq_mon__: {
-          value: true
         }
       });
 
@@ -1101,11 +1096,6 @@
     return result;
   }
 
-  function yystep(index) {
-    // 'this' is the Parser's YY object
-    this.step = index;
-  }
-
   function yypath() {
     // 'this' is the Parser's YY object
     var result = ['path'].concat(makeArray(arguments));
@@ -1156,9 +1146,9 @@
     , pendingRefresh = {};
 
   function invalidateQuery(results, refreshFunction) {
-    var tkey = getObjectId(results);
-    if ( !pendingRefresh[tkey] ) {
-      invalidated[tkey] = refreshFunction;
+    var targetKey = getObjectId(results);
+    if ( !pendingRefresh[targetKey] ) {
+      invalidated[targetKey] = refreshFunction;
     }
   }
 
@@ -1173,7 +1163,6 @@
   }
 
   function addQueryListeners(ctx, paths, invalidateQuery, invalidateResults) {
-    var result = [];
     for ( var i = paths.length; i--; ) {
       var node = paths[i]
         , index = node[1]
