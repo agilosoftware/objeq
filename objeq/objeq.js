@@ -193,7 +193,6 @@
   var MAX_NOTIFY = 128           // to avoid locking up the browser in loops
     , queue = []                 // The queue of pending notifications
     , listeners = {}             // Property@Target -> Callbacks
-    , targets = {}               // Reverse Lookup: Target -> Property@Target
     , inNotifyListeners = false; // to avoid recursion with notifyListeners
 
   function hasListeners(target, key) {
@@ -211,10 +210,8 @@
       return;
     }
 
-    // Add it to the callbacks and the target reverse lookup
+    // Add it to the callbacks
     callbacks.push(callback);
-    var targetEntry = targets[targetKey] || ( targets[targetKey] = [] );
-    targetEntry.push(entryKey);
   }
 
   function removeListener(target, key, callback) {
@@ -231,10 +228,8 @@
       return;
     }
 
-    // Remove it from the callbacks and the target reverse lookup
+    // Remove it from the callbacks
     callbacks.splice(idx, 1);
-    var targetEntry = targets[targetKey];
-    targetEntry.splice(targetEntry.indexOf(entryKey), 1);
   }
   
   function removeCallbacks(callbacksToRemove) {
