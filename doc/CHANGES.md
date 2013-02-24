@@ -4,7 +4,7 @@
 * Dynamic results can now be detached from their source by calling the result's `detach()` method.  This will effectively remove any of the internal callbacks that the dynamic query had been using, allowing it to potentially be garbage collected.  For example:
 
     var source = [{ name: 'Thom', age: 40 }, { name: 'Bill', age: 55 }]
-      , result = $objeq.dynamic(source, 'age > 50');
+      , result = $objeq(source).dynamic('age > 50');
     
     source[0].age = 51;  // result is dynamically updated
     result.detach();
