@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "jison": "0.3.x",
-    "uglify-js": "*",
-    "nodeunit": "*"
+    "uglify-js": "2.2.x",
+    "nodeunit": "0.7.x"
   },
   "engines": {
     "node": "*"
