@@ -2,7 +2,7 @@
   "name": "objeq",
   "description": "JavaScript Object Querying",
   "author": "Agilo Software GmbH",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "homepage": "http://www.objeq.org/",
   "main": "index.js",
   "keywords": ["javascript", "json", "query", "language", "server", "client"],
@@ -20,9 +20,9 @@
   "dependencies": {
   },
   "devDependencies": {
-    "jison": "*",
-    "uglify-js": "*",
-    "nodeunit": "*"
+    "jison": "0.3.x",
+    "uglify-js": "2.2.x",
+    "nodeunit": "0.7.x"
   },
   "engines": {
     "node": "*"

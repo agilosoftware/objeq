@@ -10,7 +10,7 @@
 (function (self, require, module) {
   "use strict";
 
-  var CURRENT_VERSION = "0.6.0";
+  var CURRENT_VERSION = "0.6.1";
 
   // Feature Checking *********************************************************
 
@@ -395,7 +395,7 @@
     function addDecoratorMethods() {
       defineProperties(arr, {
         query: { value: query },  // for snapshot sub-queries
-        detach: { 
+        detach: {
           value: function _detach() {
             if ( queryCallbacks ) {
               removeCallbacks(queryCallbacks);
