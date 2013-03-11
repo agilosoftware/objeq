@@ -1,5 +1,8 @@
 # Change History
 
+## 0.6.1 - Fixing Dependencies
+* When Jison hit version 0.4.x, it was factored out into multiple modules that broke some of Objeq's build scripts.  This update fixes the dependencies to a specific 0.3.x version of Jison (for now)
+
 ## 0.6.0 - Query Detachment
 * Dynamic results can now be detached from their source by calling the result's `detach()` method.  This will effectively remove any of the internal callbacks that the dynamic query had been using, allowing it to potentially be garbage collected.  For example:
 
