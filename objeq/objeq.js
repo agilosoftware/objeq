@@ -39,6 +39,10 @@
   }
 
   // we control usage, so these shims don't have to be proper
+  if ( typeof console === 'undefined' || typeof console.log === 'undefined' ) {
+     console = console || {};
+     console.log = function() {};
+   }
 
   var defineProperty = Object.defineProperty
     , isDynamicSupported = true;
