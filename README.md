@@ -54,7 +54,7 @@ Assuming you have node.js installed, you can fire up the REPL and type the follo
     // This will compile an objeq query that filters only those
     // Objects having a name property starting with 'Ro' and then
     // returns a string that combines name and age properties
-    var query = $objeq("'^Ro' =~ name -> name + ' is ' + age");
+    var query = $objeq("'^Ro' =~ name -> name + ' is ' + age + ' years old'");
 
     // This performs the query against the 'data' Array and
     // returns the result in 'res'
